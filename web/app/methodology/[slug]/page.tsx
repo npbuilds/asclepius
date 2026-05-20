@@ -41,10 +41,10 @@ export default function MethodologyEntryPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12">
-      <nav className="mb-8 text-sm">
+      <nav className="mb-8 font-display text-xs uppercase tracking-wider">
         <Link
           href="/methodology"
-          className="text-ink-400 hover:text-accent-700"
+          className="text-text-dim hover:text-cyan-bright"
         >
           ← All methodology
         </Link>
@@ -53,29 +53,28 @@ export default function MethodologyEntryPage({ params }: PageProps) {
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_280px]">
         <article>
           <header className="mb-8">
-            <div className="text-xs uppercase tracking-wider text-accent-700">
+            <div className="font-mono text-[11px] uppercase tracking-wider text-cyan-bright">
               {entry.filename}
             </div>
-            <h1 className="mt-1 font-serif text-3xl text-ink-900 sm:text-4xl">
+            <h1 className="mt-2 font-display text-3xl font-bold uppercase tracking-wider text-text-bright sm:text-4xl">
               {entry.title}
             </h1>
             {entry.summary ? (
-              <p className="mt-4 text-lg text-ink-600">{entry.summary}</p>
+              <p className="mt-4 font-prose text-lg text-text-primary">
+                {entry.summary}
+              </p>
             ) : null}
           </header>
 
-          <div className="prose prose-ink max-w-none prose-headings:font-serif prose-headings:text-ink-900 prose-a:text-accent-700 prose-a:no-underline hover:prose-a:underline prose-code:bg-ink-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[0.9em] prose-pre:bg-ink-900 prose-pre:text-ink-50 prose-table:text-sm">
+          <div className="prose max-w-none font-prose prose-headings:font-display prose-headings:font-bold prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-text-bright prose-p:text-text-primary prose-strong:text-text-bright prose-li:text-text-primary prose-a:text-cyan-bright prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-bg-panel-hover prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.9em] prose-code:text-cyan-bright prose-code:before:content-none prose-code:after:content-none prose-pre:rounded prose-pre:bg-bg-panel-hover prose-pre:text-text-primary prose-blockquote:border-l-cyan-bright prose-blockquote:text-text-primary prose-table:text-sm prose-th:text-text-bright prose-td:text-text-primary prose-hr:border-border-dim">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
                 a: ({ href, children }) => {
-                  // Rewrite cross-references to other methodology files to use
-                  // the slug-based URLs.
                   if (href && /^\d{2}-[a-z0-9-]+\.md$/i.test(href)) {
                     const slug = href.replace(/\.md$/, "");
                     return <Link href={`/methodology/${slug}`}>{children}</Link>;
                   }
-                  // External links get target="_blank"
                   if (href && /^https?:\/\//.test(href)) {
                     return (
                       <a href={href} target="_blank" rel="noopener noreferrer">
@@ -91,17 +90,19 @@ export default function MethodologyEntryPage({ params }: PageProps) {
             </ReactMarkdown>
           </div>
 
-          <nav className="mt-12 flex justify-between gap-4 border-t border-ink-200 pt-6 text-sm">
+          <nav className="mt-12 flex justify-between gap-4 border-t border-border-dim pt-6 text-sm">
             <div>
               {prev ? (
                 <Link
                   href={`/methodology/${prev.slug}`}
-                  className="block text-ink-600 hover:text-accent-700"
+                  className="block text-text-primary hover:text-cyan-bright"
                 >
-                  <div className="text-xs uppercase tracking-wider text-ink-400">
+                  <div className="font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
                     Previous
                   </div>
-                  <div className="mt-0.5 font-medium">{prev.title}</div>
+                  <div className="mt-0.5 font-display text-sm font-semibold uppercase tracking-wider">
+                    {prev.title}
+                  </div>
                 </Link>
               ) : null}
             </div>
@@ -109,12 +110,14 @@ export default function MethodologyEntryPage({ params }: PageProps) {
               {next ? (
                 <Link
                   href={`/methodology/${next.slug}`}
-                  className="block text-ink-600 hover:text-accent-700"
+                  className="block text-text-primary hover:text-cyan-bright"
                 >
-                  <div className="text-xs uppercase tracking-wider text-ink-400">
+                  <div className="font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
                     Next
                   </div>
-                  <div className="mt-0.5 font-medium">{next.title}</div>
+                  <div className="mt-0.5 font-display text-sm font-semibold uppercase tracking-wider">
+                    {next.title}
+                  </div>
                 </Link>
               ) : null}
             </div>
@@ -124,25 +127,25 @@ export default function MethodologyEntryPage({ params }: PageProps) {
         <aside className="space-y-6 lg:sticky lg:top-8 lg:self-start">
           {entry.audience ? (
             <Card label="Read this if">
-              <p className="text-sm text-ink-600">{entry.audience}</p>
+              <p className="text-sm text-text-primary">{entry.audience}</p>
             </Card>
           ) : null}
 
           {entry.framework ? (
             <Card label="Framework">
-              <p className="text-sm text-ink-600">{entry.framework}</p>
+              <p className="text-sm text-text-primary">{entry.framework}</p>
             </Card>
           ) : null}
 
           {entry.framing ? (
             <Card label="Framing">
-              <p className="text-sm text-ink-600">{entry.framing}</p>
+              <p className="text-sm text-text-primary">{entry.framing}</p>
             </Card>
           ) : null}
 
           {entry.primary_sources.length > 0 ? (
             <Card label={`Primary sources (${entry.primary_sources.length})`}>
-              <ul className="space-y-2 text-xs text-ink-600">
+              <ul className="space-y-2 text-xs text-text-primary">
                 {entry.primary_sources.map((src, i) => (
                   <li key={i} className="leading-snug">
                     {src}
@@ -154,7 +157,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
 
           {entry.related_implementations.length > 0 ? (
             <Card label="Related implementations">
-              <ul className="space-y-2 text-xs text-ink-600">
+              <ul className="space-y-2 text-xs text-text-primary">
                 {entry.related_implementations.map((src, i) => (
                   <li key={i} className="leading-snug">
                     {src}
@@ -177,8 +180,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-ink-200 bg-white p-4">
-      <div className="mb-2 text-xs font-medium uppercase tracking-wider text-ink-400">
+    <div className="rounded border border-border-dim bg-bg-panel p-4">
+      <div className="mb-2 font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-text-dim">
         {label}
       </div>
       {children}

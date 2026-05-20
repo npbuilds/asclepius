@@ -115,32 +115,34 @@ export default function DiligencePage({
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
       <header className="mb-8">
-        <div className="text-xs uppercase tracking-wider text-ink-400">
+        <div className="font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
           Diligence workbench
         </div>
-        <h1 className="mt-1 font-serif text-3xl text-ink-900">
+        <h1 className="mt-2 font-display text-3xl font-bold uppercase tracking-wider text-text-bright">
           {record.asset.asset_name}
           {record.asset.sponsor ? (
-            <span className="ml-3 text-base font-normal text-ink-400">
+            <span className="ml-3 font-body text-base font-normal normal-case tracking-normal text-text-dim">
               · {record.asset.sponsor}
             </span>
           ) : null}
         </h1>
         {isAdagrasib ? (
-          <p className="mt-2 max-w-3xl text-sm text-ink-600">
-            <strong>Retrospective backtest.</strong> Inputs locked to public
-            information available before the KRYSTAL-12 Phase 3 readout (June
-            2022 cutoff). This is calibration, not prediction — framework
-            outputs should bracket BMS's actual $4.8B acquisition price for the
-            post-readout (NDA) scenario.
+          <p className="mt-3 max-w-3xl text-sm text-text-primary">
+            <strong className="text-text-bright">Retrospective backtest.</strong>{" "}
+            Inputs locked to public information available before the KRYSTAL-12
+            Phase 3 readout (June 2022 cutoff). This is calibration, not
+            prediction — framework outputs should bracket BMS's actual $4.8B
+            acquisition price for the post-readout (NDA) scenario.
           </p>
         ) : null}
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-4">
-          <div className="rounded-lg border border-ink-200 bg-white p-5">
-            <h2 className="mb-3 font-serif text-base text-ink-900">Asset</h2>
+          <div className="rounded border border-border-dim bg-bg-panel p-5">
+            <h2 className="mb-3 font-display text-[11px] font-semibold uppercase tracking-[0.2em] text-text-dim">
+              Asset
+            </h2>
             <AssetForm value={record.asset} onChange={updateAsset} />
           </div>
 
@@ -156,7 +158,7 @@ export default function DiligencePage({
 
         <div className="space-y-5">
           {registryError ? (
-            <div className="rounded border border-bad-500/30 bg-bad-500/10 p-4 text-sm text-bad-500">
+            <div className="rounded border border-red-bright/40 bg-red-bright/10 p-4 text-sm text-red-bright">
               Could not load module registry: {registryError}. Is the API
               running on port 8000?
             </div>
@@ -168,13 +170,18 @@ export default function DiligencePage({
               return (
                 <section
                   key={m.id}
-                  className="rounded-lg border border-dashed border-ink-200 bg-white p-5"
+                  className="rounded border border-dashed border-border-dim bg-bg-panel p-5"
                 >
-                  <h2 className="font-serif text-lg text-ink-900">{m.name}</h2>
-                  <p className="mt-1 text-xs text-ink-400">
+                  <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-text-bright">
+                    {m.name}
+                  </h2>
+                  <p className="mt-1 text-xs text-text-dim">
                     Module discovered on backend ({m.id} v{m.version}) but no
                     frontend panel registered. Add one to{" "}
-                    <code>web/lib/module-registry.ts</code>.
+                    <code className="font-mono">
+                      web/lib/module-registry.ts
+                    </code>
+                    .
                   </p>
                 </section>
               );

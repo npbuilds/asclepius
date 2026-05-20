@@ -28,14 +28,14 @@ export function ReflexivitySlider({
   const active = TIERS[activeIdx] ?? TIERS[2];
 
   return (
-    <div className="rounded-lg border border-accent-600/30 bg-gradient-to-br from-accent-50 to-white p-5">
+    <div className="rounded border border-cyan-bright/30 bg-gradient-to-br from-accent-50 to-white p-5">
       <div className="flex items-baseline justify-between">
-        <h3 className="font-medium text-ink-900">Reflexivity adjustment</h3>
-        <span className="font-mono text-sm tabular-nums text-accent-700">
+        <h3 className="font-medium text-text-bright">Reflexivity adjustment</h3>
+        <span className="font-mono text-sm tabular-nums text-cyan-bright">
           ×{active.multiplier.toFixed(2)}
         </span>
       </div>
-      <p className="mt-1 text-xs text-ink-600">
+      <p className="mt-1 text-xs text-text-primary">
         Sponsor capital position. Well-capitalized sponsors run better trials
         (larger N, biomarker enrichment, adaptive designs) — a Spence-style
         costly signal capital-constrained sponsors can't credibly emit.
@@ -49,13 +49,13 @@ export function ReflexivitySlider({
           step={1}
           value={activeIdx === -1 ? 2 : activeIdx}
           onChange={(e) => onChange(TIERS[parseInt(e.target.value, 10)].value)}
-          className="w-full accent-accent-600"
+          className="w-full accent-cyan-bright"
         />
-        <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wider text-ink-400">
+        <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wider text-text-dim">
           {TIERS.map((t) => (
             <span
               key={t.value}
-              className={t.value === value ? "font-medium text-accent-700" : ""}
+              className={t.value === value ? "font-medium text-cyan-bright" : ""}
             >
               {t.label}
             </span>
@@ -63,8 +63,8 @@ export function ReflexivitySlider({
         </div>
       </div>
 
-      <div className="mt-4 rounded border border-ink-200 bg-white p-3 text-xs text-ink-600">
-        <span className="font-medium text-ink-900">{active.label}</span> —
+      <div className="mt-4 rounded border border-border-dim bg-bg-panel p-3 text-xs text-text-primary">
+        <span className="font-medium text-text-bright">{active.label}</span> —
         runway {active.runway}. Reflexivity multiplier applied last in the PoS
         chain. Empirical backing: Ma 2025 trial-accrual model (AUC 0.74) shows
         sponsor + protocol features predict structural trial breakdown.

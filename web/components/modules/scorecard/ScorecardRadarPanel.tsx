@@ -40,11 +40,11 @@ const DEFAULT_INPUT: ScorecardInput = {
 };
 
 const REC_COLOR: Record<Recommendation, string> = {
-  strong_buy: "bg-good-500 text-white",
-  buy: "bg-good-500/20 text-good-500",
-  hold: "bg-ink-100 text-ink-600",
-  cautious: "bg-accent-50 text-accent-700",
-  avoid: "bg-bad-500/20 text-bad-500",
+  strong_buy: "bg-green-bright text-white",
+  buy: "bg-green-bright/20 text-green-bright",
+  hold: "bg-bg-panel-hover text-text-primary",
+  cautious: "bg-cyan-bright/10 text-cyan-bright",
+  avoid: "bg-red-bright/20 text-red-bright",
 };
 
 export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelProps) {
@@ -71,8 +71,8 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
   }, [input]);
 
   return (
-    <section className="rounded-lg border border-ink-200 bg-white p-5">
-      <h2 className="mb-4 font-serif text-lg text-ink-900">
+    <section className="rounded border border-border-dim bg-bg-panel p-5">
+      <h2 className="mb-4 font-display text-lg text-text-bright">
         8-Pillar Scorecard
       </h2>
 
@@ -108,13 +108,13 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
         <div className="lg:w-64">
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={radarData}>
-              <PolarGrid stroke="#d6dbe7" />
+              <PolarGrid stroke="var(--border-dim)" />
               <PolarAngleAxis dataKey="pillar" tick={{ fontSize: 10 }} />
               <PolarRadiusAxis domain={[0, 10]} tick={false} axisLine={false} />
               <Radar
                 dataKey="score"
-                stroke="#c47416"
-                fill="#c47416"
+                stroke="var(--cyan-bright)"
+                fill="var(--cyan-bright)"
                 fillOpacity={0.3}
               />
             </RadarChart>
@@ -122,10 +122,10 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
 
           {scorecard ? (
             <div className="mt-3 text-sm">
-              <div className="text-[10px] uppercase tracking-wide text-ink-400">
+              <div className="text-[10px] uppercase tracking-wide text-text-dim">
                 Aggregate
               </div>
-              <div className="text-2xl font-medium tabular-nums text-ink-900">
+              <div className="text-2xl font-medium tabular-nums text-text-bright">
                 {scorecard.aggregate_score.toFixed(2)} / 10
               </div>
               <div
@@ -134,7 +134,7 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
                 {scorecard.recommendation.replace("_", " ")}
               </div>
               {scorecard.red_flags.length ? (
-                <div className="mt-2 text-[11px] text-bad-500">
+                <div className="mt-2 text-[11px] text-red-bright">
                   {scorecard.red_flags.length} red flag
                   {scorecard.red_flags.length > 1 ? "s" : ""} — recommendation capped
                 </div>
@@ -158,7 +158,7 @@ function PillarSlider({
 }) {
   return (
     <label className="grid grid-cols-[100px_1fr_30px] items-center gap-2 text-xs">
-      <span className="capitalize text-ink-600">{name}</span>
+      <span className="capitalize text-text-primary">{name}</span>
       <input
         type="range"
         min={1}
@@ -166,9 +166,9 @@ function PillarSlider({
         step={0.5}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full accent-accent-600"
+        className="w-full accent-cyan-bright"
       />
-      <span className="text-right font-mono tabular-nums text-ink-900">
+      <span className="text-right font-mono tabular-nums text-text-bright">
         {value.toFixed(1)}
       </span>
     </label>
@@ -197,19 +197,19 @@ function FlagInput({
   }
   return (
     <div className="mt-3 text-xs">
-      <div className="mb-1 uppercase tracking-wide text-ink-400">{label}</div>
+      <div className="mb-1 uppercase tracking-wide text-text-dim">{label}</div>
       <div className="flex gap-2">
         <input
           value={draft}
           placeholder={placeholder}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
-          className="flex-1 rounded border border-ink-200 px-2 py-1"
+          className="flex-1 rounded border border-border-dim px-2 py-1"
         />
         <button
           type="button"
           onClick={add}
-          className="rounded bg-ink-900 px-2 py-1 text-white hover:bg-ink-800"
+          className="rounded border border-cyan-bright bg-cyan-bright/10 px-2 py-1 font-display text-[11px] uppercase tracking-wider text-cyan-bright hover:bg-cyan-bright/20"
         >
           Add
         </button>
@@ -221,8 +221,8 @@ function FlagInput({
               key={i}
               className={`rounded-full border px-2 py-0.5 ${
                 accent === "bad"
-                  ? "border-bad-500/30 bg-bad-500/10 text-bad-500"
-                  : "border-good-500/30 bg-good-500/10 text-good-500"
+                  ? "border-red-bright/30 bg-red-bright/10 text-red-bright"
+                  : "border-green-bright/30 bg-green-bright/10 text-green-bright"
               }`}
             >
               {f}

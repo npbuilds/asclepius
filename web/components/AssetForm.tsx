@@ -69,7 +69,7 @@ export function AssetForm({
     <div className="space-y-5">
       <Row label="Asset name">
         <input
-          className="w-full rounded border border-ink-200 px-3 py-2 text-sm"
+          className="w-full rounded border border-border-dim px-3 py-2 text-sm"
           value={value.asset_name}
           onChange={(e) => set("asset_name", e.target.value)}
         />
@@ -77,7 +77,7 @@ export function AssetForm({
 
       <Row label="Sponsor">
         <input
-          className="w-full rounded border border-ink-200 px-3 py-2 text-sm"
+          className="w-full rounded border border-border-dim px-3 py-2 text-sm"
           value={value.sponsor ?? ""}
           onChange={(e) => set("sponsor", e.target.value || null)}
         />
@@ -109,7 +109,7 @@ export function AssetForm({
 
       <Row label="Mechanism">
         <input
-          className="w-full rounded border border-ink-200 px-3 py-2 text-sm"
+          className="w-full rounded border border-border-dim px-3 py-2 text-sm"
           placeholder="e.g. KRAS G12C inhibitor"
           value={value.mechanism ?? ""}
           onChange={(e) => set("mechanism", e.target.value || null)}
@@ -139,7 +139,7 @@ export function AssetForm({
           step={1}
           value={value.num_competitors}
           onChange={(e) => set("num_competitors", parseInt(e.target.value, 10))}
-          className="w-full accent-accent-600"
+          className="w-full accent-cyan-bright"
         />
       </Row>
 
@@ -154,8 +154,8 @@ export function AssetForm({
                 onClick={() => toggleDesignation(d)}
                 className={`rounded-full border px-3 py-1 text-xs ${
                   on
-                    ? "border-accent-600 bg-accent-50 text-accent-700"
-                    : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50"
+                    ? "border-cyan-bright bg-cyan-bright/10 text-cyan-bright"
+                    : "border-border-dim bg-bg-panel text-text-primary hover:bg-bg-deep"
                 }`}
               >
                 {labelFor(d)}
@@ -171,7 +171,7 @@ export function AssetForm({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="mb-1 text-xs uppercase tracking-wide text-ink-400">
+      <div className="mb-1 text-xs uppercase tracking-wide text-text-dim">
         {label}
       </div>
       {children}
@@ -190,7 +190,7 @@ function Select({
 }) {
   return (
     <select
-      className="w-full rounded border border-ink-200 bg-white px-3 py-2 text-sm"
+      className="w-full rounded border border-border-dim bg-bg-panel px-3 py-2 text-sm"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -216,8 +216,8 @@ function Checkbox({
       onClick={() => onChange(!checked)}
       className={`rounded border px-3 py-1.5 text-xs ${
         checked
-          ? "border-good-500 bg-good-500/10 text-good-500"
-          : "border-ink-200 bg-white text-ink-600 hover:bg-ink-50"
+          ? "border-green-bright bg-green-bright/10 text-green-bright"
+          : "border-border-dim bg-bg-panel text-text-primary hover:bg-bg-deep"
       }`}
     >
       {checked ? "Yes" : "No"}

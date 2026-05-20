@@ -23,13 +23,13 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
 
   const c = record.comparables;
   return (
-    <section className="rounded-lg border border-ink-200 bg-white p-5">
-      <h2 className="mb-4 font-serif text-lg text-ink-900">Deal comparables</h2>
+    <section className="rounded border border-border-dim bg-bg-panel p-5">
+      <h2 className="mb-4 font-display text-lg text-text-bright">Deal comparables</h2>
 
       {loading && !c ? (
-        <div className="h-32 animate-pulse rounded bg-ink-100" />
+        <div className="h-32 animate-pulse rounded bg-bg-panel-hover" />
       ) : !c ? (
-        <div className="text-sm text-ink-400">No comparable data.</div>
+        <div className="text-sm text-text-dim">No comparable data.</div>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-4 text-sm tabular-nums sm:grid-cols-3">
@@ -55,7 +55,7 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-ink-50 text-left text-[10px] uppercase tracking-wide text-ink-400">
+              <thead className="bg-bg-deep text-left text-[10px] uppercase tracking-wide text-text-dim">
                 <tr>
                   <th className="p-2">Asset</th>
                   <th className="p-2">Acquirer</th>
@@ -68,11 +68,11 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
               <tbody className="divide-y divide-ink-100 tabular-nums">
                 {c.cohort.map((row, i) => (
                   <tr key={i}>
-                    <td className="p-2 font-medium text-ink-900">
+                    <td className="p-2 font-medium text-text-bright">
                       {row.asset_name}
                       {row.source ? (
                         <span
-                          className="ml-1 cursor-help text-ink-400"
+                          className="ml-1 cursor-help text-text-dim"
                           title={row.source}
                           aria-label={`Source: ${row.source}`}
                         >
@@ -92,7 +92,7 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
                         ? row.peak_sales_estimate_usd_m.toLocaleString()
                         : "—"}
                     </td>
-                    <td className="p-2 text-right font-medium text-ink-900">
+                    <td className="p-2 text-right font-medium text-text-bright">
                       {row.ev_to_peak_sales != null
                         ? `${row.ev_to_peak_sales.toFixed(2)}×`
                         : "—"}
@@ -102,15 +102,15 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
               </tbody>
             </table>
             {c.cohort.some((row) => row.source) ? (
-              <div className="mt-3 space-y-1 text-[11px] text-ink-400">
-                <div className="font-medium uppercase tracking-wide text-ink-600">
+              <div className="mt-3 space-y-1 text-[11px] text-text-dim">
+                <div className="font-medium uppercase tracking-wide text-text-primary">
                   Sources
                 </div>
                 {c.cohort
                   .filter((row) => row.source)
                   .map((row, i) => (
                     <div key={i}>
-                      <span className="text-ink-600">{row.asset_name}:</span>{" "}
+                      <span className="text-text-primary">{row.asset_name}:</span>{" "}
                       <span className="italic">{row.source}</span>
                     </div>
                   ))}
@@ -134,9 +134,9 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-ink-400">{label}</div>
+      <div className="text-[10px] uppercase tracking-wide text-text-dim">{label}</div>
       <div
-        className={`mt-0.5 font-medium ${accent ? "text-accent-700" : "text-ink-900"}`}
+        className={`mt-0.5 font-medium ${accent ? "text-cyan-bright" : "text-text-bright"}`}
       >
         {value}
       </div>

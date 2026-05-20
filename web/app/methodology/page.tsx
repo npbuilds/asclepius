@@ -9,23 +9,33 @@ export const metadata = {
 };
 
 export default function MethodologyIndexPage() {
-  // The 00 entry is the product thesis — surface it as the "read this first" lede.
   const lede = METHODOLOGY_ENTRIES.find((e) => e.slug === "00-product-thesis");
-  const technical = METHODOLOGY_ENTRIES.filter((e) => e.slug !== "00-product-thesis");
+  const technical = METHODOLOGY_ENTRIES.filter(
+    (e) => e.slug !== "00-product-thesis",
+  );
+
+  const totalWords = METHODOLOGY_ENTRIES.reduce(
+    (acc, e) => acc + e.body.split(/\s+/).length,
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <header className="mb-12">
-        <h1 className="font-serif text-4xl text-ink-900">Methodology</h1>
-        <p className="mt-3 max-w-2xl text-ink-600">
+        <div className="font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
+          /methodology
+        </div>
+        <h1 className="mt-2 font-display text-4xl font-bold uppercase tracking-wider text-text-bright">
+          Methodology
+        </h1>
+        <p className="mt-4 max-w-2xl font-prose text-text-primary">
           The framework's intellectual foundation. Seven writeups,{" "}
-          {METHODOLOGY_ENTRIES.reduce(
-            (acc, e) => acc + e.body.split(/\s+/).length,
-            0,
-          ).toLocaleString()}{" "}
+          <span className="font-mono tabular-nums text-text-bright">
+            {totalWords.toLocaleString()}
+          </span>{" "}
           words, every empirical claim cited.
         </p>
-        <p className="mt-2 max-w-2xl text-sm text-ink-400">
+        <p className="mt-2 max-w-2xl font-prose text-sm text-text-dim">
           Each writeup is also a standalone document; cross-links between them
           stay within the methodology folder. A senior reader can land on any
           file and follow the citations from there.
@@ -34,16 +44,18 @@ export default function MethodologyIndexPage() {
 
       {lede ? (
         <section className="mb-12">
-          <div className="text-xs uppercase tracking-wider text-accent-700">
+          <div className="font-display text-[10px] uppercase tracking-[0.2em] text-cyan-bright">
             Read this first
           </div>
           <Link
             href={`/methodology/${lede.slug}`}
-            className="block rounded-lg border-2 border-accent-600/20 bg-gradient-to-br from-accent-50 to-white p-6 hover:border-accent-600/40"
+            className="mt-2 block rounded border-2 border-cyan-bright/40 bg-cyan-bright/5 p-6 hover:border-cyan-bright/80"
           >
-            <h2 className="font-serif text-2xl text-ink-900">{lede.title}</h2>
-            <p className="mt-3 text-ink-600">{lede.summary}</p>
-            <div className="mt-3 text-sm font-medium text-accent-700">
+            <h2 className="font-display text-xl font-bold uppercase tracking-wider text-text-bright">
+              {lede.title}
+            </h2>
+            <p className="mt-3 font-prose text-text-primary">{lede.summary}</p>
+            <div className="mt-3 font-display text-xs font-semibold uppercase tracking-wider text-cyan-bright">
               Read the product thesis →
             </div>
           </Link>
@@ -51,7 +63,7 @@ export default function MethodologyIndexPage() {
       ) : null}
 
       <section>
-        <div className="mb-4 text-xs uppercase tracking-wider text-ink-400">
+        <div className="mb-4 font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
           Technical writeups
         </div>
         <div className="space-y-4">
@@ -59,21 +71,24 @@ export default function MethodologyIndexPage() {
             <Link
               key={entry.slug}
               href={`/methodology/${entry.slug}`}
-              className="block rounded-lg border border-ink-200 bg-white p-5 hover:border-ink-400"
+              className="block rounded border border-border-dim bg-bg-panel p-5 hover:border-cyan-bright"
             >
               <div className="flex items-baseline justify-between gap-4">
-                <h3 className="font-serif text-lg text-ink-900">
+                <h3 className="font-display text-base font-semibold uppercase tracking-wider text-text-bright">
                   {entry.title}
                 </h3>
-                <div className="shrink-0 text-xs tabular-nums text-ink-400">
+                <div className="shrink-0 font-mono text-xs tabular-nums text-text-dim">
                   {entry.body.split(/\s+/).length.toLocaleString()} words
                 </div>
               </div>
-              <p className="mt-2 text-sm text-ink-600">{entry.summary}</p>
+              <p className="mt-2 font-prose text-sm text-text-primary">
+                {entry.summary}
+              </p>
               {entry.primary_sources.length > 0 ? (
-                <div className="mt-2 text-xs text-ink-400">
+                <div className="mt-2 font-mono text-[11px] uppercase tracking-wider text-text-dim">
                   {entry.primary_sources.length} primary{" "}
-                  {entry.primary_sources.length === 1 ? "source" : "sources"} cited
+                  {entry.primary_sources.length === 1 ? "source" : "sources"}{" "}
+                  cited
                 </div>
               ) : null}
             </Link>
@@ -81,21 +96,26 @@ export default function MethodologyIndexPage() {
         </div>
       </section>
 
-      <section className="mt-12 rounded-lg border border-ink-200 bg-white p-5 text-sm text-ink-600">
-        <h2 className="font-medium text-ink-900">How to read the methodology folder</h2>
-        <ul className="mt-3 space-y-2 list-disc pl-5">
+      <section className="mt-12 rounded border border-border-dim bg-bg-panel p-5 text-sm text-text-primary">
+        <h2 className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-text-bright">
+          How to read the methodology folder
+        </h2>
+        <ul className="mt-3 list-disc space-y-2 pl-5 font-prose">
           <li>
-            <strong>For framework intuition:</strong> read{" "}
+            <strong className="text-text-bright">
+              For framework intuition:
+            </strong>{" "}
+            read{" "}
             <Link
               href="/methodology/02-reflexivity-thesis"
-              className="text-accent-700 underline"
+              className="text-cyan-bright underline-offset-2 hover:underline"
             >
               02-reflexivity-thesis
             </Link>{" "}
             and then{" "}
             <Link
               href="/methodology/05-worked-example-adagrasib"
-              className="text-accent-700 underline"
+              className="text-cyan-bright underline-offset-2 hover:underline"
             >
               05-worked-example-adagrasib
             </Link>
@@ -103,34 +123,38 @@ export default function MethodologyIndexPage() {
             the tool is.
           </li>
           <li>
-            <strong>For the formal foundation:</strong> read{" "}
+            <strong className="text-text-bright">
+              For the formal foundation:
+            </strong>{" "}
+            read{" "}
             <Link
               href="/methodology/06-signaling-equilibrium"
-              className="text-accent-700 underline"
+              className="text-cyan-bright underline-offset-2 hover:underline"
             >
               06-signaling-equilibrium
             </Link>{" "}
             for Spence/Akerlof grounding and{" "}
             <Link
               href="/methodology/01-pos-framework"
-              className="text-accent-700 underline"
+              className="text-cyan-bright underline-offset-2 hover:underline"
             >
               01-pos-framework
             </Link>{" "}
             for the full PoS chain reference.
           </li>
           <li>
-            <strong>For the engine mechanics:</strong> read{" "}
+            <strong className="text-text-bright">For the engine mechanics:</strong>{" "}
+            read{" "}
             <Link
               href="/methodology/03-rnpv-monte-carlo"
-              className="text-accent-700 underline"
+              className="text-cyan-bright underline-offset-2 hover:underline"
             >
               03-rnpv-monte-carlo
             </Link>{" "}
             and{" "}
             <Link
               href="/methodology/04-scorecard-pillars"
-              className="text-accent-700 underline"
+              className="text-cyan-bright underline-offset-2 hover:underline"
             >
               04-scorecard-pillars
             </Link>

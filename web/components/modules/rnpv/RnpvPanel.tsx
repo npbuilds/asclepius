@@ -30,7 +30,7 @@ export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
   if (!pos) {
     return (
       <PanelShell title="Risk-Adjusted NPV">
-        <div className="text-sm text-ink-400">Waiting for PoS…</div>
+        <div className="text-sm text-text-dim">Waiting for PoS…</div>
       </PanelShell>
     );
   }
@@ -51,7 +51,7 @@ export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded border border-bad-500/30 bg-bad-500/10 p-3 text-sm text-bad-500">
+        <div className="mt-4 rounded border border-red-bright/30 bg-red-bright/10 p-3 text-sm text-red-bright">
           {error}
         </div>
       ) : null}
@@ -79,7 +79,7 @@ function ResultStats({
   loading: boolean;
 }) {
   if (loading && !result)
-    return <div className="h-32 animate-pulse rounded bg-ink-100" />;
+    return <div className="h-32 animate-pulse rounded bg-bg-panel-hover" />;
   if (!result) return null;
   const fmt = (n: number | null | undefined) =>
     n == null ? "—" : `$${n.toFixed(0)}M`;
@@ -95,7 +95,7 @@ function ResultStats({
         value={fmt(result.downside_failed_p3_usd_m)}
         bad
       />
-      <div className="text-[10px] uppercase tracking-wide text-ink-400">
+      <div className="text-[10px] uppercase tracking-wide text-text-dim">
         {result.monte_carlo_paths.toLocaleString()} simulated paths · seeded
       </div>
     </div>
@@ -172,7 +172,7 @@ function Slider({
 }) {
   return (
     <label className="block">
-      <div className="mb-1 text-[11px] uppercase tracking-wide text-ink-400">
+      <div className="mb-1 text-[11px] uppercase tracking-wide text-text-dim">
         {label}
       </div>
       <input
@@ -182,7 +182,7 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full accent-accent-600"
+        className="w-full accent-cyan-bright"
       />
     </label>
   );
@@ -208,8 +208,8 @@ function Tornado({
   }, [tornado, base]);
 
   return (
-    <div className="rounded border border-ink-200 bg-ink-50 p-3">
-      <div className="mb-2 text-xs uppercase tracking-wide text-ink-400">
+    <div className="rounded border border-border-dim bg-bg-deep p-3">
+      <div className="mb-2 text-xs uppercase tracking-wide text-text-dim">
         Tornado sensitivity (Δ vs base case)
       </div>
       <ResponsiveContainer width="100%" height={180}>
@@ -229,8 +229,8 @@ function Tornado({
             formatter={(v: number) => `$${v.toFixed(0)}M`}
             cursor={{ fill: "rgba(0,0,0,0.04)" }}
           />
-          <Bar dataKey="left" fill="#c4503b" stackId="t" />
-          <Bar dataKey="right" fill="#3a9a64" stackId="t" />
+          <Bar dataKey="left" fill="var(--red-bright)" stackId="t" />
+          <Bar dataKey="right" fill="var(--green-bright)" stackId="t" />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -259,32 +259,32 @@ function Histogram({
   const leftP75 = pctNum(p75);
 
   return (
-    <div className="rounded border border-ink-200 bg-ink-50 p-3">
-      <div className="mb-2 text-xs uppercase tracking-wide text-ink-400">
+    <div className="rounded border border-border-dim bg-bg-deep p-3">
+      <div className="mb-2 text-xs uppercase tracking-wide text-text-dim">
         Monte Carlo distribution
       </div>
-      <div className="relative h-8 rounded bg-ink-100">
+      <div className="relative h-8 rounded bg-bg-panel-hover">
         <div
-          className="absolute h-full rounded bg-accent-400/50"
+          className="absolute h-full rounded bg-cyan-bright/50/50"
           style={{ left: `${leftP25}%`, width: `${leftP75 - leftP25}%` }}
         />
         <div
-          className="absolute h-full w-0.5 bg-accent-700"
+          className="absolute h-full w-0.5 bg-cyan-bright"
           style={{ left: `${pctNum(p50)}%` }}
           title={`Median $${p50.toFixed(0)}M`}
         />
         <div
-          className="absolute h-full w-0.5 bg-ink-900"
+          className="absolute h-full w-0.5 bg-text-bright"
           style={{ left: `${pctNum(base)}%` }}
           title={`Base case $${base.toFixed(0)}M`}
         />
       </div>
-      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-ink-400">
+      <div className="mt-1 flex justify-between text-[10px] tabular-nums text-text-dim">
         <span>${p25.toFixed(0)}M</span>
         <span>P50 ${p50.toFixed(0)}M</span>
         <span>${p75.toFixed(0)}M</span>
       </div>
-      <div className="mt-1 text-[10px] text-ink-400">
+      <div className="mt-1 text-[10px] text-text-dim">
         Black tick = closed-form base. Orange tick = MC median.
       </div>
     </div>
@@ -299,8 +299,8 @@ function PanelShell({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-ink-200 bg-white p-5">
-      <h2 className="mb-4 font-serif text-lg text-ink-900">{title}</h2>
+    <section className="rounded border border-border-dim bg-bg-panel p-5">
+      <h2 className="mb-4 font-display text-lg text-text-bright">{title}</h2>
       {children}
     </section>
   );
@@ -319,10 +319,10 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-ink-400">{label}</div>
+      <div className="text-[10px] uppercase tracking-wide text-text-dim">{label}</div>
       <div
         className={`mt-0.5 font-medium ${
-          accent ? "text-accent-700" : bad ? "text-bad-500" : "text-ink-900"
+          accent ? "text-cyan-bright" : bad ? "text-red-bright" : "text-text-bright"
         }`}
       >
         {value}
