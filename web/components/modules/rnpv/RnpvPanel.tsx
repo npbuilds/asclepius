@@ -43,7 +43,7 @@ export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
 
   return (
     <PanelShell title="Risk-Adjusted NPV">
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_auto]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
         <Sliders inputs={rnpv_inputs} onPatch={patchInputs} />
         <div className="lg:w-72">
           <ResultStats result={result} loading={loading} />
@@ -57,7 +57,7 @@ export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
       ) : null}
 
       {result ? (
-        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
           <Tornado tornado={result.tornado} base={result.base_case_usd_m} />
           <Histogram
             p25={result.monte_carlo_p25_usd_m}
@@ -84,7 +84,7 @@ function ResultStats({
   const fmt = (n: number | null | undefined) =>
     n == null ? "—" : `$${n.toFixed(0)}M`;
   return (
-    <div className="space-y-3 text-sm tabular-nums">
+    <div className="space-y-2.5 text-sm tabular-nums">
       <Stat label="Base case (closed-form)" value={fmt(result.base_case_usd_m)} accent />
       <Stat
         label="Monte Carlo P25 / P50 / P75"
@@ -208,7 +208,7 @@ function Tornado({
   }, [tornado, base]);
 
   return (
-    <div className="rounded border border-border-dim bg-bg-deep p-3">
+    <div className="rounded border border-border-dim bg-bg-deep p-2.5">
       <div className="mb-2 text-xs uppercase tracking-wide text-text-dim">
         Tornado sensitivity (Δ vs base case)
       </div>
@@ -259,7 +259,7 @@ function Histogram({
   const leftP75 = pctNum(p75);
 
   return (
-    <div className="rounded border border-border-dim bg-bg-deep p-3">
+    <div className="rounded border border-border-dim bg-bg-deep p-2.5">
       <div className="mb-2 text-xs uppercase tracking-wide text-text-dim">
         Monte Carlo distribution
       </div>
@@ -299,8 +299,8 @@ function PanelShell({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-5">
-      <h2 className="mb-4 font-display text-lg text-text-bright">{title}</h2>
+    <section className="rounded border border-border-dim bg-bg-panel p-4">
+      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">{title}</h2>
       {children}
     </section>
   );

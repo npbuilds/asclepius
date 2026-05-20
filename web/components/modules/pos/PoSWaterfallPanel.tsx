@@ -35,7 +35,7 @@ export default function PoSWaterfallPanel({ record, setRecord }: ModulePanelProp
 
   return (
     <PanelShell title="Probability of Success">
-      <div className="mb-4 grid grid-cols-3 gap-3 text-sm tabular-nums">
+      <div className="mb-3 grid grid-cols-3 gap-3 tabular-nums">
         <Stat label="Base rate" value={pct(result.base_rate)} />
         <Stat label="Final LOA" value={pct(result.final_loa)} accent />
         <Stat
@@ -50,23 +50,47 @@ export default function PoSWaterfallPanel({ record, setRecord }: ModulePanelProp
         finalLoa={result.final_loa}
       />
 
-      <details className="mt-4 rounded border border-border-dim bg-bg-deep p-3 text-xs text-text-primary">
-        <summary className="cursor-pointer font-medium text-text-bright">
-          Audit trail ({result.adjustments.length} adjustments)
+      <details className="mt-3 rounded border border-border-dim bg-bg-deep p-2.5 text-xs text-text-primary">
+        <summary className="cursor-pointer font-display text-[11px] font-semibold uppercase tracking-[0.15em] text-text-bright">
+          Audit trail · {result.adjustments.length} adjustments
         </summary>
         <ol className="mt-2 space-y-2">
-          {result.adjustments.map((a, i) => (
-            <li key={i}>
-              <div className="flex justify-between font-medium text-text-bright">
-                <span>{a.name}</span>
-                <span className="font-mono tabular-nums">
-                  ×{a.multiplier.toFixed(3)}
-                </span>
-              </div>
-              <div className="mt-0.5">{a.rationale}</div>
-              <div className="mt-0.5 italic text-text-dim">{a.source}</div>
-            </li>
-          ))}
+          {result.adjustments.map((a, i) => {
+            const isReflexivity = a.name.toLowerCase().startsWith("reflexivity");
+            return (
+              <li
+                key={i}
+                className={
+                  isReflexivity
+                    ? "rounded border-l-2 border-magenta-bright bg-magenta-bright/5 pl-2"
+                    : ""
+                }
+              >
+                <div className="flex justify-between">
+                  <span
+                    className={
+                      isReflexivity
+                        ? "font-bold text-magenta-bright"
+                        : "font-medium text-text-bright"
+                    }
+                  >
+                    {a.name}
+                  </span>
+                  <span
+                    className={
+                      isReflexivity
+                        ? "font-mono font-bold tabular-nums text-magenta-bright"
+                        : "font-mono tabular-nums text-text-bright"
+                    }
+                  >
+                    ×{a.multiplier.toFixed(3)}
+                  </span>
+                </div>
+                <div className="mt-0.5 font-prose">{a.rationale}</div>
+                <div className="mt-0.5 italic text-text-dim">{a.source}</div>
+              </li>
+            );
+          })}
         </ol>
       </details>
     </PanelShell>
@@ -82,12 +106,22 @@ function Waterfall({
   adjustments: PoSResult["adjustments"];
   finalLoa: number;
 }) {
-  type Step = { label: string; value: number; kind: "base" | "step" | "final" };
+  type Step = {
+    label: string;
+    value: number;
+    kind: "base" | "step" | "reflexivity" | "final";
+  };
   let running = baseRate;
   const steps: Step[] = [{ label: "BIO base rate", value: baseRate, kind: "base" }];
   for (const adj of adjustments) {
     running *= adj.multiplier;
-    steps.push({ label: adj.name, value: Math.min(running, 1), kind: "step" });
+    // Reflexivity row visually distinct — it's the framework's headline differentiator.
+    const isReflexivity = adj.name.toLowerCase().startsWith("reflexivity");
+    steps.push({
+      label: adj.name,
+      value: Math.min(running, 1),
+      kind: isReflexivity ? "reflexivity" : "step",
+    });
   }
   steps.push({ label: "Final LOA", value: finalLoa, kind: "final" });
 
@@ -102,17 +136,25 @@ function Waterfall({
             ? "bg-text-dim"
             : s.kind === "final"
               ? "bg-cyan-bright"
-              : "bg-cyan-faded";
+              : s.kind === "reflexivity"
+                ? "bg-magenta-bright"
+                : "bg-cyan-faded";
+        const labelClass =
+          s.kind === "reflexivity"
+            ? "truncate font-semibold text-magenta-bright"
+            : "truncate text-text-primary";
+        const valueClass =
+          s.kind === "reflexivity"
+            ? "w-12 text-right font-mono font-bold tabular-nums text-magenta-bright"
+            : "w-12 text-right font-mono tabular-nums text-text-bright";
         return (
           <div key={i} className="grid grid-cols-[1fr_auto] items-center gap-3">
-            <div className="truncate text-text-primary">{s.label}</div>
+            <div className={labelClass}>{s.label}</div>
             <div className="flex items-center gap-2">
               <div className="h-3 w-32 rounded bg-bg-panel-hover">
                 <div className={`h-full rounded ${fill}`} style={{ width }} />
               </div>
-              <span className="w-12 text-right font-mono tabular-nums text-text-bright">
-                {(s.value * 100).toFixed(1)}%
-              </span>
+              <span className={valueClass}>{(s.value * 100).toFixed(1)}%</span>
             </div>
           </div>
         );
@@ -133,11 +175,13 @@ function PanelShell({
   error?: string;
 }) {
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-5">
-      <h2 className="mb-4 font-display text-lg text-text-bright">{title}</h2>
+    <section className="rounded border border-border-dim bg-bg-panel p-4">
+      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">
+        {title}
+      </h2>
       {loading ? <div className="h-32 animate-pulse rounded bg-bg-panel-hover" /> : null}
       {error ? (
-        <div className="rounded border border-red-bright/30 bg-red-bright/10 p-3 text-sm text-red-bright">
+        <div className="rounded border border-red-bright/30 bg-red-bright/10 p-2.5 text-sm text-red-bright">
           {error}
         </div>
       ) : null}
@@ -157,9 +201,13 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-text-dim">{label}</div>
+      <div className="font-display text-[10px] uppercase tracking-[0.15em] text-text-dim">
+        {label}
+      </div>
       <div
-        className={`mt-0.5 font-medium ${accent ? "text-cyan-bright" : "text-text-bright"}`}
+        className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+          accent ? "text-cyan-bright" : "text-text-bright"
+        }`}
       >
         {value}
       </div>

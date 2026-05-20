@@ -23,8 +23,8 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
 
   const c = record.comparables;
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-5">
-      <h2 className="mb-4 font-display text-lg text-text-bright">Deal comparables</h2>
+    <section className="rounded border border-border-dim bg-bg-panel p-4">
+      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">Deal comparables</h2>
 
       {loading && !c ? (
         <div className="h-32 animate-pulse rounded bg-bg-panel-hover" />
@@ -57,18 +57,18 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
             <table className="w-full text-xs">
               <thead className="bg-bg-deep text-left text-[10px] uppercase tracking-wide text-text-dim">
                 <tr>
-                  <th className="p-2">Asset</th>
-                  <th className="p-2">Acquirer</th>
-                  <th className="p-2">Date</th>
-                  <th className="p-2 text-right">Deal $M</th>
-                  <th className="p-2 text-right">Peak $M</th>
-                  <th className="p-2 text-right">EV/peak</th>
+                  <th className="p-1.5">Asset</th>
+                  <th className="p-1.5">Acquirer</th>
+                  <th className="p-1.5">Date</th>
+                  <th className="p-1.5 text-right">Deal $M</th>
+                  <th className="p-1.5 text-right">Peak $M</th>
+                  <th className="p-1.5 text-right">EV/peak</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-100 tabular-nums">
                 {c.cohort.map((row, i) => (
                   <tr key={i}>
-                    <td className="p-2 font-medium text-text-bright">
+                    <td className="p-1.5 font-medium text-text-bright">
                       {row.asset_name}
                       {row.source ? (
                         <span
@@ -80,19 +80,19 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
                         </span>
                       ) : null}
                     </td>
-                    <td className="p-2">{row.acquirer ?? "—"}</td>
-                    <td className="p-2">{row.deal_date ?? "—"}</td>
-                    <td className="p-2 text-right">
+                    <td className="p-1.5">{row.acquirer ?? "—"}</td>
+                    <td className="p-1.5">{row.deal_date ?? "—"}</td>
+                    <td className="p-1.5 text-right">
                       {row.deal_value_usd_m != null
                         ? row.deal_value_usd_m.toLocaleString()
                         : "—"}
                     </td>
-                    <td className="p-2 text-right">
+                    <td className="p-1.5 text-right">
                       {row.peak_sales_estimate_usd_m != null
                         ? row.peak_sales_estimate_usd_m.toLocaleString()
                         : "—"}
                     </td>
-                    <td className="p-2 text-right font-medium text-text-bright">
+                    <td className="p-1.5 text-right font-medium text-text-bright">
                       {row.ev_to_peak_sales != null
                         ? `${row.ev_to_peak_sales.toFixed(2)}×`
                         : "—"}
@@ -134,9 +134,13 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-text-dim">{label}</div>
+      <div className="font-display text-[10px] uppercase tracking-[0.15em] text-text-dim">
+        {label}
+      </div>
       <div
-        className={`mt-0.5 font-medium ${accent ? "text-cyan-bright" : "text-text-bright"}`}
+        className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+          accent ? "text-green-bright" : "text-text-bright"
+        }`}
       >
         {value}
       </div>

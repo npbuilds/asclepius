@@ -113,21 +113,21 @@ export default function DiligencePage({
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10">
-      <header className="mb-8">
+    <div className="mx-auto max-w-7xl px-6 py-6">
+      <header className="mb-6">
         <div className="font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
           Diligence workbench
         </div>
-        <h1 className="mt-2 font-display text-3xl font-bold uppercase tracking-wider text-text-bright">
+        <h1 className="mt-1.5 font-display text-2xl font-bold uppercase leading-[1.15] tracking-[0.04em] text-text-bright sm:text-3xl">
           {record.asset.asset_name}
           {record.asset.sponsor ? (
-            <span className="ml-3 font-body text-base font-normal normal-case tracking-normal text-text-dim">
+            <span className="ml-3 font-body text-sm font-normal normal-case tracking-normal text-text-dim">
               · {record.asset.sponsor}
             </span>
           ) : null}
         </h1>
         {isAdagrasib ? (
-          <p className="mt-3 max-w-3xl text-sm text-text-primary">
+          <p className="mt-2.5 max-w-3xl font-prose text-sm text-text-primary">
             <strong className="text-text-bright">Retrospective backtest.</strong>{" "}
             Inputs locked to public information available before the KRYSTAL-12
             Phase 3 readout (June 2022 cutoff). This is calibration, not
@@ -137,9 +137,9 @@ export default function DiligencePage({
         ) : null}
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
-        <aside className="space-y-4">
-          <div className="rounded border border-border-dim bg-bg-panel p-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr]">
+        <aside className="space-y-3">
+          <div className="rounded border border-border-dim bg-bg-panel p-4">
             <h2 className="mb-3 font-display text-[11px] font-semibold uppercase tracking-[0.2em] text-text-dim">
               Asset
             </h2>
@@ -156,7 +156,7 @@ export default function DiligencePage({
           <LimitationsPanel />
         </aside>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {registryError ? (
             <div className="rounded border border-red-bright/40 bg-red-bright/10 p-4 text-sm text-red-bright">
               Could not load module registry: {registryError}. Is the API

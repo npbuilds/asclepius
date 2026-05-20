@@ -27,14 +27,14 @@ const ITEMS = [
 
 export function LimitationsPanel() {
   return (
-    <details className="rounded border border-border-dim bg-bg-panel p-4">
-      <summary className="cursor-pointer text-sm font-medium text-text-bright">
+    <details className="rounded border border-amber-bright/30 bg-amber-bright/5 p-3">
+      <summary className="cursor-pointer font-display text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-bright">
         Known limitations
       </summary>
-      <ul className="mt-3 space-y-3 text-sm text-text-primary">
+      <ul className="mt-3 space-y-2.5 font-prose text-xs leading-snug text-text-primary">
         {ITEMS.map((item) => (
           <li key={item.title}>
-            <div className="font-medium text-text-bright">{item.title}</div>
+            <div className="font-bold text-text-bright">{item.title}</div>
             <div>{item.detail}</div>
           </li>
         ))}

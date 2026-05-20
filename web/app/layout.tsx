@@ -95,9 +95,8 @@ export default function RootLayout({
         </header>
         <main>{children}</main>
         <footer className="border-t border-border-dim bg-bg-panel">
-          <div className="mx-auto max-w-6xl px-6 py-6 text-[11px] font-mono uppercase tracking-wider text-text-dim">
-            Asclepius v0.1 · methodology cited from BIO/Informa, Wong 2019,
-            Damodaran 2025 · adagrasib backtest as retrospective calibration
+          <div className="mx-auto max-w-6xl px-6 py-4 font-mono text-[11px] uppercase tracking-wider text-text-dim">
+            Asclepius v0.1
           </div>
         </footer>
       </body>

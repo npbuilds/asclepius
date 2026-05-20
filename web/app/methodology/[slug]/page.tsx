@@ -40,8 +40,8 @@ export default function MethodologyEntryPage({ params }: PageProps) {
       : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <nav className="mb-8 font-display text-xs uppercase tracking-wider">
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      <nav className="mb-6 font-display text-xs uppercase tracking-wider">
         <Link
           href="/methodology"
           className="text-text-dim hover:text-cyan-bright"
@@ -50,17 +50,17 @@ export default function MethodologyEntryPage({ params }: PageProps) {
         </Link>
       </nav>
 
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_280px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_260px]">
         <article>
-          <header className="mb-8">
-            <div className="font-mono text-[11px] uppercase tracking-wider text-cyan-bright">
+          <header className="mb-6">
+            <div className="font-mono text-[11px] uppercase tracking-wider text-amber-bright">
               {entry.filename}
             </div>
-            <h1 className="mt-2 font-display text-3xl font-bold uppercase tracking-wider text-text-bright sm:text-4xl">
+            <h1 className="mt-2 font-display text-2xl font-bold uppercase leading-[1.15] tracking-[0.04em] text-text-bright sm:text-3xl">
               {entry.title}
             </h1>
             {entry.summary ? (
-              <p className="mt-4 font-prose text-lg text-text-primary">
+              <p className="mt-3 font-prose text-base text-text-primary">
                 {entry.summary}
               </p>
             ) : null}
@@ -90,7 +90,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
             </ReactMarkdown>
           </div>
 
-          <nav className="mt-12 flex justify-between gap-4 border-t border-border-dim pt-6 text-sm">
+          <nav className="mt-10 flex justify-between gap-4 border-t border-border-dim pt-5 text-sm">
             <div>
               {prev ? (
                 <Link
@@ -124,7 +124,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
           </nav>
         </article>
 
-        <aside className="space-y-6 lg:sticky lg:top-8 lg:self-start">
+        <aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
           {entry.audience ? (
             <Card label="Read this if">
               <p className="text-sm text-text-primary">{entry.audience}</p>
@@ -180,8 +180,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded border border-border-dim bg-bg-panel p-4">
-      <div className="mb-2 font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-text-dim">
+    <div className="rounded border border-border-dim bg-bg-panel p-3">
+      <div className="mb-1.5 font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-text-dim">
         {label}
       </div>
       {children}

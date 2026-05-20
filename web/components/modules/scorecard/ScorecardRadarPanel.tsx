@@ -71,12 +71,12 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
   }, [input]);
 
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-5">
-      <h2 className="mb-4 font-display text-lg text-text-bright">
+    <section className="rounded border border-border-dim bg-bg-panel p-4">
+      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">
         8-Pillar Scorecard
       </h2>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_auto]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
         <div className="space-y-2">
           {PILLAR_NAMES.map((name) => (
             <PillarSlider
