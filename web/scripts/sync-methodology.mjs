@@ -1,15 +1,20 @@
 // Sync methodology/*.md from the repo root into a TS module the web app imports.
 //
-// Why this script: Vercel deploys the `web/` directory, not the full repo. To
-// render methodology files in production we either (a) read from the
-// filesystem at build time (which works locally but fails on Vercel because
-// the parent directory isn't in the deploy context), or (b) bundle the
-// content into a TS module at build time. We do (b).
+// Local development: this script runs on `predev` / `prebuild` / `typecheck`
+// to regenerate `web/lib/methodology-content.ts` from the source files in
+// `../methodology/`. Edit a .md file, save, the dev server picks up the change.
 //
-// Run automatically via the `prebuild` and `predev` package.json scripts so
-// it stays in sync with the methodology folder during local development.
+// Vercel deploy: Vercel only deploys the `web/` subdirectory, so
+// `../methodology/` doesn't exist in the build environment. In that case we
+// SKIP — the generated `methodology-content.ts` file is committed to git, so
+// the build can proceed without regenerating it. The trade-off (a generated
+// file in version control) is documented in the .gitignore.
+//
+// To update methodology in production: edit the .md files, run
+// `pnpm sync:methodology` locally, commit both the .md change and the
+// regenerated .ts file in the same commit, push.
 
-import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,6 +22,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..");
 const METHODOLOGY_DIR = join(REPO_ROOT, "methodology");
 const OUTPUT_PATH = join(__dirname, "..", "lib", "methodology-content.ts");
+
+// If we're running outside the repo (e.g. on Vercel where only web/ is
+// deployed), skip the regeneration — the committed TS file is what gets used.
+if (!existsSync(METHODOLOGY_DIR)) {
+  if (existsSync(OUTPUT_PATH)) {
+    console.log(
+      `sync-methodology: methodology/ not present (likely a deploy build); ` +
+        `using committed lib/methodology-content.ts as-is.`,
+    );
+    process.exit(0);
+  } else {
+    console.error(
+      `sync-methodology: methodology/ not found at ${METHODOLOGY_DIR}, and ` +
+        `committed output ${OUTPUT_PATH} is also missing. Cannot build.`,
+    );
+    process.exit(1);
+  }
+}
 
 // Frontmatter parser — minimal YAML-style (top-of-file --- block).
 function parseFrontmatter(raw) {
