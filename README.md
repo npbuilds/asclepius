@@ -1,5 +1,7 @@
 # Asclepius
 
+**Live:** <https://asclepius-lyart.vercel.app> · [methodology index](https://asclepius-lyart.vercel.app/methodology) · [worked example](https://asclepius-lyart.vercel.app/diligence/adagrasib)
+
 > Asclepius is the first open rNPV tool that prices the path-dependency between a sponsor's
 > balance sheet and their trial's probability of success. Capital-constrained sponsors run
 > worse trials; well-capitalized sponsors enable adaptive designs and stronger regulatory
@@ -132,15 +134,15 @@ The seven writeups are designed to be read in any order, but for a first pass:
    project itself, via The Loom's six-phase AI-native product framework. Read if you want
    to understand what kind of thing Asclepius is becoming, not just what it computes.
 
-Or browse the [methodology index](https://asclepius.vercel.app/methodology) when the project
-is deployed.
+Or browse the [methodology index](https://asclepius-lyart.vercel.app/methodology) on the live
+deployment.
 
 ## Stack
 
 - **API**: Python 3.11+, FastAPI, pydantic v2, numpy/scipy. 56 tests, all passing.
 - **Web**: Next.js 14 (App Router), Tailwind, recharts, react-markdown, TypeScript.
   Production build clean.
-- **Deploy**: Vercel (web) + Railway/Fly (api). See [`docs/deployment.md`](docs/deployment.md).
+- **Deploy**: Vercel (web) + Fly.io (api) — live at `asclepius-api.fly.dev`. See [`docs/deployment.md`](docs/deployment.md).
 - **CI**: GitHub Actions running ruff + pytest + pnpm typecheck + pnpm build on every push.
 
 ## Related work
@@ -186,7 +188,7 @@ Full per-writeup citations are in [`methodology/`](methodology/).
 
 ## License
 
-MIT (see [LICENSE](LICENSE) once present).
+MIT — see [LICENSE](LICENSE).
 
 The methodology writeups are released under the same license. If you build on the
 reflexivity adjustment, the productization-of-methodology framing, or the audit-trail
