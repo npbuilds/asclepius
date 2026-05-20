@@ -15,19 +15,19 @@ export default function MethodologyIndexPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <header className="mb-8">
-        <div className="font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
-          /methodology
+    <div className="mx-auto max-w-3xl px-6 py-6">
+      <header className="mb-6">
+        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
+          ── /methodology ──
         </div>
-        <h1 className="mt-2 font-display text-3xl font-bold uppercase leading-[1.1] tracking-[0.04em] text-text-bright">
+        <h1 className="mt-1.5 font-display text-2xl font-bold uppercase leading-[1.1] tracking-[0.04em] text-text-bright">
           Methodology
         </h1>
-        <p className="mt-3 max-w-2xl font-prose text-base text-text-primary">
+        <p className="mt-2 max-w-2xl font-prose text-sm text-text-primary">
           The framework's intellectual foundation. Seven writeups, every
           empirical claim cited.
         </p>
-        <p className="mt-2 max-w-2xl font-prose text-sm text-text-dim">
+        <p className="mt-1.5 max-w-2xl font-prose text-[13px] text-text-dim">
           Each writeup is also a standalone document; cross-links between them
           stay within the methodology folder. A senior reader can land on any
           file and follow the citations from there.
@@ -35,21 +35,21 @@ export default function MethodologyIndexPage() {
       </header>
 
       {lede ? (
-        <section className="mb-8">
-          <div className="font-display text-[10px] uppercase tracking-[0.2em] text-magenta-bright">
+        <section className="mb-6">
+          <div className="font-display text-[9px] uppercase tracking-[0.2em] text-magenta-bright">
             Read this first
           </div>
           <Link
             href={`/methodology/${lede.slug}`}
-            className="mt-2 block rounded border-2 border-magenta-bright/40 bg-magenta-bright/5 p-4 hover:border-magenta-bright/80"
+            className="mt-1.5 block rounded border-2 border-magenta-bright/40 bg-magenta-bright/5 p-3 hover:border-magenta-bright/80"
           >
-            <h2 className="font-display text-lg font-bold uppercase tracking-wider text-text-bright">
+            <h2 className="font-display text-base font-bold uppercase tracking-wider text-text-bright">
               {lede.title}
             </h2>
-            <p className="mt-2 font-prose text-sm text-text-primary">
+            <p className="mt-1.5 font-prose text-[13px] text-text-primary">
               {lede.summary}
             </p>
-            <div className="mt-3 font-display text-xs font-semibold uppercase tracking-wider text-magenta-bright">
+            <div className="mt-2 font-display text-[11px] font-semibold uppercase tracking-wider text-magenta-bright">
               Read the product thesis →
             </div>
           </Link>
@@ -57,24 +57,24 @@ export default function MethodologyIndexPage() {
       ) : null}
 
       <section>
-        <div className="mb-3 font-display text-[10px] uppercase tracking-[0.2em] text-text-dim">
+        <div className="mb-2 font-display text-[9px] uppercase tracking-[0.2em] text-text-dim">
           Technical writeups
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {technical.map((entry) => (
             <Link
               key={entry.slug}
               href={`/methodology/${entry.slug}`}
-              className="block rounded border border-border-dim bg-bg-panel p-4 hover:border-cyan-bright"
+              className="block rounded border border-border-dim bg-bg-panel p-3 hover:border-cyan-bright"
             >
-              <h3 className="font-display text-base font-semibold uppercase tracking-wider text-text-bright">
+              <h3 className="font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
                 {entry.title}
               </h3>
-              <p className="mt-1.5 font-prose text-sm text-text-primary">
+              <p className="mt-1 font-prose text-[13px] text-text-primary">
                 {entry.summary}
               </p>
               {entry.primary_sources.length > 0 ? (
-                <div className="mt-2 font-mono text-[10px] uppercase tracking-wider text-amber-bright">
+                <div className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-bright">
                   {entry.primary_sources.length} primary{" "}
                   {entry.primary_sources.length === 1 ? "source" : "sources"}{" "}
                   cited
@@ -85,7 +85,7 @@ export default function MethodologyIndexPage() {
         </div>
       </section>
 
-      <section className="mt-8 rounded border border-border-dim bg-bg-panel p-4 text-sm text-text-primary">
+      <section className="mt-6 rounded border border-border-dim bg-bg-panel p-3 text-[13px] text-text-primary">
         <h2 className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-text-bright">
           How to read the methodology folder
         </h2>

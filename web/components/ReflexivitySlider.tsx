@@ -31,22 +31,22 @@ export function ReflexivitySlider({
   const active = TIERS[activeIdx] ?? TIERS[2];
 
   return (
-    <div className="rounded border border-magenta-bright/30 bg-magenta-bright/5 p-4">
+    <div className="rounded border border-magenta-bright/30 bg-magenta-bright/5 p-3">
       <div className="flex items-baseline justify-between">
-        <h3 className="font-display text-[11px] font-semibold uppercase tracking-[0.2em] text-magenta-bright">
+        <h3 className="font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-magenta-bright">
           Reflexivity adjustment
         </h3>
-        <span className="font-mono text-sm font-bold tabular-nums text-magenta-bright">
+        <span className="font-mono text-[13px] font-bold tabular-nums text-magenta-bright">
           ×{active.multiplier.toFixed(2)}
         </span>
       </div>
-      <p className="mt-2 font-prose text-xs leading-snug text-text-primary">
+      <p className="mt-1.5 font-prose text-[11px] leading-snug text-text-primary">
         Sponsor capital position. Well-capitalized sponsors run better trials
         (larger N, biomarker enrichment, adaptive designs) — a Spence-style
         costly signal capital-constrained sponsors can't credibly emit.
       </p>
 
-      <div className="mt-3">
+      <div className="mt-2.5">
         <input
           type="range"
           min={0}
@@ -56,7 +56,7 @@ export function ReflexivitySlider({
           onChange={(e) => onChange(TIERS[parseInt(e.target.value, 10)].value)}
           className="w-full accent-magenta-bright"
         />
-        <div className="mt-1.5 flex justify-between font-display text-[9px] uppercase tracking-[0.1em] text-text-dim">
+        <div className="mt-1 flex justify-between font-display text-[8px] uppercase tracking-[0.1em] text-text-dim">
           {TIERS.map((t) => (
             <span
               key={t.value}
@@ -68,11 +68,11 @@ export function ReflexivitySlider({
         </div>
       </div>
 
-      <div className="mt-3 rounded border border-border-dim bg-bg-panel p-2.5 font-prose text-xs leading-snug text-text-primary">
+      <div className="mt-2.5 rounded border border-border-dim bg-bg-panel p-2 font-prose text-[11px] leading-snug text-text-primary">
         <span className="font-bold text-text-bright">{active.label}</span> —
-        runway {active.runway}. Reflexivity multiplier applied last in the PoS
-        chain. Empirical backing: Ma 2025 trial-accrual model (AUC 0.74) shows
-        sponsor + protocol features predict structural trial breakdown.
+        runway {active.runway}. Applied last in the PoS chain. Empirical:{" "}
+        Ma 2025 trial-accrual model (AUC 0.74) shows sponsor + protocol features
+        predict structural trial breakdown.
       </div>
     </div>
   );

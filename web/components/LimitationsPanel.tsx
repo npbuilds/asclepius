@@ -27,11 +27,11 @@ const ITEMS = [
 
 export function LimitationsPanel() {
   return (
-    <details className="rounded border border-amber-bright/30 bg-amber-bright/5 p-3">
-      <summary className="cursor-pointer font-display text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-bright">
+    <details className="rounded border border-amber-bright/30 bg-amber-bright/5 p-2.5">
+      <summary className="cursor-pointer font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-bright">
         Known limitations
       </summary>
-      <ul className="mt-3 space-y-2.5 font-prose text-xs leading-snug text-text-primary">
+      <ul className="mt-2.5 space-y-2 font-prose text-[11px] leading-snug text-text-primary">
         {ITEMS.map((item) => (
           <li key={item.title}>
             <div className="font-bold text-text-bright">{item.title}</div>

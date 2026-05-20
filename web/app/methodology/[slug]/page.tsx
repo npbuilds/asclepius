@@ -40,33 +40,31 @@ export default function MethodologyEntryPage({ params }: PageProps) {
       : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <nav className="mb-6 font-display text-xs uppercase tracking-wider">
-        <Link
-          href="/methodology"
-          className="text-text-dim hover:text-cyan-bright"
-        >
-          ← All methodology
+    <div className="mx-auto max-w-6xl px-6 py-6">
+      <nav className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-text-dim">
+        <div className="mb-1">── Methodology ──</div>
+        <Link href="/methodology" className="hover:text-cyan-bright">
+          ← All writeups
         </Link>
       </nav>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_260px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_240px]">
         <article>
-          <header className="mb-6">
-            <div className="font-mono text-[11px] uppercase tracking-wider text-amber-bright">
+          <header className="mb-4">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-amber-bright">
               {entry.filename}
             </div>
-            <h1 className="mt-2 font-display text-2xl font-bold uppercase leading-[1.15] tracking-[0.04em] text-text-bright sm:text-3xl">
+            <h1 className="mt-1.5 font-display text-xl font-bold uppercase leading-[1.15] tracking-[0.04em] text-text-bright sm:text-2xl">
               {entry.title}
             </h1>
             {entry.summary ? (
-              <p className="mt-3 font-prose text-base text-text-primary">
+              <p className="mt-2 font-prose text-sm text-text-primary">
                 {entry.summary}
               </p>
             ) : null}
           </header>
 
-          <div className="prose max-w-none font-prose prose-headings:font-display prose-headings:font-bold prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-text-bright prose-p:text-text-primary prose-strong:text-text-bright prose-li:text-text-primary prose-a:text-cyan-bright prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-bg-panel-hover prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.9em] prose-code:text-cyan-bright prose-code:before:content-none prose-code:after:content-none prose-pre:rounded prose-pre:bg-bg-panel-hover prose-pre:text-text-primary prose-blockquote:border-l-cyan-bright prose-blockquote:text-text-primary prose-table:text-sm prose-th:text-text-bright prose-td:text-text-primary prose-hr:border-border-dim">
+          <div className="prose prose-sm max-w-none font-prose prose-headings:font-display prose-headings:font-bold prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-text-bright prose-p:text-text-primary prose-strong:text-text-bright prose-li:text-text-primary prose-a:text-cyan-bright prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-bg-panel-hover prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.9em] prose-code:text-cyan-bright prose-code:before:content-none prose-code:after:content-none prose-pre:rounded prose-pre:bg-bg-panel-hover prose-pre:text-text-primary prose-blockquote:border-l-cyan-bright prose-blockquote:text-text-primary prose-table:text-xs prose-th:text-text-bright prose-td:text-text-primary prose-hr:border-border-dim">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -90,7 +88,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
             </ReactMarkdown>
           </div>
 
-          <nav className="mt-10 flex justify-between gap-4 border-t border-border-dim pt-5 text-sm">
+          <nav className="mt-8 flex justify-between gap-4 border-t border-border-dim pt-4 text-[13px]">
             <div>
               {prev ? (
                 <Link
@@ -124,28 +122,28 @@ export default function MethodologyEntryPage({ params }: PageProps) {
           </nav>
         </article>
 
-        <aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
+        <aside className="space-y-3 lg:sticky lg:top-6 lg:self-start">
           {entry.audience ? (
             <Card label="Read this if">
-              <p className="text-sm text-text-primary">{entry.audience}</p>
+              <p className="text-[13px] text-text-primary">{entry.audience}</p>
             </Card>
           ) : null}
 
           {entry.framework ? (
             <Card label="Framework">
-              <p className="text-sm text-text-primary">{entry.framework}</p>
+              <p className="text-[13px] text-text-primary">{entry.framework}</p>
             </Card>
           ) : null}
 
           {entry.framing ? (
             <Card label="Framing">
-              <p className="text-sm text-text-primary">{entry.framing}</p>
+              <p className="text-[13px] text-text-primary">{entry.framing}</p>
             </Card>
           ) : null}
 
           {entry.primary_sources.length > 0 ? (
             <Card label={`Primary sources (${entry.primary_sources.length})`}>
-              <ul className="space-y-2 text-xs text-text-primary">
+              <ul className="space-y-1.5 text-[11px] text-text-primary">
                 {entry.primary_sources.map((src, i) => (
                   <li key={i} className="leading-snug">
                     {src}
@@ -157,7 +155,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
 
           {entry.related_implementations.length > 0 ? (
             <Card label="Related implementations">
-              <ul className="space-y-2 text-xs text-text-primary">
+              <ul className="space-y-1.5 text-[11px] text-text-primary">
                 {entry.related_implementations.map((src, i) => (
                   <li key={i} className="leading-snug">
                     {src}
@@ -180,8 +178,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded border border-border-dim bg-bg-panel p-3">
-      <div className="mb-1.5 font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-text-dim">
+    <div className="rounded border border-border-dim bg-bg-panel p-2.5">
+      <div className="mb-1 font-display text-[9px] font-semibold uppercase tracking-[0.2em] text-text-dim">
         {label}
       </div>
       {children}

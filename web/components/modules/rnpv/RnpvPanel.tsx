@@ -57,7 +57,7 @@ export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
       ) : null}
 
       {result ? (
-        <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-2.5 lg:grid-cols-2">
           <Tornado tornado={result.tornado} base={result.base_case_usd_m} />
           <Histogram
             p25={result.monte_carlo_p25_usd_m}
@@ -84,7 +84,7 @@ function ResultStats({
   const fmt = (n: number | null | undefined) =>
     n == null ? "—" : `$${n.toFixed(0)}M`;
   return (
-    <div className="space-y-2.5 text-sm tabular-nums">
+    <div className="space-y-2 text-[13px] tabular-nums">
       <Stat label="Base case (closed-form)" value={fmt(result.base_case_usd_m)} accent />
       <Stat
         label="Monte Carlo P25 / P50 / P75"
@@ -95,7 +95,7 @@ function ResultStats({
         value={fmt(result.downside_failed_p3_usd_m)}
         bad
       />
-      <div className="text-[10px] uppercase tracking-wide text-text-dim">
+      <div className="text-[9px] uppercase tracking-[0.15em] text-text-dim">
         {result.monte_carlo_paths.toLocaleString()} simulated paths · seeded
       </div>
     </div>
@@ -110,7 +110,7 @@ function Sliders({
   onPatch: (patch: Partial<RnpvInputs>) => void;
 }) {
   return (
-    <div className="space-y-3 text-sm">
+    <div className="space-y-2 text-[13px]">
       <Slider
         label={`Peak sales: $${inputs.peak_sales_usd_m.toFixed(0)}M`}
         min={100}
@@ -172,7 +172,7 @@ function Slider({
 }) {
   return (
     <label className="block">
-      <div className="mb-1 text-[11px] uppercase tracking-wide text-text-dim">
+      <div className="mb-1 text-[10px] uppercase tracking-wide text-text-dim">
         {label}
       </div>
       <input
@@ -299,8 +299,8 @@ function PanelShell({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-4">
-      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">{title}</h2>
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">{title}</h2>
       {children}
     </section>
   );
@@ -319,7 +319,7 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-text-dim">{label}</div>
+      <div className="text-[9px] uppercase tracking-[0.15em] text-text-dim">{label}</div>
       <div
         className={`mt-0.5 font-medium ${
           accent ? "text-cyan-bright" : bad ? "text-red-bright" : "text-text-bright"

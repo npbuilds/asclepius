@@ -95,8 +95,10 @@ export default function RootLayout({
         </header>
         <main>{children}</main>
         <footer className="border-t border-border-dim bg-bg-panel">
-          <div className="mx-auto max-w-6xl px-6 py-4 font-mono text-[11px] uppercase tracking-wider text-text-dim">
-            Asclepius v0.1
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-6 py-3 font-mono text-[11px] uppercase tracking-wider text-text-dim">
+            <span>── Asclepius ──</span>
+            <span className="text-cyan-bright">●</span>
+            <span>v0.1</span>
           </div>
         </footer>
       </body>

@@ -71,8 +71,8 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
   }, [input]);
 
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-4">
-      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
         8-Pillar Scorecard
       </h2>
 
@@ -122,21 +122,21 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
 
           {scorecard ? (
             <div className="mt-3 text-sm">
-              <div className="text-[10px] uppercase tracking-wide text-text-dim">
+              <div className="text-[9px] uppercase tracking-[0.15em] text-text-dim">
                 Aggregate
               </div>
-              <div className="text-2xl font-medium tabular-nums text-text-bright">
+              <div className="font-mono text-xl font-bold tabular-nums text-text-bright">
                 {scorecard.aggregate_score.toFixed(2)} / 10
               </div>
               <div
-                className={`mt-2 inline-block rounded px-2 py-0.5 text-xs uppercase tracking-wide ${REC_COLOR[scorecard.recommendation]}`}
+                className={`mt-1.5 inline-block rounded px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ${REC_COLOR[scorecard.recommendation]}`}
               >
-                {scorecard.recommendation.replace("_", " ")}
+                ● {scorecard.recommendation.replace("_", " ")}
               </div>
               {scorecard.red_flags.length ? (
-                <div className="mt-2 text-[11px] text-red-bright">
+                <div className="mt-1.5 font-mono text-[10px] uppercase tracking-wider text-red-bright">
                   {scorecard.red_flags.length} red flag
-                  {scorecard.red_flags.length > 1 ? "s" : ""} — recommendation capped
+                  {scorecard.red_flags.length > 1 ? "s" : ""} — capped
                 </div>
               ) : null}
             </div>
@@ -157,8 +157,10 @@ function PillarSlider({
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="grid grid-cols-[100px_1fr_30px] items-center gap-2 text-xs">
-      <span className="capitalize text-text-primary">{name}</span>
+    <label className="grid grid-cols-[90px_1fr_28px] items-center gap-2 text-[11px]">
+      <span className="font-mono uppercase tracking-wider text-text-dim">
+        {name}
+      </span>
       <input
         type="range"
         min={1}
@@ -168,7 +170,7 @@ function PillarSlider({
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="w-full accent-cyan-bright"
       />
-      <span className="text-right font-mono tabular-nums text-text-bright">
+      <span className="text-right font-mono font-bold tabular-nums text-text-bright">
         {value.toFixed(1)}
       </span>
     </label>
@@ -209,7 +211,7 @@ function FlagInput({
         <button
           type="button"
           onClick={add}
-          className="rounded border border-cyan-bright bg-cyan-bright/10 px-2 py-1 font-display text-[11px] uppercase tracking-wider text-cyan-bright hover:bg-cyan-bright/20"
+          className="rounded border border-cyan-bright bg-cyan-bright/10 px-2 py-1 font-display text-[10px] uppercase tracking-wider text-cyan-bright hover:bg-cyan-bright/20"
         >
           Add
         </button>

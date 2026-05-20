@@ -23,8 +23,8 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
 
   const c = record.comparables;
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-4">
-      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">Deal comparables</h2>
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">Deal comparables</h2>
 
       {loading && !c ? (
         <div className="h-32 animate-pulse rounded bg-bg-panel-hover" />
@@ -55,7 +55,7 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
 
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-bg-deep text-left text-[10px] uppercase tracking-wide text-text-dim">
+              <thead className="bg-bg-deep text-left text-[9px] uppercase tracking-[0.15em] text-text-dim">
                 <tr>
                   <th className="p-1.5">Asset</th>
                   <th className="p-1.5">Acquirer</th>
@@ -134,11 +134,11 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="font-display text-[10px] uppercase tracking-[0.15em] text-text-dim">
+      <div className="font-display text-[9px] uppercase tracking-[0.15em] text-text-dim">
         {label}
       </div>
       <div
-        className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+        className={`mt-0.5 font-mono text-sm font-bold tabular-nums ${
           accent ? "text-green-bright" : "text-text-bright"
         }`}
       >

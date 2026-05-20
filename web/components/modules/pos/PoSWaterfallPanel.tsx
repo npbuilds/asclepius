@@ -35,7 +35,7 @@ export default function PoSWaterfallPanel({ record, setRecord }: ModulePanelProp
 
   return (
     <PanelShell title="Probability of Success">
-      <div className="mb-3 grid grid-cols-3 gap-3 tabular-nums">
+      <div className="mb-2.5 grid grid-cols-3 gap-2.5 tabular-nums">
         <Stat label="Base rate" value={pct(result.base_rate)} />
         <Stat label="Final LOA" value={pct(result.final_loa)} accent />
         <Stat
@@ -175,8 +175,8 @@ function PanelShell({
   error?: string;
 }) {
   return (
-    <section className="rounded border border-border-dim bg-bg-panel p-4">
-      <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-text-bright">
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
         {title}
       </h2>
       {loading ? <div className="h-32 animate-pulse rounded bg-bg-panel-hover" /> : null}
@@ -201,11 +201,11 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="font-display text-[10px] uppercase tracking-[0.15em] text-text-dim">
+      <div className="font-display text-[9px] uppercase tracking-[0.15em] text-text-dim">
         {label}
       </div>
       <div
-        className={`mt-0.5 font-mono text-base font-bold tabular-nums ${
+        className={`mt-0.5 font-mono text-sm font-bold tabular-nums ${
           accent ? "text-cyan-bright" : "text-text-bright"
         }`}
       >

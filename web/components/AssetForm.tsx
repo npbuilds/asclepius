@@ -66,10 +66,10 @@ export function AssetForm({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Row label="Asset name">
         <input
-          className="w-full rounded border border-border-dim bg-bg-panel px-2.5 py-1.5 text-sm text-text-bright"
+          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-1.5 text-[13px] text-text-bright"
           value={value.asset_name}
           onChange={(e) => set("asset_name", e.target.value)}
         />
@@ -77,13 +77,13 @@ export function AssetForm({
 
       <Row label="Sponsor">
         <input
-          className="w-full rounded border border-border-dim bg-bg-panel px-2.5 py-1.5 text-sm text-text-bright"
+          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-1.5 text-[13px] text-text-bright"
           value={value.sponsor ?? ""}
           onChange={(e) => set("sponsor", e.target.value || null)}
         />
       </Row>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         <Row label="Phase">
           <Select
             value={value.phase}
@@ -109,14 +109,14 @@ export function AssetForm({
 
       <Row label="Mechanism">
         <input
-          className="w-full rounded border border-border-dim bg-bg-panel px-2.5 py-1.5 text-sm text-text-bright"
+          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-1.5 text-[13px] text-text-bright"
           placeholder="e.g. KRAS G12C inhibitor"
           value={value.mechanism ?? ""}
           onChange={(e) => set("mechanism", e.target.value || null)}
         />
       </Row>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         <Row label="Target validated by prior approval">
           <Checkbox
             checked={value.target_validated}
@@ -152,12 +152,13 @@ export function AssetForm({
                 key={d}
                 type="button"
                 onClick={() => toggleDesignation(d)}
-                className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider ${
+                className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
                   on
                     ? "border-amber-bright bg-amber-bright/10 text-amber-bright"
                     : "border-border-dim bg-bg-panel text-text-dim hover:border-amber-bright/50 hover:text-amber-bright"
                 }`}
               >
+                {on ? "● " : ""}
                 {labelFor(d)}
               </button>
             );
@@ -171,7 +172,7 @@ export function AssetForm({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="mb-1 font-display text-[10px] uppercase tracking-[0.15em] text-text-dim">
+      <div className="mb-0.5 font-display text-[9px] uppercase tracking-[0.15em] text-text-dim">
         {label}
       </div>
       {children}
@@ -190,7 +191,7 @@ function Select({
 }) {
   return (
     <select
-      className="w-full rounded border border-border-dim bg-bg-panel px-2.5 py-1.5 text-sm text-text-bright"
+      className="w-full rounded border border-border-dim bg-bg-panel px-2 py-1.5 text-[13px] text-text-bright"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -214,13 +215,13 @@ function Checkbox({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`rounded border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider ${
+      className={`rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
         checked
           ? "border-green-bright bg-green-bright/10 text-green-bright"
           : "border-border-dim bg-bg-panel text-text-dim hover:border-green-bright/50 hover:text-green-bright"
       }`}
     >
-      {checked ? "Yes" : "No"}
+      {checked ? "● Yes" : "No"}
     </button>
   );
 }
