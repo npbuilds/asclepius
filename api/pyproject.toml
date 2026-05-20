@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.7",
     "numpy>=1.26",
     "scipy>=1.13",
+    "anthropic>=0.40",
 ]
 
 [project.optional-dependencies]

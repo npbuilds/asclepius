@@ -180,3 +180,29 @@ export interface ModuleManifest {
   outputs: string[];
   deps: string[];
 }
+
+// --- Agents (v1.1) ---------------------------------------------------------
+// Recommendation is shared with ScorecardResult — declared once at line ~124.
+
+export interface AgentManifest {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  skill_loadout: string[];
+  trigger_label: string;
+  input_fields: string[];
+  output_fields: string[];
+  model: string | null;
+  cached_assets: string[];
+}
+
+export interface MemoOutput {
+  body_markdown: string;
+  executive_summary: string;
+  recommendation: Recommendation;
+  red_flags: string[];
+  model_used: string;
+  from_cache: boolean;
+  generated_at: string;
+}

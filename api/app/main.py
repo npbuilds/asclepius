@@ -45,6 +45,11 @@ def create_app() -> FastAPI:
         if loaded.router is not None:
             app.include_router(loaded.router)
 
+    # Generic agent invocation route — handles every agent registered above
+    from .agents.routes import router as agents_router
+
+    app.include_router(agents_router)
+
     # ---- Built-in routes ----
 
     @app.get("/health")

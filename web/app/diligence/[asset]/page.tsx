@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AssetForm } from "@/components/AssetForm";
 import { LimitationsPanel } from "@/components/LimitationsPanel";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
+import { MemoPanel } from "@/components/agents/MemoPanel";
 import { listModules } from "@/lib/api-client";
 import {
   ClientDiligenceRecord,
@@ -188,6 +189,8 @@ export default function DiligencePage({
             }
             return <Panel key={m.id} record={record} setRecord={setRecord} />;
           })}
+
+          <MemoPanel record={record} />
         </div>
       </div>
     </div>

@@ -1,0 +1,29 @@
+{
+  "id": "memo_writer",
+  "name": "Memo Writer",
+  "version": "0.1.0",
+  "description": "Synthesizes a computed diligence record into a 2-page investment memo with H2 sections (Executive summary, PoS read, Valuation, Red flags, Recommendation) ending in an explicit recommendation paragraph.",
+  "skill_loadout": [
+    "biotech-venture/leaf/investment-memo-writer/SKILL.md",
+    "biotech-venture/leaf/diligence-scorecard/SKILL.md"
+  ],
+  "trigger_label": "Generate memo",
+  "input_fields": [
+    "asset",
+    "pos",
+    "rnpv",
+    "scorecard",
+    "comparables"
+  ],
+  "output_fields": [
+    "body_markdown",
+    "executive_summary",
+    "recommendation",
+    "red_flags",
+    "model_used",
+    "from_cache",
+    "generated_at"
+  ],
+  "model": "claude-opus-4-7",
+  "cached_assets": ["adagrasib"]
+}

@@ -62,11 +62,23 @@ class AgentManifest(BaseModel):
     version: str
     description: str
     skill_loadout: list[str] = Field(
-        description="Skill paths (relative to ASCLEPIUS_SKILLS_DIR) this agent loads."
+        description="Skill paths (relative to ASCLEPIUS_SKILLS_DIR) this agent loads.",
+        default_factory=list,
     )
     trigger_label: str = Field(description="UI button label for this agent.")
     input_fields: list[str]
     output_fields: list[str]
+    model: str | None = Field(
+        default=None,
+        description="Anthropic model id used for live calls. None = no LLM (cache-only or rule-based).",
+    )
+    cached_assets: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Asset names with pre-computed cached responses on disk. Cache hits "
+            "are served without calling the LLM."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +119,7 @@ class LoadedModule:
 class LoadedAgent:
     manifest: AgentManifest
     agent_cls: type
+    instance: Any  # BaseAgent instance — held across requests
     path: Path
 
 
@@ -239,13 +252,22 @@ class Registry:
             except Exception as exc:
                 log.error("invalid agent manifest %s: %s", manifest_file, exc)
                 continue
-            agent_mod = importlib.import_module(f"{package}.{child.name}.agent")
+            try:
+                agent_mod = importlib.import_module(f"{package}.{child.name}.agent")
+            except Exception as exc:
+                log.error("failed to import agent %s agent.py: %s", child.name, exc)
+                continue
             agent_cls = getattr(agent_mod, "Agent", None)
             if agent_cls is None:
                 log.error("agent %s has no Agent class in agent.py", child.name)
                 continue
+            try:
+                instance = agent_cls(manifest=manifest, agent_dir=child)
+            except Exception as exc:
+                log.error("failed to instantiate agent %s: %s", child.name, exc)
+                continue
             self.agents[manifest.id] = LoadedAgent(
-                manifest=manifest, agent_cls=agent_cls, path=child
+                manifest=manifest, agent_cls=agent_cls, instance=instance, path=child
             )
             log.info("registered agent: %s v%s", manifest.id, manifest.version)
 

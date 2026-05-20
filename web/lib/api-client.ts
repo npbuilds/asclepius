@@ -5,8 +5,10 @@
 // lets prod / staging / local use the same code.
 
 import type {
+  AgentManifest,
   AssetInput,
   ComparablesResult,
+  MemoOutput,
   ModuleManifest,
   PoSResult,
   RnpvInputs,
@@ -14,6 +16,11 @@ import type {
   ScorecardInput,
   ScorecardResult,
 } from "./types";
+
+export interface AgentError {
+  status: number;
+  message: string;
+}
 
 async function jsonFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -65,6 +72,46 @@ export async function runScorecard(
     },
   );
   return data.scorecard;
+}
+
+// ---- Agents (v1.1) -------------------------------------------------------
+
+export async function listAgents(): Promise<AgentManifest[]> {
+  const data = await jsonFetch<{ agents: AgentManifest[] }>("/api/agents");
+  return data.agents;
+}
+
+// The agent endpoint differs from modules: it expects the full DiligenceRecord
+// shape, not the {asset, pos, …} envelope each module uses. We accept a record
+// shape from the caller and forward it verbatim.
+export async function runAgent<T>(
+  agentId: string,
+  record: Record<string, unknown>,
+): Promise<T> {
+  const res = await fetch(`/api/agents/${agentId}/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    cache: "no-store",
+    body: JSON.stringify(record),
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = (await res.json()) as { detail?: string };
+      if (body.detail) detail = body.detail;
+    } catch {
+      // body wasn't JSON; keep statusText
+    }
+    const err: AgentError = { status: res.status, message: detail };
+    throw err;
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function runMemoWriter(
+  record: Record<string, unknown>,
+): Promise<MemoOutput> {
+  return runAgent<MemoOutput>("memo_writer", record);
 }
 
 export async function runComparables(
