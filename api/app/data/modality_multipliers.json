@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "description": "Multiplicative adjustments applied to base-rate LOA for each modality. Values are point estimates inside published BIO/Informa ranges; range_low/range_high preserve the documented uncertainty for sensitivity analysis.",
+  "multipliers": [
+    {
+      "modality": "small_molecule",
+      "multiplier": 1.00,
+      "range_low": 0.95,
+      "range_high": 1.05,
+      "rationale": "Reference modality. Most BIO/Informa base rates are computed on a small-molecule-dominant historical cohort.",
+      "source": "bio_2021"
+    },
+    {
+      "modality": "monoclonal_antibody",
+      "multiplier": 1.15,
+      "range_low": 1.10,
+      "range_high": 1.20,
+      "rationale": "mAbs show higher Phase 1 safety and lower attrition through approval; biologics LOA from P1 reported ~11% vs ~6% for NMEs.",
+      "source": "bio_2021"
+    },
+    {
+      "modality": "antibody_drug_conjugate",
+      "multiplier": 0.85,
+      "range_low": 0.80,
+      "range_high": 0.90,
+      "rationale": "ADCs face higher CMC and DLT/payload-toxicity attrition relative to naked antibodies; manufacturing complexity raises late-stage risk.",
+      "source": "informa_pharma_intelligence"
+    },
+    {
+      "modality": "gene_therapy",
+      "multiplier": 0.75,
+      "range_low": 0.70,
+      "range_high": 0.80,
+      "rationale": "Gene therapies show elevated Phase 3 attrition (durability, immunogenicity, dose-response); CMC scale-up risk also significant.",
+      "source": "informa_pharma_intelligence"
+    },
+    {
+      "modality": "cell_therapy_autologous",
+      "multiplier": 0.65,
+      "range_low": 0.60,
+      "range_high": 0.70,
+      "rationale": "Autologous cell therapies face per-patient manufacturing variability and complex logistics; documented higher commercial-stage attrition.",
+      "source": "informa_pharma_intelligence"
+    },
+    {
+      "modality": "cell_therapy_allogeneic",
+      "multiplier": 0.70,
+      "range_low": 0.65,
+      "range_high": 0.75,
+      "rationale": "Allogeneic platforms simplify supply but face persistence and immunogenicity risk.",
+      "source": "informa_pharma_intelligence"
+    },
+    {
+      "modality": "mrna",
+      "multiplier": 0.90,
+      "range_low": 0.85,
+      "range_high": 0.95,
+      "rationale": "Platform validated for vaccines; therapeutic mRNA still has limited Phase 3 readouts outside infectious disease.",
+      "source": "informa_pharma_intelligence"
+    },
+    {
+      "modality": "protein",
+      "multiplier": 1.10,
+      "range_low": 1.05,
+      "range_high": 1.15,
+      "rationale": "Recombinant proteins/enzymes track biologics behavior with slight discount for immunogenicity risk.",
+      "source": "bio_2021"
+    },
+    {
+      "modality": "oligonucleotide",
+      "multiplier": 0.85,
+      "range_low": 0.80,
+      "range_high": 0.90,
+      "rationale": "ASO/siRNA approvals exist but historical Phase 2 attrition is high; delivery/biodistribution remains the dominant risk.",
+      "source": "informa_pharma_intelligence"
+    },
+    {
+      "modality": "peptide",
+      "multiplier": 1.00,
+      "range_low": 0.95,
+      "range_high": 1.05,
+      "rationale": "Peptides behave like small molecules in success rates; PK/PD challenges offset structural simplicity.",
+      "source": "informa_pharma_intelligence"
+    },
+    {
+      "modality": "other",
+      "multiplier": 1.00,
+      "range_low": 0.90,
+      "range_high": 1.10,
+      "rationale": "Unspecified modality — defaults to reference; widen the range to reflect higher prior uncertainty.",
+      "source": "bio_2021"
+    }
+  ]
+}

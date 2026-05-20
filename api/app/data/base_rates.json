@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "description": "Phase-transition probabilities and cumulative LOA by therapeutic area. Every row cites a primary industry source. Numbers reflect the long-run base rate before any sponsor-specific or trial-specific adjustments.",
+  "primary_sources": [
+    {
+      "id": "bio_2021",
+      "citation": "Biotechnology Innovation Organization, Informa Pharma Intelligence, QLS Advisors. Clinical Development Success Rates and Contributing Factors 2011-2020 (2021).",
+      "url": "https://go.bio.org/rs/490-EHZ-999/images/ClinicalDevelopmentSuccessRates2011_2020.pdf"
+    },
+    {
+      "id": "wong_2019",
+      "citation": "Wong CH, Siah KW, Lo AW. Estimation of clinical trial success rates and related parameters. Biostatistics 20(2):273-286 (2019).",
+      "url": "https://academic.oup.com/biostatistics/article/20/2/273/4817524"
+    }
+  ],
+  "transitions": [
+    {
+      "therapeutic_area": "all",
+      "p1_to_p2": 0.52,
+      "p2_to_p3": 0.29,
+      "p3_to_nda": 0.58,
+      "nda_to_approval": 0.88,
+      "loa_from_p1": 0.079,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "oncology",
+      "p1_to_p2": 0.45,
+      "p2_to_p3": 0.24,
+      "p3_to_nda": 0.52,
+      "nda_to_approval": 0.85,
+      "loa_from_p1": 0.047,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "rare_orphan",
+      "p1_to_p2": 0.65,
+      "p2_to_p3": 0.42,
+      "p3_to_nda": 0.65,
+      "nda_to_approval": 0.92,
+      "loa_from_p1": 0.163,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "cns",
+      "p1_to_p2": 0.48,
+      "p2_to_p3": 0.20,
+      "p3_to_nda": 0.50,
+      "nda_to_approval": 0.85,
+      "loa_from_p1": 0.041,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "metabolic",
+      "p1_to_p2": 0.58,
+      "p2_to_p3": 0.32,
+      "p3_to_nda": 0.60,
+      "nda_to_approval": 0.90,
+      "loa_from_p1": 0.100,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "infectious",
+      "p1_to_p2": 0.65,
+      "p2_to_p3": 0.40,
+      "p3_to_nda": 0.65,
+      "nda_to_approval": 0.90,
+      "loa_from_p1": 0.152,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "cardiovascular",
+      "p1_to_p2": 0.55,
+      "p2_to_p3": 0.27,
+      "p3_to_nda": 0.55,
+      "nda_to_approval": 0.88,
+      "loa_from_p1": 0.072,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "autoimmune",
+      "p1_to_p2": 0.62,
+      "p2_to_p3": 0.30,
+      "p3_to_nda": 0.62,
+      "nda_to_approval": 0.90,
+      "loa_from_p1": 0.104,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "ophthalmology",
+      "p1_to_p2": 0.86,
+      "p2_to_p3": 0.36,
+      "p3_to_nda": 0.59,
+      "nda_to_approval": 0.91,
+      "loa_from_p1": 0.166,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "hematology",
+      "p1_to_p2": 0.66,
+      "p2_to_p3": 0.40,
+      "p3_to_nda": 0.65,
+      "nda_to_approval": 0.92,
+      "loa_from_p1": 0.157,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "respiratory",
+      "p1_to_p2": 0.61,
+      "p2_to_p3": 0.27,
+      "p3_to_nda": 0.62,
+      "nda_to_approval": 0.89,
+      "loa_from_p1": 0.091,
+      "source": "bio_2021"
+    },
+    {
+      "therapeutic_area": "other",
+      "p1_to_p2": 0.52,
+      "p2_to_p3": 0.29,
+      "p3_to_nda": 0.58,
+      "nda_to_approval": 0.88,
+      "loa_from_p1": 0.079,
+      "source": "bio_2021"
+    }
+  ]
+}

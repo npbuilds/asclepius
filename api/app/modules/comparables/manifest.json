@@ -1,0 +1,9 @@
+{
+  "id": "comparables",
+  "name": "Deal Comparables",
+  "version": "0.1.0",
+  "description": "Loads cohort comparables for a therapeutic area + modality, computes EV/peak-sales multiples, and derives an implied value for the target asset from the cohort median. The adagrasib worked example uses oncology-kinase cohort (encorafenib, selpercatinib, larotrectinib).",
+  "inputs": ["asset.therapeutic_area", "asset.modality", "rnpv_inputs.peak_sales_usd_m"],
+  "outputs": ["comparables"],
+  "deps": []
+}

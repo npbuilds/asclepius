@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "asset_name": "adagrasib (MRTX849)",
+  "sponsor": "Mirati Therapeutics",
+  "data_cutoff": "2022-06-01",
+  "framing": "Retrospective backtest using only public information available pre-KRYSTAL-12 (Phase 3 NSCLC readout). Framework reproduces deal-range fair value from contemporaneous data; outcome (BMS $4.8B acquisition, Oct 2022) is the validation, not the prediction.",
+  "asset_input": {
+    "asset_name": "adagrasib",
+    "sponsor": "Mirati Therapeutics",
+    "phase": "phase_2",
+    "therapeutic_area": "oncology",
+    "modality": "small_molecule",
+    "capital_position": "adequate",
+    "mechanism": "KRAS G12C inhibitor",
+    "target": "KRAS G12C",
+    "indication": "NSCLC (2L+, G12C-mutant)",
+    "regulatory_designations": ["breakthrough_therapy"],
+    "num_competitors": 1,
+    "target_validated": true,
+    "biomarker_enrichment": true
+  },
+  "rnpv_inputs": {
+    "peak_sales_usd_m": 1200.0,
+    "years_to_peak": 5,
+    "years_of_exclusivity": 12,
+    "cogs_pct": 0.18,
+    "wacc": 0.10,
+    "dev_cost_phase_1_usd_m": 0.0,
+    "dev_cost_phase_2_usd_m": 0.0,
+    "dev_cost_phase_3_usd_m": 250.0,
+    "launch_cost_usd_m": 150.0,
+    "years_per_phase": {"phase_1": 0.0, "phase_2": 0.0, "phase_3": 3.0, "regulatory": 1.0}
+  },
+  "input_sources": {
+    "peak_sales_usd_m": "Pre-readout sell-side consensus implied $1.0-1.5B peak sales for adagrasib in 2L+ G12C NSCLC; conservative anchor at $1.2B reflects Mirati's smaller commercial footprint vs. Amgen's sotorasib. CRC/other-tumor expansion was potential upside, not in the base case.",
+    "wacc": "Phase 2 oncology mid-cap with BTD sits at the lower end of the wacc_benchmarks.json phase_2_small_mid_cap range (0.10-0.14). Using 10% reflects (a) the BTD-driven regulatory tailwind reducing late-stage uncertainty and (b) the typical sell-side practice of using lower discount rates when PoS already carries the development-stage risk weighting.",
+    "competitors": "Sotorasib (Lumakras) — only other approved/late-stage G12C inhibitor as of June 2022.",
+    "regulatory_designations": "FDA BTD granted for adagrasib in 2021 for NSCLC.",
+    "biomarker_enrichment": "KRAS G12C testing is a hard inclusion criterion — definitional biomarker enrichment.",
+    "target_validated": "Sotorasib received FDA accelerated approval May 2021 for the same target/indication — direct clinical validation.",
+    "capital_position": "Mirati had ~$890M cash at end of Q1 2022 and ongoing access to follow-ons; adequate but not 'well-capitalized'."
+  },
+  "expected_outputs": {
+    "rnpv_base_range_usd_m": [400, 700],
+    "post_p3_success_range_usd_m": [4400, 5200],
+    "actual_deal_value_usd_m": 4800,
+    "actual_deal_date": "2022-10-08",
+    "actual_acquirer": "Bristol-Myers Squibb",
+    "winners_curse_adjusted_private_value_usd_m": [4400, 4600],
+    "verdict": "Pre-readout (Phase 2, KRYSTAL-1 ongoing), framework values adagrasib at ~$545M as a risk-weighted entry point. Conditional on positive Phase 3 readout, framework value rises to ~$4.9B — bracketing the actual BMS $4.8B acquisition within ~2%. Story for a VC: pre-readout, you'd pay up to ~$550M; post-readout, the deal price is *exactly* defensible; the winner's-curse adjustment suggests a financial-buyer private value of ~$4.4-4.6B, so BMS's premium reflects strategic KRAS-franchise value, not financial fair value."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "asset_name": "selpercatinib (Retevmo)",
+  "acquirer": "Eli Lilly",
+  "sponsor_pre_deal": "Loxo Oncology",
+  "deal_value_usd_m": 8000,
+  "deal_date": "2019-01-07",
+  "peak_sales_estimate_usd_m": 1200,
+  "indication": "RET-fusion+ NSCLC, RET-mutant MTC",
+  "modality": "small_molecule",
+  "therapeutic_area": "oncology",
+  "notes": "Loxo Oncology acquired by Lilly for $8B to capture selpercatinib + larotrectinib (NTRK). Selpercatinib was the lead late-stage asset. EV/peak-sales ~6.7x. Deal also bought a platform (precision-oncology pipeline) so multiple understates single-asset value.",
+  "source": "Lilly-Loxo merger agreement; consensus sell-side peak-sales estimates."
+}

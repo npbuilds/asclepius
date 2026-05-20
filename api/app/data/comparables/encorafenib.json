@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "asset_name": "encorafenib + binimetinib (Braftovi/Mektovi)",
+  "acquirer": "Pfizer",
+  "sponsor_pre_deal": "Array BioPharma",
+  "deal_value_usd_m": 11400,
+  "deal_date": "2019-06-17",
+  "peak_sales_estimate_usd_m": 750,
+  "indication": "BRAF-mutant melanoma; BRAF-mutant CRC",
+  "modality": "small_molecule",
+  "therapeutic_area": "oncology",
+  "notes": "Targeted BRAF/MEK combo; Pfizer paid $11.4B for Array BioPharma. Deal supported by encorafenib's BRAF+CRC label expansion and a broader Array pipeline. EV/peak-sales ~15x — premium reflects pipeline + commercial fit.",
+  "source": "Pfizer-Array merger agreement; sell-side peak-sales consensus pre-deal."
+}

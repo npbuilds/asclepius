@@ -1,0 +1,9 @@
+{
+  "id": "rnpv",
+  "name": "Risk-Adjusted NPV",
+  "version": "0.1.0",
+  "description": "Phase-gated rNPV with cost optionality (costs stop on trial failure). Closed-form base case + 10k-path Monte Carlo (log-normal peak sales, beta LOA, normal WACC, triangular COGS) + tornado sensitivity. Revenue uses mid-year discount convention.",
+  "inputs": ["asset.phase", "pos.final_loa", "pos.phase_transitions", "rnpv_inputs"],
+  "outputs": ["rnpv"],
+  "deps": ["wacc_benchmarks"]
+}

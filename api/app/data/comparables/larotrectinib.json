@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "asset_name": "larotrectinib (Vitrakvi)",
+  "acquirer": "Bayer (commercialization) / Eli Lilly (acquisition)",
+  "sponsor_pre_deal": "Loxo Oncology",
+  "deal_value_usd_m": 1550,
+  "deal_date": "2017-11-14",
+  "peak_sales_estimate_usd_m": 400,
+  "indication": "NTRK-fusion+ tumor-agnostic",
+  "modality": "small_molecule",
+  "therapeutic_area": "oncology",
+  "notes": "Bayer/Loxo $1.55B collaboration (upfront + milestones); tumor-agnostic NTRK approval (2018) was the first of its kind. Lower peak-sales estimate because tumor-agnostic NTRK is a small TAM (~5K patients/yr in US). EV/peak-sales ~3.9x.",
+  "source": "Bayer-Loxo collaboration agreement; consensus sell-side estimates."
+}

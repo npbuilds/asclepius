@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "description": "Reflexivity multipliers by sponsor capital position. The empirical mechanism: capital-constrained sponsors run worse trials (smaller N, weaker comparators, less biomarker enrichment, deferred regulatory engagement), and that delta is structurally predictive of trial breakdown per Ma et al. 2025 (accrual failure model, AUC 0.74). This module makes that path-dependency explicit and quantifiable.",
+  "primary_sources": [
+    {
+      "id": "ma_2025",
+      "citation": "Ma S et al. Predicting accrual success for better clinical trial resource allocation. Scientific Reports 15 (2025).",
+      "url": "https://consensus.app/papers/details/e262d49916ee5d8a891fc05dedec8e30/"
+    },
+    {
+      "id": "soros_reflexivity",
+      "citation": "Soros G. The Alchemy of Finance (1987); General Theory of Reflexivity (2014).",
+      "note": "Macro analog: the same feedback-loop dynamic operates in clinical development."
+    }
+  ],
+  "adjustments": [
+    {
+      "capital_position": "well_capitalized",
+      "multiplier": 1.08,
+      "range_low": 1.05,
+      "range_high": 1.10,
+      "rationale": "≥24 months runway, no near-term raise pressure. Enables adaptive trial design, biomarker-enriched populations, active-comparator trials, and proactive FDA engagement — all costly signals that capital-constrained sponsors cannot credibly emit. Spence-style separating equilibrium: only well-capitalized sponsors can afford the signal."
+    },
+    {
+      "capital_position": "adequate",
+      "multiplier": 1.00,
+      "range_low": 0.97,
+      "range_high": 1.03,
+      "rationale": "12-24 months runway. Reference tier — no structural advantage or disadvantage."
+    },
+    {
+      "capital_position": "constrained",
+      "multiplier": 0.88,
+      "range_low": 0.85,
+      "range_high": 0.92,
+      "rationale": "6-12 months runway, raise dependency. Common compromises: smaller trials, single-arm vs randomized, deferred regulatory meetings, weaker CRO selection. Ma 2025: protocol-level features predict accrual failure with AUC 0.74; sponsor capital is a documented mediator."
+    },
+    {
+      "capital_position": "distressed",
+      "multiplier": 0.78,
+      "range_low": 0.72,
+      "range_high": 0.85,
+      "rationale": "<6 months runway, going-concern overhang. Structural reasons for elevated failure: trial truncation, premature analyses, executive turnover, CRO/site quality compromises, partnering-driven scope changes. The signal in the market is rarely 'cheap' — it's a credibility tax."
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "pos",
+  "name": "Probability of Success",
+  "version": "0.1.0",
+  "description": "Computes phase-to-approval likelihood with an explicit adjustment audit trail. The reflexivity adjustment (capital position) is the headline differentiator; it converts sponsor balance-sheet state into a structural PoS modifier per the Spence-style separating equilibrium argument.",
+  "inputs": [
+    "asset.phase",
+    "asset.therapeutic_area",
+    "asset.modality",
+    "asset.capital_position",
+    "asset.regulatory_designations",
+    "asset.biomarker_enrichment",
+    "asset.target_validated",
+    "asset.num_competitors"
+  ],
+  "outputs": ["pos"],
+  "deps": ["bio_base_rates", "modality_multipliers", "reflexivity_adjustments"]
+}

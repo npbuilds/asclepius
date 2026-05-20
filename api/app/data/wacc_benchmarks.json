@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "description": "WACC / discount-rate benchmarks for rNPV. Single-asset biotech rNPV typically uses the equity cost of capital because phase-gated probability already prices most idiosyncratic risk; using a high systemic-risk-adjusted WACC double-counts.",
+  "primary_sources": [
+    {
+      "id": "damodaran_2025",
+      "citation": "Damodaran A. Cost of Capital by Industry (US), updated Jan 2025. NYU Stern.",
+      "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/wacc.html",
+      "note": "Biotech industry cost of equity ~10-11%, beta ~1.2."
+    },
+    {
+      "id": "stewart_2002",
+      "citation": "Stewart JJ, Allison PN, Johnson RS. Putting a price on biotechnology. Nature Biotechnology 19, 813-817 (2001).",
+      "note": "Foundational treatment of rNPV discount rates by stage."
+    }
+  ],
+  "benchmarks": [
+    {
+      "company_stage": "preclinical_private",
+      "wacc": 0.20,
+      "range_low": 0.18,
+      "range_high": 0.25,
+      "rationale": "Highest cost of capital for un-validated private biotech."
+    },
+    {
+      "company_stage": "phase_1_small_cap",
+      "wacc": 0.15,
+      "range_low": 0.13,
+      "range_high": 0.18,
+      "rationale": "Public micro-cap with one or two clinical assets."
+    },
+    {
+      "company_stage": "phase_2_small_mid_cap",
+      "wacc": 0.12,
+      "range_low": 0.10,
+      "range_high": 0.14,
+      "rationale": "Reference tier for the adagrasib backtest (Mirati at Phase 2 KRYSTAL-1)."
+    },
+    {
+      "company_stage": "phase_3_mid_cap",
+      "wacc": 0.10,
+      "range_low": 0.09,
+      "range_high": 0.12,
+      "rationale": "Substantial Phase 3 program, near-term commercial."
+    },
+    {
+      "company_stage": "commercial_large_cap",
+      "wacc": 0.08,
+      "range_low": 0.07,
+      "range_high": 0.09,
+      "rationale": "Commercial biotech / large pharma — closer to industry beta."
+    }
+  ]
+}

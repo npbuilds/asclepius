@@ -1,0 +1,9 @@
+{
+  "id": "scorecard",
+  "name": "8-Pillar Diligence Scorecard",
+  "version": "0.1.0",
+  "description": "Weighted aggregation across 8 diligence pillars (clinical, regulatory, competitive, manufacturing, IP, financial, team, and the novel computational-infrastructure pillar). Red flags auto-cap the recommendation; green flags lift it. The 8th pillar is the methodology's differentiation: it explicitly prices a biotech's AI/ML/data assets as a value driver, which no standard BD scorecard does.",
+  "inputs": ["asset", "scorecard_input"],
+  "outputs": ["scorecard"],
+  "deps": []
+}
