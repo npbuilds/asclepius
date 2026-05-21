@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AssetForm } from "@/components/AssetForm";
 import { LimitationsPanel } from "@/components/LimitationsPanel";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
+import { AdversaryPanel } from "@/components/agents/AdversaryPanel";
 import { MemoPanel } from "@/components/agents/MemoPanel";
 import { listModules } from "@/lib/api-client";
 import {
@@ -191,6 +192,7 @@ export default function DiligencePage({
           })}
 
           <MemoPanel record={record} />
+          <AdversaryPanel record={record} />
         </div>
       </div>
     </div>

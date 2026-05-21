@@ -1,0 +1,30 @@
+{
+  "id": "game_theory_adversary",
+  "name": "Game-Theory Adversary",
+  "version": "0.1.0",
+  "description": "Devil's-advocate critique of a diligence record (and optionally the generated memo) through three game-theoretic lenses: signaling (Spence/Akerlof), auction (winner's-curse on comparables), and Bayesian persuasion (selective disclosure). Outputs structured findings with severity tags and a verdict on whether the adversarial pass upgrades, holds, or downgrades the recommendation.",
+  "skill_loadout": [
+    "game-theory/signaling-screening/SKILL.md",
+    "game-theory/auction-theory/SKILL.md",
+    "game-theory/bayesian-persuasion/SKILL.md"
+  ],
+  "trigger_label": "Stress-test thesis",
+  "input_fields": [
+    "asset",
+    "pos",
+    "rnpv",
+    "scorecard",
+    "comparables"
+  ],
+  "output_fields": [
+    "body_markdown",
+    "verdict_shift",
+    "recommendation_shift_to",
+    "findings",
+    "model_used",
+    "from_cache",
+    "generated_at"
+  ],
+  "model": "claude-opus-4-7",
+  "cached_assets": ["adagrasib"]
+}

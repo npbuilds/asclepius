@@ -107,6 +107,31 @@ def build_record(asset_slug: str) -> DiligenceRecord:
     return record
 
 
+def _seed_invoke(loaded, record):
+    """Per-agent seeding logic.
+
+    The Adversary stress-tests memo claims when a memo is available. During
+    seeding we look up the already-cached memo for the same asset and pass
+    its body via the agent's _live_call extra arg, bypassing the public
+    cache-first run() path (since we just deleted that file).
+    """
+    agent_id = loaded.manifest.id
+    if agent_id == "game_theory_adversary":
+        registry = get_registry()
+        memo_loaded = registry.agents.get("memo_writer")
+        memo_body = None
+        if memo_loaded is not None:
+            slug = record.asset.asset_name.lower().replace(" ", "_")
+            memo_path = memo_loaded.path / "cache" / f"{slug}.json"
+            if memo_path.exists():
+                try:
+                    memo_body = json.loads(memo_path.read_text()).get("body_markdown")
+                except Exception:
+                    pass
+        return loaded.instance._live_call(record, memo_body=memo_body)
+    return loaded.instance.run(record)
+
+
 def precompute_for_agent(asset_slug: str, agent_id: str) -> Path:
     """Run one agent against the record, save to cache/<slug>.json.
 
@@ -124,7 +149,7 @@ def precompute_for_agent(asset_slug: str, agent_id: str) -> Path:
         cache_path.unlink()
     record = build_record(asset_slug)
     print(f"  → running {agent_id} for {asset_slug}…", flush=True)
-    result = loaded.instance.run(record)
+    result = _seed_invoke(loaded, record)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(result, indent=2, default=str))
     print(f"  ✓ wrote {cache_path}")

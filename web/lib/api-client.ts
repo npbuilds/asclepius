@@ -5,6 +5,7 @@
 // lets prod / staging / local use the same code.
 
 import type {
+  AdversaryOutput,
   AgentManifest,
   AssetInput,
   ComparablesResult,
@@ -112,6 +113,12 @@ export async function runMemoWriter(
   record: Record<string, unknown>,
 ): Promise<MemoOutput> {
   return runAgent<MemoOutput>("memo_writer", record);
+}
+
+export async function runGameTheoryAdversary(
+  record: Record<string, unknown>,
+): Promise<AdversaryOutput> {
+  return runAgent<AdversaryOutput>("game_theory_adversary", record);
 }
 
 export async function runComparables(

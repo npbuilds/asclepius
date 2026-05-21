@@ -206,3 +206,23 @@ export interface MemoOutput {
   from_cache: boolean;
   generated_at: string;
 }
+
+export type AdversaryLens = "signaling" | "auction" | "persuasion";
+export type AdversarySeverity = "minor" | "moderate" | "critical";
+export type AdversaryVerdictShift = "upgrade" | "hold" | "downgrade";
+
+export interface AdversarialFinding {
+  lens: AdversaryLens;
+  claim: string;
+  severity: AdversarySeverity;
+}
+
+export interface AdversaryOutput {
+  body_markdown: string;
+  verdict_shift: AdversaryVerdictShift;
+  recommendation_shift_to: Recommendation | null;
+  findings: AdversarialFinding[];
+  model_used: string;
+  from_cache: boolean;
+  generated_at: string;
+}
