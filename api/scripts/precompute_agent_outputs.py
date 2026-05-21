@@ -46,34 +46,42 @@ CACHEABLE_ASSETS: dict[str, dict] = {
             "target_validated": True,
             "biomarker_enrichment": True,
         },
+        # rNPV inputs MUST match web/app/diligence/[asset]/page.tsx ADAGRASIB_RNPV,
+        # otherwise the cached memo references numbers different from those on
+        # the live workbench. Phase 1/2 are sunk at the June 2022 cutoff so
+        # their costs and timelines are zero.
         "rnpv_inputs": {
             "peak_sales_usd_m": 1200.0,
             "years_to_peak": 5,
             "years_of_exclusivity": 12,
             "cogs_pct": 0.18,
             "wacc": 0.10,
+            "dev_cost_phase_1_usd_m": 0.0,
+            "dev_cost_phase_2_usd_m": 0.0,
             "dev_cost_phase_3_usd_m": 250.0,
             "launch_cost_usd_m": 150.0,
+            "years_per_phase": {
+                "phase_1": 0,
+                "phase_2": 0,
+                "phase_3": 3,
+                "regulatory": 1,
+            },
         },
-        # Scorecard inputs reflect the adagrasib-at-cutoff read (June 2022):
-        # clinical mid-7 (validated target, BTD, but Ph3 still ahead);
-        # competitive 6 (sotorasib already approved); financial 6 (adequate-
-        # not-flush capital position); computational 5 (small-molecule, no AI
-        # discovery moat). These match the worked example's narrative.
+        # Scorecard inputs MUST match the ScorecardRadarPanel defaults so the
+        # cached memo's aggregate score and pillar discussion line up with what
+        # the page actually renders. (Defaults: clinical/regulatory/manufacturing/
+        # ip/team 7, competitive/financial 6, computational 5, no flags.)
         "scorecard_input": {
-            "clinical": {"score": 7.5},
-            "regulatory": {"score": 7.5},
+            "clinical": {"score": 7.0},
+            "regulatory": {"score": 7.0},
             "competitive": {"score": 6.0},
-            "manufacturing": {"score": 7.5},
+            "manufacturing": {"score": 7.0},
             "ip": {"score": 7.0},
             "financial": {"score": 6.0},
             "team": {"score": 7.0},
             "computational": {"score": 5.0},
             "red_flags": [],
-            "green_flags": [
-                "FDA Breakthrough Therapy Designation",
-                "Target clinically validated by sotorasib precedent",
-            ],
+            "green_flags": [],
         },
     }
 }
@@ -100,15 +108,23 @@ def build_record(asset_slug: str) -> DiligenceRecord:
 
 
 def precompute_for_agent(asset_slug: str, agent_id: str) -> Path:
-    """Run one agent against the record, save to cache/<slug>.json."""
+    """Run one agent against the record, save to cache/<slug>.json.
+
+    Deletes any existing cache file before invoking the agent — otherwise the
+    agent's own cache-first logic would short-circuit and just re-serialize
+    the stale entry without calling the LLM. This is the only place we need
+    to force the cache-miss path.
+    """
     registry = get_registry()
     loaded = registry.agents.get(agent_id)
     if loaded is None:
         raise RuntimeError(f"agent {agent_id!r} not registered")
+    cache_path = loaded.path / "cache" / f"{asset_slug}.json"
+    if cache_path.exists():
+        cache_path.unlink()
     record = build_record(asset_slug)
     print(f"  → running {agent_id} for {asset_slug}…", flush=True)
     result = loaded.instance.run(record)
-    cache_path = loaded.path / "cache" / f"{asset_slug}.json"
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps(result, indent=2, default=str))
     print(f"  ✓ wrote {cache_path}")
