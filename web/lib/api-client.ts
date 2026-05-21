@@ -8,6 +8,7 @@ import type {
   AdversaryOutput,
   AgentManifest,
   AssetInput,
+  AutoDiligenceOutput,
   ComparablesResult,
   MemoOutput,
   ModuleManifest,
@@ -119,6 +120,12 @@ export async function runGameTheoryAdversary(
   record: Record<string, unknown>,
 ): Promise<AdversaryOutput> {
   return runAgent<AdversaryOutput>("game_theory_adversary", record);
+}
+
+export async function runAutoDiligence(
+  record: Record<string, unknown>,
+): Promise<AutoDiligenceOutput> {
+  return runAgent<AutoDiligenceOutput>("auto_diligence", record);
 }
 
 export async function runComparables(

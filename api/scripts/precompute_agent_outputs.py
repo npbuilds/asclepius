@@ -114,6 +114,10 @@ def _seed_invoke(loaded, record):
     seeding we look up the already-cached memo for the same asset and pass
     its body via the agent's _live_call extra arg, bypassing the public
     cache-first run() path (since we just deleted that file).
+
+    The Auto-Diligence agent has no cross-agent dependency; the default
+    run() path is correct (it will call _live_call which makes a real
+    web_search-enabled Anthropic call when there's no cache).
     """
     agent_id = loaded.manifest.id
     if agent_id == "game_theory_adversary":

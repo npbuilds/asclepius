@@ -7,6 +7,20 @@ Each agent has a narrow contract:
 
 The constructor receives the manifest and the agent's directory so subclasses
 can find their cache/ subfolder and prompt assets without hardcoded paths.
+
+KNOWN LIMITATION (v1.1.0 / v1.1.1 — to be addressed in v1.1.3):
+  The manifest's `skill_loadout` field lists paths into the Asclepius
+  skill-suite (e.g. "biotech-venture/leaf/investment-memo-writer/SKILL.md")
+  but the agent classes do not currently load those files at runtime — the
+  prompts in each agent's prompts.py are hardcoded heuristics inspired by
+  the same methodology, not the verbatim skill content. This is honest
+  documentation, not a runtime contract.
+
+  v1.1.3 will add a `_load_skill_context()` hook that reads the listed
+  skill files at startup and injects them into the system prompt. The
+  research dive for the Auto-Diligence agent (v1.1.2) is the forcing
+  function — once Auto-Diligence proves the skill-loading mechanism, the
+  Memo Writer and Adversary will be backported in v1.1.3.
 """
 
 from __future__ import annotations

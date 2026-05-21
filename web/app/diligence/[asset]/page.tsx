@@ -6,6 +6,7 @@ import { AssetForm } from "@/components/AssetForm";
 import { LimitationsPanel } from "@/components/LimitationsPanel";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
 import { AdversaryPanel } from "@/components/agents/AdversaryPanel";
+import { AutoDiligencePanel } from "@/components/agents/AutoDiligencePanel";
 import { MemoPanel } from "@/components/agents/MemoPanel";
 import { listModules } from "@/lib/api-client";
 import {
@@ -165,6 +166,8 @@ export default function DiligencePage({
               running on port 8000?
             </div>
           ) : null}
+
+          <AutoDiligencePanel record={record} setRecord={setRecord} />
 
           {manifests.map((m) => {
             const Panel = getPanelFor(m);

@@ -226,3 +226,41 @@ export interface AdversaryOutput {
   from_cache: boolean;
   generated_at: string;
 }
+
+export type FieldConfidence = "high" | "medium" | "low" | "missing";
+
+export interface ExtractedAsset {
+  asset_name: string | null;
+  aliases?: string[];
+  sponsor: string | null;
+  phase: Phase | string | null;
+  therapeutic_area: TherapeuticArea | string | null;
+  modality: Modality | string | null;
+  indication: string | null;
+  target: string | null;
+  mechanism: string | null;
+  route_of_administration?: string | null;
+  regulatory_designations?: string[];
+  num_competitors?: number | null;
+  named_competitors?: string[];
+  target_validated?: boolean | null;
+  biomarker_enrichment?: boolean | null;
+  capital_position?: CapitalPosition | string | null;
+}
+
+export interface AutoDiligenceCitation {
+  field: string;
+  url: string;
+  title: string | null;
+  span: string;
+}
+
+export interface AutoDiligenceOutput {
+  extracted: ExtractedAsset;
+  citations: AutoDiligenceCitation[];
+  field_confidence: Record<string, FieldConfidence>;
+  web_searches_used: number;
+  model_used: string;
+  from_cache: boolean;
+  generated_at: string;
+}
