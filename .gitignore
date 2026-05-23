@@ -105,3 +105,15 @@ api/app/data/calibration.db
 # /methodology/ only. Local-dev agents read /methodology/ directly via
 # the path resolution in api/app/agents/base.py.
 api/app/methodology/
+
+# ============================================================
+# v1.5.2 BioBERT training pipeline data + scratch artifacts
+# ============================================================
+# Training pipeline is offline; the HINT corpus (~500MB raw CSVs) lives
+# here and is fetched via api/data_pipeline/download_hint.sh. The
+# intermediate parquet (~50-200MB) lives at data/training/.
+# The shipped model artifact (api/app/modules/ml_pos_prior/model.joblib)
+# is tracked normally; the embeddings.npy ships via Git LFS once it
+# lands.
+api/data/hint/
+api/data/training/
