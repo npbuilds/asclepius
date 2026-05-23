@@ -1,11 +1,12 @@
 "use client";
 
-// ML PoS Prior panel — the "second opinion" path alongside the rule-based
-// PoS chain. Renders immediately below the PoS waterfall.
+// ML PoS Prior panel — the rule-smoothed logistic-surrogate path alongside
+// the deterministic PoS chain. Renders immediately below the PoS waterfall.
 //
-// Three-way readout: BIO base rate | Rule-based final LOA | ML prior.
-// Disagreement chip surfaces when the two paths diverge >3pp — that's the
-// uncertainty signal the plan promised, "disagreement-between-methods".
+// Three-way readout: BIO base rate | Rule-based final LOA | ML surrogate.
+// Disagreement chip surfaces composition-rule sensitivity (multiplicative
+// vs. additive log-odds) — NOT independent clinical evidence. See
+// methodology/09-ml-pos-prior.md for the honest framing.
 
 import { useEffect, useState } from "react";
 
@@ -97,7 +98,7 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
     <section className="rounded border border-border-dim bg-bg-panel p-3">
       <div className="mb-2 flex items-baseline justify-between">
         <h2 className="font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
-          ML PoS Prior · second opinion
+          ML PoS Prior · rule-smoothed surrogate
         </h2>
         <span className="font-mono text-[9px] uppercase tracking-wider text-text-dim">
           {result.model_kind} · {result.n_features} features
@@ -113,11 +114,11 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
           color="bg-cyan-faded"
         />
         <ReadoutRow
-          label="ML prior (LR · 10K-sample)"
+          label="ML surrogate (LR · 10K-sample)"
           value={ml}
           max={maxVal}
           color="bg-magenta-bright"
-          ci={[result.confidence_low, result.confidence_high]}
+          band={[result.uncertainty_low, result.uncertainty_high]}
         />
       </div>
 
@@ -134,11 +135,12 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
       </div>
 
       <p className="mt-2 font-prose text-[11px] leading-snug text-text-dim">
-        The ML path is structured-feature logistic regression trained on
-        10,000 synthetic samples from the BIO base-rate distribution.
-        Disagreement with the rule-based chain reflects where multiplicative
-        adjustments stack differently than additive log-odds. Not a
-        BioBERT-on-protocol-text model — that's v1.5.2.
+        Logistic regression trained on 10,000 uniform synthetic feature
+        samples, labeled by the rule-based PoS chain (Bernoulli-sampled).
+        This is rule-distillation, not independent evidence. Disagreement
+        with the rule-based chain reflects composition-rule sensitivity
+        (multiplicative vs. additive log-odds). BioBERT-on-protocol-text
+        with real outcome labels is v1.5.2.
       </p>
     </section>
   );
@@ -149,28 +151,29 @@ function ReadoutRow({
   value,
   max,
   color,
-  ci,
+  band,
 }: {
   label: string;
   value: number;
   max: number;
   color: string;
-  ci?: [number, number];
+  // Heuristic uncertainty band — NOT a statistical CI.
+  band?: [number, number];
 }) {
   const width = `${(value / max) * 100}%`;
-  const ciLeft = ci ? `${(ci[0] / max) * 100}%` : null;
-  const ciWidth = ci ? `${((ci[1] - ci[0]) / max) * 100}%` : null;
+  const bandLeft = band ? `${(band[0] / max) * 100}%` : null;
+  const bandWidth = band ? `${((band[1] - band[0]) / max) * 100}%` : null;
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-3">
       <div className="truncate text-text-primary">{label}</div>
       <div className="flex items-center gap-2">
         <div className="relative h-3 w-40 rounded bg-bg-panel-hover">
-          {/* Confidence band (drawn first, under the bar) */}
-          {ci ? (
+          {/* Uncertainty band (heuristic, not statistical CI) */}
+          {band ? (
             <div
               className="absolute h-full rounded bg-magenta-bright/20"
-              style={{ left: ciLeft!, width: ciWidth! }}
-              title={`CI: ${(ci[0] * 100).toFixed(1)}-${(ci[1] * 100).toFixed(1)}%`}
+              style={{ left: bandLeft!, width: bandWidth! }}
+              title={`Heuristic band: ${(band[0] * 100).toFixed(1)}-${(band[1] * 100).toFixed(1)}%`}
             />
           ) : null}
           <div className={`h-full rounded ${color}`} style={{ width }} />

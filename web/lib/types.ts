@@ -321,8 +321,10 @@ export type DisagreementLevel = "aligned" | "moderate" | "divergent";
 
 export interface MLPosPriorResult {
   predicted_pos: number;
-  confidence_low: number;
-  confidence_high: number;
+  // Heuristic uncertainty band (±1 SE in logit space). NOT a statistical
+  // confidence interval — see methodology/09-ml-pos-prior.md.
+  uncertainty_low: number;
+  uncertainty_high: number;
   rule_based_pos: number;
   disagreement_pp: number;
   disagreement_level: DisagreementLevel;

@@ -1,13 +1,23 @@
-# ML PoS Prior — second-opinion path
+# ML PoS Prior — rule-smoothed surrogate path
 
 The framework's deterministic PoS chain combines BIO base rates with
 multiplicative adjustments for modality, regulatory designation, biomarker
 enrichment, target validation, and reflexivity tier. The chain is
 auditable, but it is also opinionated about *how* the adjustments combine
 — each is a fixed multiplier applied in sequence, and the chain assumes
-no interaction between adjustments. The ML PoS Prior path tests that
-assumption by training a structured-feature classifier on the same
-inputs and surfacing where the two paths disagree.
+no interaction between adjustments. The ML PoS Prior path surfaces where
+that composition rule disagrees with an additive-log-odds approximation
+fit on the same inputs.
+
+**An honesty caveat up front.** Because the classifier's labels are
+Bernoulli-sampled from the rule-based PoS engine itself, this module is
+a *logistic-regression surrogate* of the rule chain, not an independent
+source of evidence. Disagreement between the two paths reflects
+logistic-regression's additive-log-odds inductive bias against the rule
+chain's multiplicative composition — useful for surfacing composition-
+rule sensitivity, but not new information about the world. Genuine
+independence requires training on real outcomes (HINT / CTOP / CT Open),
+which is the v1.5.2 path documented at the end of this writeup.
 
 ## What ships in v1.5.1
 
@@ -58,9 +68,15 @@ Two readings of the gap:
    target validation + low competition because each multiplier is
    conservative. The ML path's additive log-odds combination produces
    a larger combined uplift. Whether the multiplicative or additive
-   composition is correct is an empirical question the Calibration
+   composition is correct is an empirical question — but it can only
+   be settled by real outcome data on a sample that's large enough and
+   unbiased enough to support a calibration claim. The Calibration
    Dashboard ([`08-calibration-dashboard.md`](08-calibration-dashboard.md))
-   ultimately adjudicates.
+   provides the infrastructure for that adjudication; the seed sample
+   it ships with is too small (and too survivorship-biased) to settle
+   the question today, and the ML path currently isn't scored against
+   independent outcomes either. The honest read is that this v1.5.1
+   module *surfaces the question* but does not answer it.
 2. **The ML path may be over-fitting the training distribution.** The
    training data is synthetic-from-BIO with Bernoulli noise. The model
    has the structure of a logistic regression with no interaction
@@ -129,7 +145,7 @@ The next iteration delivers the BioBERT path:
 That delivers the plan's v1.5 specification. v1.5.1 ships the
 scaffolding that makes v1.5.2 a drop-in swap rather than a rewrite.
 
-## Why a "second opinion" matters at all
+## Why a "rule-smoothed surrogate" matters at all
 
 Single-number PoS estimates are the most over-stated quantitative
 input in biotech diligence. The framework's audit-trail discipline
@@ -153,7 +169,7 @@ delivers it.
 ## See also
 
 - [`01-pos-framework.md`](01-pos-framework.md) — the rule-based chain
-  the ML path is a second opinion to.
+  the ML path is a rule-smoothed surrogate to.
 - [`02-reflexivity-thesis.md`](02-reflexivity-thesis.md) — the
   capital-position adjustment that drives most of the rule-based ML
   disagreement on well-capitalized assets.

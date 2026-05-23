@@ -1,21 +1,31 @@
-"""Training script for the ML PoS Prior classifier.
+"""Training script for the ML PoS Prior — a rule-smoothed logistic surrogate.
 
 Run with:
     python -m app.modules.ml_pos_prior.train
 
-Samples N=10_000 synthetic AssetInputs from a uniform-over-features prior,
-computes the "true" P(approval) for each combination via the deterministic
-PoS engine, then Bernoulli-samples a binary outcome. Fits sklearn
-LogisticRegression(L2) on the encoded features and pickles to model.joblib.
+What this trains, honestly:
+    Samples N=10_000 synthetic AssetInputs uniformly over feature combinations,
+    computes the rule-based PoS engine's final_loa for each, then Bernoulli-
+    samples a binary outcome from that probability. Fits sklearn
+    LogisticRegression(L2) on the encoded features and pickles to model.joblib.
 
-The Bernoulli step is what makes this a meaningful classifier rather than
-a re-implementation of the rule-based chain: the trained logistic
-regression learns a smoothed decision surface over feature combinations
-the discrete chain treats as exact.
+What this is NOT:
+    An independent second opinion. The labels are derived from the rule-based
+    chain. The trained classifier is a logistic-regression surrogate — useful
+    for surfacing where the chain's multiplicative composition disagrees with
+    an additive log-odds approximation, but NOT new evidence about the world.
+    True independent evidence requires real outcome data (HINT / CTOP / CT
+    Open), which is the v1.5.2 path documented in methodology/09-ml-pos-prior.md.
 
-Honest framing: this is structured-feature shrinkage of the deterministic
-chain, not "ML on protocol text". The BioBERT/CTOP/CT-Open path lands in
-v1.5.2 per methodology/09-ml-pos-prior.md.
+What's persisted in the artifact:
+    {
+      "model": <fitted LogisticRegression>,
+      "metrics": {... test_auc, test_brier, ...},
+      "feature_schema": {... runtime-encoder-invariants the engine validates},
+      "training_meta": {... sklearn version, fitting date, random seed},
+    }
+    The schema sidecar lets engine._load_model() reject artifacts whose feature
+    space has drifted from the runtime encoder.
 """
 
 from __future__ import annotations
@@ -24,8 +34,11 @@ import logging
 from pathlib import Path
 from typing import cast
 
+from datetime import datetime, timezone
+
 import joblib
 import numpy as np
+import sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score
 from sklearn.model_selection import train_test_split
@@ -43,6 +56,7 @@ from .features import (
     CAPITAL_POSITIONS,
     DESIGNATION_FLAGS,
     MODALITIES,
+    N_FEATURES,
     PHASE_ORDER,
     THERAPEUTIC_AREAS,
     encode,
@@ -133,12 +147,44 @@ def train() -> dict:
         "test_auc": float(auc),
         "test_brier": float(brier),
         "test_base_rate": base_rate,
-        "model_kind": "logistic_regression_v0.1.0",
+        "model_kind": "logistic_regression_v0.1.1",
     }
 
-    joblib.dump({"model": model, "metrics": metrics}, MODEL_OUT)
+    # Schema sidecar — engine._load_model() validates these against runtime
+    # encoder. Any change in feature count or category order forces a re-train,
+    # which is what we want (silent feature drift would invalidate every
+    # prediction).
+    feature_schema = {
+        "n_features": N_FEATURES,
+        "phase_order": [p.value for p in PHASE_ORDER],
+        "therapeutic_areas": [t.value for t in THERAPEUTIC_AREAS],
+        "modalities": [m.value for m in MODALITIES],
+        "capital_positions": [c.value for c in CAPITAL_POSITIONS],
+        "designation_flags": [d.value for d in DESIGNATION_FLAGS],
+    }
+
+    training_meta = {
+        "sklearn_version": sklearn.__version__,
+        "trained_at": datetime.now(timezone.utc).isoformat(),
+        "random_seed": RANDOM_SEED,
+        "training_label_source": (
+            "rule-based PoS engine final_loa, Bernoulli-sampled — "
+            "rule-distillation, not independent evidence"
+        ),
+    }
+
+    joblib.dump(
+        {
+            "model": model,
+            "metrics": metrics,
+            "feature_schema": feature_schema,
+            "training_meta": training_meta,
+        },
+        MODEL_OUT,
+    )
     log.info("model written to %s", MODEL_OUT)
     log.info("metrics: %s", metrics)
+    log.info("training_meta: %s", training_meta)
     return metrics
 
 
