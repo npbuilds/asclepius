@@ -1,0 +1,18 @@
+{
+  "id": "ml_pos_prior",
+  "name": "ML PoS Prior",
+  "version": "0.1.0",
+  "description": "A structured-feature logistic-regression classifier that estimates phase-to-approval probability from the same inputs the deterministic chain uses (phase, TA, modality, capital position, regulatory designations, biomarker enrichment, target validation, competitor count). Trained on a synthetic dataset sampled from the BIO base rates with stochastic outcomes. Acts as a smoothed, continuous-valued second opinion to the rule-based PoS chain. Disagreement between the two paths surfaces as an uncertainty signal — the plan's 'disagreement-between-methods' beat. The BioBERT/CTOP path is documented as v1.5.2.",
+  "inputs": [
+    "asset.phase",
+    "asset.therapeutic_area",
+    "asset.modality",
+    "asset.capital_position",
+    "asset.regulatory_designations",
+    "asset.biomarker_enrichment",
+    "asset.target_validated",
+    "asset.num_competitors"
+  ],
+  "outputs": ["ml_pos_prior"],
+  "deps": ["pos"]
+}

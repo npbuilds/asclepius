@@ -12,6 +12,7 @@ import type {
   AutoDiligenceOutput,
   CalibrationReport,
   ComparablesResult,
+  MLPosPriorResult,
   MemoOutput,
   ModuleManifest,
   PoSResult,
@@ -63,6 +64,16 @@ export async function runRnpv(
     body: JSON.stringify({ asset, pos, rnpv_inputs }),
   });
   return data.rnpv;
+}
+
+export async function runMLPosPrior(
+  asset: AssetInput,
+  pos: PoSResult,
+): Promise<MLPosPriorResult> {
+  return jsonFetch<MLPosPriorResult>("/api/modules/ml_pos_prior", {
+    method: "POST",
+    body: JSON.stringify({ asset, pos }),
+  });
 }
 
 export async function runScorecard(

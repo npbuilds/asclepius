@@ -1,0 +1,184 @@
+"use client";
+
+// ML PoS Prior panel — the "second opinion" path alongside the rule-based
+// PoS chain. Renders immediately below the PoS waterfall.
+//
+// Three-way readout: BIO base rate | Rule-based final LOA | ML prior.
+// Disagreement chip surfaces when the two paths diverge >3pp — that's the
+// uncertainty signal the plan promised, "disagreement-between-methods".
+
+import { useEffect, useState } from "react";
+
+import { runMLPosPrior } from "@/lib/api-client";
+import type { ModulePanelProps } from "@/lib/module-registry";
+import type { DisagreementLevel, MLPosPriorResult } from "@/lib/types";
+
+const DISAGREEMENT_COLOR: Record<DisagreementLevel, string> = {
+  aligned: "bg-green-bright/15 text-green-bright border-green-bright/30",
+  moderate: "bg-amber-bright/15 text-amber-bright border-amber-bright/30",
+  divergent: "bg-red-bright/15 text-red-bright border-red-bright/30",
+};
+
+const DISAGREEMENT_LABEL: Record<DisagreementLevel, string> = {
+  aligned: "aligned",
+  moderate: "moderate",
+  divergent: "divergent",
+};
+
+function pct(v: number): string {
+  return `${(v * 100).toFixed(1)}%`;
+}
+
+export default function MLPosPriorPanel({ record }: ModulePanelProps) {
+  const [result, setResult] = useState<MLPosPriorResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setError(null);
+    if (!record.pos) {
+      // Wait for PoS module to populate first
+      return () => {
+        cancelled = true;
+      };
+    }
+    runMLPosPrior(record.asset, record.pos)
+      .then((r) => !cancelled && setResult(r))
+      .catch((e) => !cancelled && setError(String(e)));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    JSON.stringify(record.asset),
+    record.pos?.final_loa,
+  ]);
+
+  if (!record.pos) {
+    return (
+      <section className="rounded border border-border-dim bg-bg-panel p-3">
+        <h2 className="mb-2 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+          ML PoS Prior · second opinion
+        </h2>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-text-dim">
+          Waiting for the rule-based PoS chain…
+        </p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="rounded border border-red-bright/30 bg-red-bright/10 p-3 text-sm text-red-bright">
+        ML PoS Prior unavailable: {error}
+      </section>
+    );
+  }
+
+  if (!result) {
+    return (
+      <section className="rounded border border-border-dim bg-bg-panel p-3">
+        <h2 className="mb-2 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+          ML PoS Prior · second opinion
+        </h2>
+        <div className="h-20 animate-pulse rounded bg-bg-panel-hover" />
+      </section>
+    );
+  }
+
+  const base = record.pos.base_rate;
+  const ruleBased = result.rule_based_pos;
+  const ml = result.predicted_pos;
+  // For the visual bar, normalize against the maximum of the three so all
+  // three are visible regardless of magnitude.
+  const maxVal = Math.max(base, ruleBased, ml, 0.01);
+
+  return (
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h2 className="font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+          ML PoS Prior · second opinion
+        </h2>
+        <span className="font-mono text-[9px] uppercase tracking-wider text-text-dim">
+          {result.model_kind} · {result.n_features} features
+        </span>
+      </div>
+
+      <div className="space-y-1 text-xs">
+        <ReadoutRow label="BIO base rate" value={base} max={maxVal} color="bg-text-dim" />
+        <ReadoutRow
+          label="Rule-based final LOA"
+          value={ruleBased}
+          max={maxVal}
+          color="bg-cyan-faded"
+        />
+        <ReadoutRow
+          label="ML prior (LR · 10K-sample)"
+          value={ml}
+          max={maxVal}
+          color="bg-magenta-bright"
+          ci={[result.confidence_low, result.confidence_high]}
+        />
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <span
+          className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ${DISAGREEMENT_COLOR[result.disagreement_level]}`}
+        >
+          ● {DISAGREEMENT_LABEL[result.disagreement_level]}
+        </span>
+        <span className="font-mono text-[10px] tabular-nums text-text-dim">
+          ML − rule-based: {result.disagreement_pp > 0 ? "+" : ""}
+          {result.disagreement_pp.toFixed(1)}pp
+        </span>
+      </div>
+
+      <p className="mt-2 font-prose text-[11px] leading-snug text-text-dim">
+        The ML path is structured-feature logistic regression trained on
+        10,000 synthetic samples from the BIO base-rate distribution.
+        Disagreement with the rule-based chain reflects where multiplicative
+        adjustments stack differently than additive log-odds. Not a
+        BioBERT-on-protocol-text model — that's v1.5.2.
+      </p>
+    </section>
+  );
+}
+
+function ReadoutRow({
+  label,
+  value,
+  max,
+  color,
+  ci,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  color: string;
+  ci?: [number, number];
+}) {
+  const width = `${(value / max) * 100}%`;
+  const ciLeft = ci ? `${(ci[0] / max) * 100}%` : null;
+  const ciWidth = ci ? `${((ci[1] - ci[0]) / max) * 100}%` : null;
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-center gap-3">
+      <div className="truncate text-text-primary">{label}</div>
+      <div className="flex items-center gap-2">
+        <div className="relative h-3 w-40 rounded bg-bg-panel-hover">
+          {/* Confidence band (drawn first, under the bar) */}
+          {ci ? (
+            <div
+              className="absolute h-full rounded bg-magenta-bright/20"
+              style={{ left: ciLeft!, width: ciWidth! }}
+              title={`CI: ${(ci[0] * 100).toFixed(1)}-${(ci[1] * 100).toFixed(1)}%`}
+            />
+          ) : null}
+          <div className={`h-full rounded ${color}`} style={{ width }} />
+        </div>
+        <span className="w-12 text-right font-mono font-bold tabular-nums text-text-bright">
+          {pct(value)}
+        </span>
+      </div>
+    </div>
+  );
+}

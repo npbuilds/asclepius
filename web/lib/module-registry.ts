@@ -40,6 +40,10 @@ const panelByModuleId: Record<string, LoadablePanel> = {
   pos: dynamic(() => import("@/components/modules/pos/PoSWaterfallPanel"), {
     ssr: false,
   }),
+  ml_pos_prior: dynamic(
+    () => import("@/components/modules/ml_pos_prior/MLPosPriorPanel"),
+    { ssr: false },
+  ),
   rnpv: dynamic(() => import("@/components/modules/rnpv/RnpvPanel"), {
     ssr: false,
   }),
@@ -61,7 +65,14 @@ export function getPanelFor(manifest: ModuleManifest): LoadablePanel | null {
   return panelByModuleId[manifest.id] ?? null;
 }
 
-const DISPLAY_ORDER: string[] = ["pos", "rnpv", "scorecard", "comparables", "calibration"];
+const DISPLAY_ORDER: string[] = [
+  "pos",
+  "ml_pos_prior",
+  "rnpv",
+  "scorecard",
+  "comparables",
+  "calibration",
+];
 
 export function orderModules(manifests: ModuleManifest[]): ModuleManifest[] {
   return [...manifests].sort((a, b) => {

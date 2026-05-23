@@ -314,3 +314,18 @@ export interface PredictionLogEntry {
   outcome_date: string | null;
   outcome_source: string | null;
 }
+
+// --- ML PoS Prior (v1.5.1) ------------------------------------------------
+
+export type DisagreementLevel = "aligned" | "moderate" | "divergent";
+
+export interface MLPosPriorResult {
+  predicted_pos: number;
+  confidence_low: number;
+  confidence_high: number;
+  rule_based_pos: number;
+  disagreement_pp: number;
+  disagreement_level: DisagreementLevel;
+  model_kind: string;
+  n_features: number;
+}
