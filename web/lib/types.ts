@@ -319,6 +319,54 @@ export interface PredictionLogEntry {
 
 export type DisagreementLevel = "aligned" | "moderate" | "divergent";
 
+// --- Portfolio Sizing (v2.0) ----------------------------------------------
+
+export type PositionStatus =
+  | "recommended"
+  | "below_floor"
+  | "above_cap"
+  | "negative_kelly";
+
+export interface FundParameters {
+  total_capital_usd_m: number;
+  kelly_fraction: number;
+  max_position_pct: number;
+  min_position_pct: number;
+}
+
+export interface AssetSizingInput {
+  asset: AssetInput;
+  pos: PoSResult;
+  rnpv: RnpvResult;
+  conviction: number;
+}
+
+export interface AssetKellyResult {
+  asset_name: string;
+  pos: number;
+  payoff_multiple: number;
+  kelly_optimal: number;
+  kelly_fractional: number;
+  conviction_applied: number;
+  final_weight: number;
+  status: PositionStatus;
+  rationale: string;
+}
+
+export interface PortfolioRecommendation {
+  positions: AssetKellyResult[];
+  total_deployed_pct: number;
+  total_deployed_usd_m: number;
+  cash_residual_pct: number;
+  cash_residual_usd_m: number;
+  gini_coefficient: number;
+  expected_value_rnpv_usd_m: number;
+  n_recommended: number;
+  n_below_floor: number;
+  n_above_cap: number;
+  n_negative_kelly: number;
+}
+
 export interface MLPosPriorResult {
   predicted_pos: number;
   // Heuristic uncertainty band (±1 SE in logit space). NOT a statistical

@@ -9,10 +9,13 @@ import type {
   AgentManifest,
   AssetCalibrationContext,
   AssetInput,
+  AssetSizingInput,
   AutoDiligenceOutput,
   CalibrationReport,
   ComparablesResult,
+  FundParameters,
   MLPosPriorResult,
+  PortfolioRecommendation,
   MemoOutput,
   ModuleManifest,
   PoSResult,
@@ -140,6 +143,21 @@ export async function runAutoDiligence(
   record: Record<string, unknown>,
 ): Promise<AutoDiligenceOutput> {
   return runAgent<AutoDiligenceOutput>("auto_diligence", record);
+}
+
+// --- Portfolio Sizing (v2.0) ----------------------------------------------
+
+export async function runPortfolioSizing(
+  assets: AssetSizingInput[],
+  fund: FundParameters,
+): Promise<PortfolioRecommendation> {
+  return jsonFetch<PortfolioRecommendation>(
+    "/api/modules/portfolio_sizing/portfolio",
+    {
+      method: "POST",
+      body: JSON.stringify({ assets, fund }),
+    },
+  );
 }
 
 // --- Calibration module ---------------------------------------------------

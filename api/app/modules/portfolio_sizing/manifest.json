@@ -1,0 +1,14 @@
+{
+  "id": "portfolio_sizing",
+  "name": "Portfolio Sizing",
+  "version": "0.1.0",
+  "description": "Kelly-criterion-with-fractional-multiplier + barbell-allocation portfolio sizing for biotech fund managers. Takes a list of computed DiligenceRecords + analyst conviction scores + fund parameters; returns recommended position weights with rationale per asset. Different audience from single-asset diligence — this is the v2 surface for the biotech fund-manager conversation. Standard compute(record) returns a single-asset Kelly (useful for 'if this were your only asset' framing); the multi-asset endpoint at POST /portfolio takes the full portfolio.",
+  "inputs": [
+    "asset.phase",
+    "pos.final_loa",
+    "rnpv.base_case_usd_m",
+    "rnpv.downside_failed_p3_usd_m"
+  ],
+  "outputs": ["portfolio_sizing"],
+  "deps": ["pos", "rnpv"]
+}

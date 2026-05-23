@@ -76,6 +76,12 @@ export default function RootLayout({
                 Worked example
               </Link>
               <Link
+                href="/portfolio"
+                className="font-display hover:text-cyan-bright"
+              >
+                Portfolio
+              </Link>
+              <Link
                 href="/methodology"
                 className="font-display hover:text-cyan-bright"
               >
