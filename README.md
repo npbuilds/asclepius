@@ -112,6 +112,8 @@ Asclepius is positioned as a maintained tool, not a frozen artifact:
 | Damodaran's January cost-of-capital update | 15 min — refresh `api/app/data/wacc_benchmarks.json` |
 | Major biotech M&A closes | 30 min per deal — add a new JSON to `api/app/data/comparables/` |
 | Semi-annual methodology sweep | 2–3 hours — re-read writeups against current values |
+| Framework run on a public asset | 1 min — log_prediction, then `python api/scripts/sync_predictions_to_public_log.py` + commit. See [`methodology/10-public-prediction-log.md`](methodology/10-public-prediction-log.md). |
+| Public catalyst lands (FDA action, M&A, readout) | 5 min — resolve_prediction with source citation, sync + commit |
 
 Reference data is JSON-first with `source` fields on every row, so refreshes don't require
 code changes. See [`docs/architecture.md`](docs/architecture.md) for the
@@ -119,7 +121,7 @@ contract.
 
 ## Reading the methodology folder
 
-The seven writeups are designed to be read in any order, but for a first pass:
+The ten writeups are designed to be read in any order, but for a first pass:
 
 1. [`02-reflexivity-thesis.md`](methodology/02-reflexivity-thesis.md) — the framework's
    load-bearing intellectual claim. ~2,000 words. Reads as an investor memo.

@@ -135,14 +135,14 @@ calibrated to remain credible.
 
 ## What's deliberately deferred to v1.6+
 
-- **ML-PoS Prior as a second-opinion path.** v1.5.1 will add a BioBERT-
-  classifier-based PoS estimate as a parallel column to the deterministic
-  chain. The Calibration Dashboard will score both paths independently
-  and surface the disagreement-as-uncertainty signal.
-- **Public prediction log.** v1.6 will publish every prediction the
-  framework makes on a public asset as a JSON in `predictions/` in the
-  repo, so the calibration claim becomes externally auditable rather
-  than internally tracked.
+- **ML-PoS Prior as a second-opinion path.** v1.5.1 ships a rule-
+  smoothed logistic surrogate at [`09-ml-pos-prior.md`](09-ml-pos-prior.md);
+  the BioBERT-on-protocol-text path with real outcome labels is v1.5.2.
+- **Public prediction log.** ✓ Shipped in v1.6 —
+  [`10-public-prediction-log.md`](10-public-prediction-log.md). Every
+  prediction the framework makes on a public asset lives as a committed
+  JSON file in [`predictions/`](../predictions/), so the calibration
+  claim becomes externally auditable rather than internally tracked.
 - **Brier decomposition by phase.** A Phase 2 prediction's Brier is not
   comparable to an NDA prediction's Brier. v1.6 stratifies the
   dashboard.

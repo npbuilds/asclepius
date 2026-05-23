@@ -1,0 +1,21 @@
+{
+  "asset": {
+    "capital_position": "adequate",
+    "modality": "small_molecule",
+    "name": "adagrasib",
+    "phase": "phase_2",
+    "therapeutic_area": "oncology"
+  },
+  "framework": {
+    "predicted_pos": 0.161,
+    "reflexivity_multiplier": 1.0
+  },
+  "prediction_date": "2022-06-01",
+  "prediction_id": "seed-adagrasib-2022-06",
+  "resolution": {
+    "date": "2022-12-12",
+    "outcome": 1,
+    "source": "FDA accelerated approval (Krazati, NDA 216340), Dec 12 2022. Methodology framework retrospective backtest documented in 05-worked-example-adagrasib.md."
+  },
+  "schema_version": "1.0"
+}

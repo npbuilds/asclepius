@@ -1,0 +1,21 @@
+{
+  "asset": {
+    "capital_position": "well_capitalized",
+    "modality": "antibody_drug_conjugate",
+    "name": "tisotumab vedotin (combo arm, GOG-3023)",
+    "phase": "phase_3",
+    "therapeutic_area": "oncology"
+  },
+  "framework": {
+    "predicted_pos": 0.42,
+    "reflexivity_multiplier": 1.08
+  },
+  "prediction_date": "2020-03-01",
+  "prediction_id": "seed-tisotumab-combo-p3-2020-03",
+  "resolution": {
+    "date": null,
+    "outcome": null,
+    "source": "Outcome pending: confirmatory Phase 3 readout in cervical cancer combo. Logged as unresolved to demonstrate the n_unresolved surface."
+  },
+  "schema_version": "1.0"
+}
