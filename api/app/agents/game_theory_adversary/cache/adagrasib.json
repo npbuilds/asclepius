@@ -1,0 +1,35 @@
+{
+  "body_markdown": "## Signaling lens\n\nThe memo accepts reflexivity at \u00d71.00 (\"adequate, 12-24 months runway\") as a neutral signal, but this misreads the Spence separating equilibrium given the competitive context. A genuinely high-PoS KRAS G12C sponsor facing Amgen's sotorasib (already accelerated-approved, ~13-month lead) would credibly burn capital to *separate*: a randomized active-comparator trial vs. docetaxel or, more aggressively, a head-to-head vs. sotorasib in a biomarker-defined subset, plus an intracranial-activity arm to claim differentiation. The brief describes a Phase 2 with biomarker enrichment but no comparator structure \u2014 this is the same observable design a capital-constrained, lower-PoS sponsor would run. Result: Mirati is **pooling** with the constrained tier on trial design while the memo credits it the \"adequate\" tier on balance sheet. The \u00d71.20 biomarker multiplier is doing double duty \u2014 it's a PoS uplift *and* implicitly the differentiation story, which is a separating-equilibrium violation when the comparator (sotorasib) is also biomarker-enriched. Severity: moderate. The 16.1% LOA likely overstates by 1\u20132 points.\n\nA second signaling flag: BTD \u00d71.10 is granted on *preliminary* evidence and is observable to all G12C sponsors \u2014 sotorasib also held BTD. A multiplier that every serious entrant in the cohort carries does not separate types; it pools them. Counting it as uplift is a pooling-equilibrium error.\n\n## Auction lens\n\nThe memo's $8.0B implied value at 6.67x cohort median is winner's-curse contaminated and the memo half-acknowledges this (flagging Braftovi/Mektovi 15.2x as an outlier) but then still uses the *median* as the anchor. The cohort has n=3, and the median is selpercatinib at exactly 6.67x \u2014 a single observation is doing all the work. Larotrectinib at 3.88x is arguably the better analog for a second-entrant targeted oncology asset facing an established first-mover (which is adagrasib's actual position vs. sotorasib), and at 3.88x the implied value is ~$4.65B, not $8.0B. The memo's \"6\u20139% of implied value\" reconciliation to LOA is therefore anchored on the wrong comparable.\n\nOn the exit side, the rNPV $516M is plausibly a **floor** under a common-value auction. Likely contested bidders for a KRAS G12C franchise: BMS (needs oncology pipeline post-Celgene), Lilly (already in targeted oncology with selpercatinib at 6.67x), Pfizer (Braftovi/Mektovi infrastructure at 15.2x), and Sanofi/Takeda as outside bidders. Three+ credible strategics on a scarce asset class (only two G12C inhibitors at this stage) is exactly the setup where winner's-curse premia inflate the realized multiple above intrinsic. The memo's $729M P75 likely understates the takeout ceiling. Severity: this actually cuts *toward* the buy thesis on upside but against the median-multiple framing. Net: moderate, ambiguous direction.\n\n## Persuasion lens\n\nThe brief does not name specific disclosure events, so I will not fabricate them. One structural flag worth naming: the asset is Phase 2 with BTD, and BTD-era sponsors routinely disclose ORR from single-arm cohorts without matched DCR, DoR, or intracranial-activity breakdowns until a financing or partnership window. The memo's recommendation explicitly conditions a downgrade on \"sotorasib generates competitive readouts (OS, intracranial activity, durability)\" \u2014 the *symmetric* concern is whether Mirati has selectively disclosed the favorable subset of those same endpoints for adagrasib. The memo does not interrogate adagrasib's own disclosure composition with the same skepticism it applies to sotorasib's future readouts, which is an asymmetric prior under Kamenica-Gentzkow. Severity: minor (no specific event cited in brief), but the asymmetry in how the memo treats own-asset vs. competitor disclosure is itself a persuasion artifact.\n\n## Verdict\n\nThe buy recommendation survives, but two findings tighten the entry discipline. The signaling critique (pooling on trial design, BTD as non-separating) suggests the 16.1% LOA is 1\u20132 points optimistic, which pushes fair value toward the lower half of the P25\u2013P50 band ($300M\u2013$474M) rather than the memo's $474M\u2013$516M anchor. The auction critique on comparable selection (larotrectinib at 3.88x is the better second-entrant analog than selpercatinib at 6.67x) further weakens the \"$8.0B implied\" framing the memo leans on for upside justification. Neither finding is fatal \u2014 the validated target and BTD are real \u2014 but entry above the P50 of $474M is harder to defend than the memo claims. Recommendation holds at buy with stricter entry discipline at or below P50; not a downgrade.",
+  "verdict_shift": "hold",
+  "recommendation_shift_to": null,
+  "findings": [
+    {
+      "lens": "signaling",
+      "claim": "Trial design (biomarker-enriched single-arm, no active comparator vs. sotorasib or docetaxel) pools Mirati with constrained-tier sponsors despite 'adequate' capital classification \u2014 violates Spence separation given a 13-month-behind second-entrant position",
+      "severity": "moderate"
+    },
+    {
+      "lens": "signaling",
+      "claim": "BTD \u00d71.10 multiplier is non-separating \u2014 sotorasib also held BTD; a signal carried by every serious cohort entrant cannot uplift type-revelation",
+      "severity": "minor"
+    },
+    {
+      "lens": "auction",
+      "claim": "Cohort median 6.67x relies on n=1 (selpercatinib); larotrectinib at 3.88x is the structurally correct second-entrant analog and implies $4.65B not $8.0B, undercutting the 'discount to cohort is exactly LOA' reconciliation",
+      "severity": "moderate"
+    },
+    {
+      "lens": "auction",
+      "claim": "rNPV $516M / P75 $729M likely understates takeout ceiling under a contested common-value auction with 3+ credible strategics (BMS, Lilly, Pfizer) on a scarce G12C franchise",
+      "severity": "minor"
+    },
+    {
+      "lens": "persuasion",
+      "claim": "Memo applies asymmetric disclosure skepticism \u2014 treats future sotorasib readouts (OS, intracranial, durability) as risk but does not interrogate adagrasib's own selective disclosure on the same endpoint set",
+      "severity": "minor"
+    }
+  ],
+  "model_used": "claude-opus-4-7",
+  "from_cache": false,
+  "generated_at": "2026-05-23T02:44:19.184066Z"
+}
