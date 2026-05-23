@@ -38,11 +38,10 @@ log = logging.getLogger(__name__)
 JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
 
-def _slugify_asset_name(name: str) -> str:
-    """adagrasib (MRTX849) → adagrasib_mrtx849. Conservative — strip everything
-    that isn't alphanumeric or underscore."""
-    cleaned = re.sub(r"[^a-z0-9_]+", "_", name.lower())
-    return cleaned.strip("_") or "unnamed"
+# v1.6.1: slugify moved to app.utils.text (Codex F9). Kept as a thin
+# alias here so existing internal call sites + the test imports keep
+# working without surface churn.
+from ...utils.text import slugify_asset_name as _slugify_asset_name  # noqa: E402,F401
 
 
 def _parse_memo_response(raw: str, model_used: str) -> dict[str, Any]:

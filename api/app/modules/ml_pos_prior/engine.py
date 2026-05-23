@@ -24,9 +24,10 @@ from pathlib import Path
 import joblib
 from fastapi import HTTPException
 
-from ...domain import DiligenceRecord
+from ...domain import DiligenceRecord, Phase
 from .features import (
     CAPITAL_POSITIONS,
+    DESIGNATION_FLAGS,
     MODALITIES,
     N_FEATURES,
     PHASE_ORDER,
@@ -86,6 +87,7 @@ def _load_model():
         or schema.get("therapeutic_areas") != [t.value for t in THERAPEUTIC_AREAS]
         or schema.get("modalities") != [m.value for m in MODALITIES]
         or schema.get("capital_positions") != [c.value for c in CAPITAL_POSITIONS]
+        or schema.get("designation_flags") != [d.value for d in DESIGNATION_FLAGS]
     ):
         raise HTTPException(
             status_code=503,
@@ -93,6 +95,19 @@ def _load_model():
                 "ML PoS Prior artifact's categorical schema does not match "
                 "the runtime domain enums. Re-train to regenerate the "
                 "model and feature schema."
+            ),
+        )
+
+    # F5 from Codex v1.6 review: validate the artifact dict keys inside the
+    # guarded path. A readable but key-incomplete pickle previously raised a
+    # raw KeyError outside the 503 wrapper.
+    if "model" not in artifact or "metrics" not in artifact:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "ML PoS Prior artifact is missing required keys "
+                "('model', 'metrics'). Re-train via "
+                "`python -m app.modules.ml_pos_prior.train`."
             ),
         )
 
@@ -127,7 +142,20 @@ def _logit_band(p: float, se: float = SE_HEURISTIC) -> tuple[float, float]:
 
 
 def compute(record: DiligenceRecord) -> MLPosPriorResult:
-    """Required entrypoint."""
+    """Required entrypoint.
+
+    Defense-in-depth: the route layer (routes.py) rejects Phase.APPROVED
+    with HTTPException(422), but a direct in-process call to compute()
+    would bypass that guard. The engine raises ValueError here so the
+    contract is enforced regardless of caller (routes translate ValueError
+    to HTTP 422 via FastAPI's exception_handler, and tests catch ValueError
+    directly).
+    """
+    if record.asset.phase == Phase.APPROVED:
+        raise ValueError(
+            "ML PoS Prior is fit on pre-approval transitions only; "
+            "Phase.APPROVED assets are out of the training distribution."
+        )
     model, metrics = _load_model()
     x = encode(record.asset).reshape(1, -1)
     assert x.shape == (1, N_FEATURES), f"feature shape mismatch: {x.shape}"

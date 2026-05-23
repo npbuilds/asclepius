@@ -32,9 +32,8 @@ VALID_LENSES = {"signaling", "auction", "persuasion"}
 VALID_SEVERITIES = {"minor", "moderate", "critical"}
 
 
-def _slugify_asset_name(name: str) -> str:
-    cleaned = re.sub(r"[^a-z0-9_]+", "_", name.lower())
-    return cleaned.strip("_") or "unnamed"
+# v1.6.1: slugify moved to app.utils.text (Codex F9).
+from ...utils.text import slugify_asset_name as _slugify_asset_name  # noqa: E402,F401
 
 
 def _parse_adversary_response(raw: str, model_used: str) -> dict[str, Any]:

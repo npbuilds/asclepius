@@ -215,6 +215,93 @@ def test_artifact_with_wrong_feature_count_rejected(tmp_path: Path, monkeypatch)
     engine._load_model.cache_clear()
 
 
+def test_artifact_with_wrong_designation_flag_order_rejected(
+    tmp_path: Path, monkeypatch
+):
+    """v1.6.1 (Codex F1): if the persisted designation_flags don't match the
+    runtime DESIGNATION_FLAGS list, the load must fail loud. Previous version
+    persisted the list but didn't validate it."""
+    engine._load_model.cache_clear()
+    from app.modules.ml_pos_prior.features import (
+        CAPITAL_POSITIONS,
+        DESIGNATION_FLAGS,
+        MODALITIES,
+        N_FEATURES,
+        PHASE_ORDER,
+        THERAPEUTIC_AREAS,
+    )
+
+    # Build a fake artifact whose schema has the designation_flags in the
+    # wrong order (reversed). Everything else matches runtime.
+    bad_artifact_path = tmp_path / "bad_designation.joblib"
+    bad_artifact = {
+        "model": object(),
+        "metrics": {"model_kind": "test"},
+        "feature_schema": {
+            "n_features": N_FEATURES,
+            "phase_order": [p.value for p in PHASE_ORDER],
+            "therapeutic_areas": [t.value for t in THERAPEUTIC_AREAS],
+            "modalities": [m.value for m in MODALITIES],
+            "capital_positions": [c.value for c in CAPITAL_POSITIONS],
+            "designation_flags": list(reversed([d.value for d in DESIGNATION_FLAGS])),
+        },
+        "training_meta": {},
+    }
+    joblib.dump(bad_artifact, bad_artifact_path)
+    monkeypatch.setattr(engine, "MODEL_PATH", bad_artifact_path)
+    with pytest.raises(HTTPException) as exc:
+        engine._load_model()
+    assert exc.value.status_code == 503
+    assert "categorical schema" in exc.value.detail.lower()
+    engine._load_model.cache_clear()
+
+
+def test_artifact_missing_required_keys_rejected(tmp_path: Path, monkeypatch):
+    """v1.6.1 (Codex F5): a readable but malformed artifact missing 'model'
+    or 'metrics' must raise HTTPException(503), not a raw KeyError."""
+    engine._load_model.cache_clear()
+    from app.modules.ml_pos_prior.features import (
+        CAPITAL_POSITIONS,
+        DESIGNATION_FLAGS,
+        MODALITIES,
+        N_FEATURES,
+        PHASE_ORDER,
+        THERAPEUTIC_AREAS,
+    )
+
+    incomplete = tmp_path / "incomplete.joblib"
+    artifact = {
+        # Missing 'model' key
+        "metrics": {"model_kind": "test"},
+        "feature_schema": {
+            "n_features": N_FEATURES,
+            "phase_order": [p.value for p in PHASE_ORDER],
+            "therapeutic_areas": [t.value for t in THERAPEUTIC_AREAS],
+            "modalities": [m.value for m in MODALITIES],
+            "capital_positions": [c.value for c in CAPITAL_POSITIONS],
+            "designation_flags": [d.value for d in DESIGNATION_FLAGS],
+        },
+        "training_meta": {},
+    }
+    joblib.dump(artifact, incomplete)
+    monkeypatch.setattr(engine, "MODEL_PATH", incomplete)
+    with pytest.raises(HTTPException) as exc:
+        engine._load_model()
+    assert exc.value.status_code == 503
+    assert "required keys" in exc.value.detail.lower()
+    engine._load_model.cache_clear()
+
+
+def test_engine_compute_rejects_approved_phase(tmp_path: Path):
+    """v1.6.1 (Codex F6): defense-in-depth — engine.compute() must reject
+    Phase.APPROVED with ValueError so direct in-process calls (not via the
+    HTTP route) can't bypass the guard."""
+    record = _record(phase=Phase.APPROVED)
+    with pytest.raises(ValueError) as exc:
+        engine.compute(record)
+    assert "approved" in str(exc.value).lower()
+
+
 def test_artifact_without_schema_sidecar_rejected(tmp_path: Path, monkeypatch):
     """Older artifacts without the feature_schema sidecar are rejected — keeps
     stale pre-v1.5.1.1 artifacts from being silently used."""

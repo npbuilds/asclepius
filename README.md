@@ -115,6 +115,47 @@ Asclepius is positioned as a maintained tool, not a frozen artifact:
 | Framework run on a public asset | 1 min — log_prediction, then `python api/scripts/sync_predictions_to_public_log.py` + commit. See [`methodology/10-public-prediction-log.md`](methodology/10-public-prediction-log.md). |
 | Public catalyst lands (FDA action, M&A, readout) | 5 min — resolve_prediction with source citation, sync + commit |
 
+### Concrete prediction-log workflow
+
+Log a new prediction (replace placeholders with the asset's actual values):
+
+```bash
+curl -s -X POST https://asclepius-api.fly.dev/api/modules/calibration/log_prediction \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asset_name": "<asset>",
+    "phase": "phase_2",
+    "therapeutic_area": "oncology",
+    "modality": "small_molecule",
+    "capital_position": "adequate",
+    "predicted_pos": 0.161,
+    "reflexivity_multiplier": 1.0
+  }'
+# → {"id": "<uuid>"}
+```
+
+Resolve a prediction when the catalyst lands:
+
+```bash
+curl -s -X POST https://asclepius-api.fly.dev/api/modules/calibration/resolve_prediction \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prediction_id": "<uuid-from-log_prediction>",
+    "outcome": 1,
+    "outcome_source": "FDA accelerated approval, NDA 216340, Dec 12 2022."
+  }'
+# → {"updated": true}
+```
+
+Publish to the public log + commit:
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+python api/scripts/sync_predictions_to_public_log.py
+git add predictions/
+git commit -m "Log <asset> prediction" -m "<outcome source if resolved>"
+```
+
 Reference data is JSON-first with `source` fields on every row, so refreshes don't require
 code changes. See [`docs/architecture.md`](docs/architecture.md) for the
 contract.

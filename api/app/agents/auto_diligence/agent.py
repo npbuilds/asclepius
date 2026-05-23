@@ -28,9 +28,8 @@ log = logging.getLogger(__name__)
 JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
 
-def _slugify_asset_name(name: str) -> str:
-    cleaned = re.sub(r"[^a-z0-9_]+", "_", name.lower())
-    return cleaned.strip("_") or "unnamed"
+# v1.6.1: slugify moved to app.utils.text (Codex F9).
+from ...utils.text import slugify_asset_name as _slugify_asset_name  # noqa: E402,F401
 
 
 def _walk_response(message) -> tuple[str, list[dict], int]:

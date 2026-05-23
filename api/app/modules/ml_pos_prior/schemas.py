@@ -37,10 +37,12 @@ class MLPosPriorResult(BaseModel):
         ge=0.0,
         le=1.0,
         description=(
-            "Lower bound of a fixed-width heuristic band (±1 in logit space "
-            "from the point estimate). NOT a calibrated statistical interval; "
-            "see methodology/09-ml-pos-prior.md for the v1.5.2 path to proper "
-            "coverage intervals."
+            "Lower bound of a fixed-width heuristic band (±0.30 in logit "
+            "space from the point estimate, mapped back to probability). "
+            "NOT a calibrated statistical interval — the width is a "
+            "conservative heuristic, not derived from x' Cov(beta) x or "
+            "bootstrap. See methodology/09-ml-pos-prior.md for the v1.5.2 "
+            "path to proper coverage intervals."
         ),
     )
     uncertainty_high: float = Field(

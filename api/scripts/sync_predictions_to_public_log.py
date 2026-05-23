@@ -47,7 +47,6 @@ Usage:
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -61,14 +60,12 @@ sys.path.insert(0, str(API_DIR))
 
 from app.modules.calibration import db  # noqa: E402
 from app.modules.calibration.schemas import PredictionLogEntry  # noqa: E402
+from app.utils.text import slugify_asset_name as _slugify  # noqa: E402
 
-SCHEMA_VERSION = "1.0"
-
-
-def _slugify(s: str) -> str:
-    """Match the slug rule the calibration seed and agent caches already use."""
-    cleaned = re.sub(r"[^a-z0-9_]+", "_", s.lower())
-    return cleaned.strip("_") or "unnamed"
+# v1.6.1 (Codex F8): one canonical schema version constant for the public log,
+# imported by tests and methodology cross-references. Bump when the public
+# JSON shape changes in a backward-incompatible way.
+PUBLIC_LOG_SCHEMA_VERSION = "1.0"
 
 
 def _entry_to_public_dict(entry: PredictionLogEntry) -> dict:
@@ -91,18 +88,34 @@ def _entry_to_public_dict(entry: PredictionLogEntry) -> dict:
             "date": entry.outcome_date.isoformat() if entry.outcome_date else None,
             "source": entry.outcome_source,
         },
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": PUBLIC_LOG_SCHEMA_VERSION,
     }
 
 
 def _filename_for(entry: PredictionLogEntry) -> str:
-    return f"{entry.prediction_date.isoformat()}-{_slugify(entry.asset_name)}.json"
+    """Public-log filename.
+
+    v1.6.1 (Codex F2): includes prediction_id to avoid silent collisions
+    when two predictions share the same date + asset. v1.6.0 used only
+    (date, slug) which would overwrite one prediction with another in the
+    real-world case of multiple framework runs on the same asset on the
+    same day (e.g., before/after a parameter sweep).
+    """
+    pid_slug = _slugify(entry.id)
+    return (
+        f"{entry.prediction_date.isoformat()}-"
+        f"{_slugify(entry.asset_name)}-{pid_slug}.json"
+    )
 
 
-def sync(*, dry_run: bool = False) -> dict:
-    """Write one JSON per prediction. Returns a summary dict."""
+def sync(*, dry_run: bool = False, db_path: Path | None = None) -> dict:
+    """Write one JSON per prediction. Returns a summary dict.
+
+    v1.6.1 (Codex F7): accepts an optional db_path so tests can isolate the
+    input fixture. Production callers omit it and use the default DB.
+    """
     PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
-    entries = db.list_predictions()
+    entries = db.list_predictions(db_path=db_path)
 
     new_files: list[str] = []
     updated_files: list[str] = []

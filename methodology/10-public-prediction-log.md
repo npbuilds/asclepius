@@ -20,14 +20,17 @@ when it was resolved."
 Each file in `predictions/` represents one prediction:
 
 ```
-predictions/<YYYY-MM-DD>-<asset-slug>.json
+predictions/<YYYY-MM-DD>-<asset-slug>-<prediction-id-slug>.json
 ```
+
+The prediction-id segment ensures uniqueness when two predictions
+share a (date, asset) pair — see the schema discussion below.
 
 Schema:
 
 ```json
 {
-  "prediction_id": "<sqlite row id>",
+  "prediction_id": "<stable text id assigned at log_prediction time>",
   "asset": {
     "name": "...",
     "phase": "...",
@@ -56,6 +59,14 @@ captures the load-bearing information for a calibration claim — the
 prediction itself, when it was made, and what happened. Anything else
 the diligence reader needs is reconstructible from the methodology
 writeups and the asset's name.
+
+The `prediction_id` is a stable text identifier assigned when the
+prediction is first logged (UUID for runtime predictions; descriptive
+slug like `seed-adagrasib-2022-06` for the v1.6 seed cohort). It exists
+to give the file a unique, citable handle independent of the asset name
+and date — needed because two predictions on the same asset on the same
+day are otherwise indistinguishable in the public log (a common case
+during a parameter sweep or methodology revision).
 
 ## How the log is maintained
 

@@ -40,7 +40,7 @@ A new analysis module at `api/app/modules/ml_pos_prior/` containing:
   metrics transparently.
 - A frontend panel renders directly below the PoS waterfall showing
   three bars (BIO base rate, rule-based final LOA, ML prior with
-  confidence band) and a disagreement chip (aligned <3pp, moderate
+  heuristic uncertainty band) and a disagreement chip (aligned <3pp, moderate
   3–7pp, divergent >7pp).
 
 The module is drop-in via the existing registry — zero edits to the
@@ -115,7 +115,7 @@ Three reasons:
    reporting AUC + Brier with full methodology. Same reason as (2) —
    this is multi-day work, not the right scope for a single ship.
 
-This module is therefore the *honest minimum viable second-opinion
+This module is therefore the *honest minimum viable rule-smoothed-surrogate
 path*. It demonstrates the architecture (module registers, three-way
 readout renders, disagreement chip lights up) and gives a real
 trained-on-data classifier doing the inference — but it does not
@@ -150,7 +150,7 @@ scaffolding that makes v1.5.2 a drop-in swap rather than a rewrite.
 Single-number PoS estimates are the most over-stated quantitative
 input in biotech diligence. The framework's audit-trail discipline
 already addresses this by showing every step of the multiplicative
-chain. The second-opinion path closes the remaining loop: even when
+chain. The surrogate path closes the remaining loop: even when
 the audit trail is right, the *composition rule* (multiplicative vs.
 additive log-odds) is itself an assumption. Surfacing the two paths
 makes the composition rule auditable too.
@@ -158,7 +158,7 @@ makes the composition rule auditable too.
 A senior investor reading the diligence page now sees: BIO base rate
 (observed industry frequency), rule-based final LOA (the framework's
 opinionated combination), ML prior (an alternative combination with a
-confidence band), and the disagreement chip. The investor's mental
+heuristic uncertainty band), and the disagreement chip. The investor's mental
 model of PoS for this asset becomes a posterior over both paths,
 weighted by their priors about which composition rule is more
 appropriate for the asset's segment.

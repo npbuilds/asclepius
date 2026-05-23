@@ -41,7 +41,14 @@ def compute_ml_pos_prior(req: MLPosPriorRequest) -> MLPosPriorResult:
             ),
         )
     record = DiligenceRecord(asset=req.asset, pos=req.pos)
-    return engine.compute(record)
+    try:
+        return engine.compute(record)
+    except ValueError as exc:
+        # Defense-in-depth: engine raises ValueError for the same Phase.APPROVED
+        # case (F6 from Codex review of v1.6). Should be unreachable given the
+        # explicit pre-check above, but translates correctly if other code
+        # paths ever bypass the route-level guard.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/model_info")

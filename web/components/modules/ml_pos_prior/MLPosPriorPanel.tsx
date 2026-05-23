@@ -59,7 +59,7 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
     return (
       <section className="rounded border border-border-dim bg-bg-panel p-3">
         <h2 className="mb-2 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
-          ML PoS Prior · second opinion
+          ML PoS Prior · rule-smoothed surrogate
         </h2>
         <p className="font-mono text-[11px] uppercase tracking-wider text-text-dim">
           Waiting for the rule-based PoS chain…
@@ -80,7 +80,7 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
     return (
       <section className="rounded border border-border-dim bg-bg-panel p-3">
         <h2 className="mb-2 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
-          ML PoS Prior · second opinion
+          ML PoS Prior · rule-smoothed surrogate
         </h2>
         <div className="h-20 animate-pulse rounded bg-bg-panel-hover" />
       </section>
