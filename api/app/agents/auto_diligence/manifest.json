@@ -1,14 +1,9 @@
 {
   "id": "auto_diligence",
   "name": "Auto-Diligence",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Asset name → structured PoS/rNPV inputs with citations. Uses Anthropic web_search restricted to a high-signal allowlist (CT.gov, SEC EDGAR, FDA, EMA, top journals, newswires). Single-pass extractor; populates AssetInput fields with a verbatim URL+span citation on every grounded value.",
-  "skill_loadout": [
-    "biotech-venture/leaf/spelunker/SKILL.md",
-    "biotech-venture/leaf/claim-decomposer/SKILL.md",
-    "biotech-venture/leaf/source-triangulator/SKILL.md",
-    "biotech-venture/leaf/evidence-synthesizer/SKILL.md"
-  ],
+  "methodology_refs": [],
   "trigger_label": "Auto-diligence from asset name",
   "input_fields": [
     "asset.asset_name"

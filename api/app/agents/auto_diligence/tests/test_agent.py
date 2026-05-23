@@ -39,7 +39,7 @@ def _make_agent(tmp_path: Path, cached_assets: list[str]) -> Agent:
         name="Auto-Diligence",
         version="0.1.0",
         description="test",
-        skill_loadout=[],
+        methodology_refs=[],
         trigger_label="Auto-diligence",
         input_fields=["asset.asset_name"],
         output_fields=["extracted"],

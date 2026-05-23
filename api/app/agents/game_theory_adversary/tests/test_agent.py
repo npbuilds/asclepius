@@ -38,7 +38,7 @@ def _make_agent(tmp_path: Path, cached_assets: list[str]) -> Agent:
         name="Game-Theory Adversary",
         version="0.1.0",
         description="test",
-        skill_loadout=[],
+        methodology_refs=[],
         trigger_label="Stress-test thesis",
         input_fields=["asset"],
         output_fields=["body_markdown"],

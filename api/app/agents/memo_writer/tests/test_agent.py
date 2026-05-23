@@ -34,7 +34,7 @@ def _make_agent(tmp_path: Path, cached_assets: list[str]) -> Agent:
         name="Memo Writer",
         version="0.1.0",
         description="test",
-        skill_loadout=[],
+        methodology_refs=[],
         trigger_label="Generate memo",
         input_fields=["asset"],
         output_fields=["body_markdown"],

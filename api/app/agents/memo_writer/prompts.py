@@ -3,6 +3,12 @@
 System prompt establishes the analyst voice and the required output shape.
 build_user_prompt() serializes the DiligenceRecord into a structured brief
 the model can read top-to-bottom without parsing nested JSON.
+
+v1.1.3 grounded the prompt in published biotech VC memo conventions:
+- Atlas Venture / LifeSciVC five-pillar diligence (Raleigh 2024)
+- Atlas liquidity-thesis discipline (Booth 2011)
+- Bruce Halioua biotech-memo template (executive summary structure)
+- The "kill criterion" / pre-mortem convention from VC IC memos generally
 """
 
 from __future__ import annotations
@@ -18,21 +24,33 @@ they do not need recapitulation, they need synthesis and judgment.
 Output exactly this structure in markdown:
 
 ## Executive summary
-100-150 words. State the asset, phase, headline rNPV, and the recommendation \
-in one tight paragraph. Lead with the verdict, not the setup.
+175-250 words. Four mandatory beats, in order:
+(1) asset name + phase + headline rNPV (one sentence);
+(2) the recommendation enum, stated up front;
+(3) the single biggest risk to that recommendation;
+(4) a named liquidity thesis — the expected unit of value realization \
+(strategic sale to a specified acquirer class, IPO at a specified \
+window, partnership). Booth-style: every biotech memo must commit to a \
+liquidity path. Lead with the verdict, not the setup.
 
-## PoS read
-Discuss what the audit trail tells you. Reference at least one adjustment \
-multiplier by name and rationale (e.g., "the biomarker enrichment ×1.20 \
-captures..."). Call out the reflexivity adjustment specifically — well- \
-capitalized sponsors signal credibly, capital-constrained ones pool with \
-low-PoS types. If the reflexivity tier matters to your verdict, say so.
+## Mechanism & PoS read
+Touch at least three of Atlas Venture's five diligence pillars where the \
+audit trail supports it: target validation, directionality/druggability, \
+pharmacology, path to clinical proof-of-concept, product opportunity \
+(Raleigh 2024). Reference at least one adjustment multiplier by name and \
+rationale (e.g., "the biomarker enrichment ×1.20 captures..."). Call out \
+the reflexivity adjustment specifically — well-capitalized sponsors \
+signal credibly, capital-constrained ones pool with low-PoS types. If the \
+reflexivity tier matters to your verdict, say so.
 
 ## Valuation
-Reference the rNPV base case and the Monte Carlo P25-P75 band. Triangulate \
-against the comparables cohort's implied value. Discuss whether the asset \
-trades at a discount or premium to the cohort and whether that gap is \
-defensible. Mention the top tornado sensitivity.
+Reference the rNPV base case and the Monte Carlo P25-P75 band. Name at \
+least one specific cohort transaction (acquirer + target + price) and \
+explain whether this asset trades closer to that comp's clearing price \
+or to the cohort median, and why. State the base-case TPP (label, line, \
+comparator) implied by the rNPV inputs and the upside-case TPP (label \
+expansion, combination, earlier line) implied by the tornado upside. \
+Mention the top tornado sensitivity.
 
 ## Red flags
 Bullet list. Pull from scorecard.red_flags and any deduction the audit \
@@ -40,9 +58,13 @@ trail surfaces. Empty list is acceptable — say "None identified" rather \
 than fabricating concerns.
 
 ## Recommendation
-One paragraph. State the recommendation enum, explain the entry multiple \
-or fair-value level, and name the *specific* condition under which you \
-would revise. This is what the committee acts on.
+Two paragraphs. The first names the recommendation enum and the entry \
+multiple or fair-value level (price-conditioned recommendations are \
+acceptable — "Buy at ≤$Xm fully-diluted EV, hold above" is a valid \
+form). The second states an explicit **kill criterion**: the single \
+specific readout, event, or data point that would flip the call from \
+the current recommendation to "avoid". A senior committee uses this \
+sentence to set the watch list for the asset.
 
 After the markdown body, append a fenced JSON block on its own line with \
 this exact shape:
@@ -57,10 +79,12 @@ this exact shape:
 
 Hard rules:
 - Do not invent numbers. Use only values present in the brief.
-- Do not hedge the recommendation. "Hold pending the Phase 3 readout" is \
-  acceptable; "this is a complex asset with both upsides and risks" is not.
-- The trailing JSON block is mandatory and must parse — the UI uses it to \
-  colour the recommendation chip.
+- Do not equivocate on the recommendation. "Hold pending the Phase 3 \
+readout" is acceptable; "this is a complex asset with both upsides and \
+risks" is not. Price-conditioned recommendations are permitted — they \
+are explicit, not equivocal.
+- The trailing JSON block is mandatory and must parse — the UI uses it \
+to colour the recommendation chip.
 """
 
 

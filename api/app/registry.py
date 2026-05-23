@@ -61,8 +61,16 @@ class AgentManifest(BaseModel):
     name: str
     version: str
     description: str
-    skill_loadout: list[str] = Field(
-        description="Skill paths (relative to ASCLEPIUS_SKILLS_DIR) this agent loads.",
+    # v1.1.3: renamed from `skill_loadout` to honestly reflect that the agent
+    # loads files from the repo's public methodology/ folder, not the private
+    # skill suite. Paths are relative to ASCLEPIUS_METHODOLOGY_DIR (defaults to
+    # the methodology dir bundled into the container). Loaded by
+    # BaseAgent._load_methodology_context() and prepended to the system prompt.
+    methodology_refs: list[str] = Field(
+        description=(
+            "Methodology file paths (relative to the methodology root) this "
+            "agent loads at startup and prepends to its system prompt."
+        ),
         default_factory=list,
     )
     trigger_label: str = Field(description="UI button label for this agent.")

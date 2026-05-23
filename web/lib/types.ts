@@ -189,7 +189,7 @@ export interface AgentManifest {
   name: string;
   version: string;
   description: string;
-  skill_loadout: string[];
+  methodology_refs: string[];
   trigger_label: string;
   input_fields: string[];
   output_fields: string[];

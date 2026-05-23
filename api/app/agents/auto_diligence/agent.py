@@ -179,7 +179,7 @@ class Agent(BaseAgent):
         message = client.messages.create(
             model=model,
             max_tokens=4096,
-            system=SYSTEM_PROMPT,
+            system=self._system_prompt_with_methodology(SYSTEM_PROMPT),
             tools=[
                 {
                     "type": "web_search_20250305",

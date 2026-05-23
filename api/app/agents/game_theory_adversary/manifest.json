@@ -1,12 +1,12 @@
 {
   "id": "game_theory_adversary",
   "name": "Game-Theory Adversary",
-  "version": "0.1.0",
-  "description": "Devil's-advocate critique of a diligence record (and optionally the generated memo) through three game-theoretic lenses: signaling (Spence/Akerlof), auction (winner's-curse on comparables), and Bayesian persuasion (selective disclosure). Outputs structured findings with severity tags and a verdict on whether the adversarial pass upgrades, holds, or downgrades the recommendation.",
-  "skill_loadout": [
-    "game-theory/signaling-screening/SKILL.md",
-    "game-theory/auction-theory/SKILL.md",
-    "game-theory/bayesian-persuasion/SKILL.md"
+  "version": "0.2.0",
+  "description": "Devil's-advocate critique of a diligence record (and optionally the generated memo) through three game-theoretic lenses: signaling (Spence/Akerlof, Lo & Thakor 2022), auction (winner's-curse + 2023-cohort premium correction), Bayesian persuasion (Kamenica-Gentzkow with four empirically-documented disclosure patterns from Kao 2024, Rothenstein 2011, Yi 2024). Outputs structured findings with severity tags and a verdict on whether the adversarial pass upgrades, holds, or downgrades the recommendation.",
+  "methodology_refs": [
+    "02-reflexivity-thesis.md",
+    "06-signaling-equilibrium.md",
+    "07-bayesian-persuasion-disclosure.md"
   ],
   "trigger_label": "Stress-test thesis",
   "input_fields": [

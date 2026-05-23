@@ -96,3 +96,12 @@ pnpm-debug.log*
 *.sqlite3
 *.db
 api/app/data/calibration.db
+
+# ============================================================
+# Methodology staging (api/scripts/fly_deploy.sh)
+# ============================================================
+# Staged copy of /methodology/ into the Docker build context immediately
+# before flyctl deploy, cleaned up after. Source of truth stays in
+# /methodology/ only. Local-dev agents read /methodology/ directly via
+# the path resolution in api/app/agents/base.py.
+api/app/methodology/
