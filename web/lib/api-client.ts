@@ -7,12 +7,15 @@
 import type {
   AdversaryOutput,
   AgentManifest,
+  AssetCalibrationContext,
   AssetInput,
   AutoDiligenceOutput,
+  CalibrationReport,
   ComparablesResult,
   MemoOutput,
   ModuleManifest,
   PoSResult,
+  PredictionLogEntry,
   RnpvInputs,
   RnpvResult,
   ScorecardInput,
@@ -126,6 +129,27 @@ export async function runAutoDiligence(
   record: Record<string, unknown>,
 ): Promise<AutoDiligenceOutput> {
   return runAgent<AutoDiligenceOutput>("auto_diligence", record);
+}
+
+// --- Calibration module ---------------------------------------------------
+
+export async function runCalibration(
+  asset: AssetInput,
+): Promise<AssetCalibrationContext> {
+  return jsonFetch<AssetCalibrationContext>("/api/modules/calibration", {
+    method: "POST",
+    body: JSON.stringify({ asset }),
+  });
+}
+
+export async function getCalibrationReport(): Promise<CalibrationReport> {
+  return jsonFetch<CalibrationReport>("/api/modules/calibration/report");
+}
+
+export async function listPredictions(): Promise<PredictionLogEntry[]> {
+  return jsonFetch<PredictionLogEntry[]>(
+    "/api/modules/calibration/predictions",
+  );
 }
 
 export async function runComparables(

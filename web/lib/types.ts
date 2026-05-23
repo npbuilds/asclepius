@@ -264,3 +264,53 @@ export interface AutoDiligenceOutput {
   from_cache: boolean;
   generated_at: string;
 }
+
+// --- Calibration (v1.5) ----------------------------------------------------
+
+export interface AssetCalibrationContext {
+  asset_segment_label: string;
+  segment_n_resolved: number;
+  segment_brier: number | null;
+  segment_mean_predicted: number | null;
+  segment_mean_observed: number | null;
+  overall_n_resolved: number;
+  overall_brier: number | null;
+  sample_size_disclaimer: string;
+}
+
+export interface CalibrationSegmentStats {
+  segment_kind: "therapeutic_area" | "modality" | "capital_position" | "overall";
+  segment_value: string;
+  n_resolved: number;
+  n_unresolved: number;
+  brier_score: number | null;
+  mean_predicted: number | null;
+  mean_observed: number | null;
+  calibration_gap: number | null;
+}
+
+export interface CalibrationReport {
+  n_total_predictions: number;
+  n_resolved: number;
+  overall: CalibrationSegmentStats;
+  by_therapeutic_area: CalibrationSegmentStats[];
+  by_modality: CalibrationSegmentStats[];
+  by_capital_position: CalibrationSegmentStats[];
+  last_updated: string;
+  sample_size_disclaimer: string;
+}
+
+export interface PredictionLogEntry {
+  id: string;
+  asset_name: string;
+  phase: string;
+  therapeutic_area: string;
+  modality: string;
+  capital_position: string;
+  predicted_pos: number;
+  reflexivity_multiplier: number;
+  prediction_date: string;
+  outcome: 0 | 1 | null;
+  outcome_date: string | null;
+  outcome_source: string | null;
+}

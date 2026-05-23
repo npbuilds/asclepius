@@ -51,13 +51,17 @@ const panelByModuleId: Record<string, LoadablePanel> = {
     () => import("@/components/modules/comparables/ComparablesPanel"),
     { ssr: false },
   ),
+  calibration: dynamic(
+    () => import("@/components/modules/calibration/CalibrationPanel"),
+    { ssr: false },
+  ),
 };
 
 export function getPanelFor(manifest: ModuleManifest): LoadablePanel | null {
   return panelByModuleId[manifest.id] ?? null;
 }
 
-const DISPLAY_ORDER: string[] = ["pos", "rnpv", "scorecard", "comparables"];
+const DISPLAY_ORDER: string[] = ["pos", "rnpv", "scorecard", "comparables", "calibration"];
 
 export function orderModules(manifests: ModuleManifest[]): ModuleManifest[] {
   return [...manifests].sort((a, b) => {

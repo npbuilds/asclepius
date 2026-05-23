@@ -1,0 +1,14 @@
+{
+  "id": "calibration",
+  "name": "Calibration Dashboard",
+  "version": "0.1.0",
+  "description": "Logs every framework prediction to local SQLite with metadata (asset, phase, therapeutic area, modality, capital-position tier, predicted PoS, reflexivity multiplier). Resolved outcomes (manual or scripted from CT.gov / press releases) feed Brier-score aggregation by segment. The dashboard answers the question every VC asks: 'how do we know your model is calibrated?' Architecturally mirrors Archon's log_prediction / resolve_prediction / get_calibration_report pattern but is self-contained (no MCP dependency). v1.5 ships the discipline; v1.6+ accumulates the sample.",
+  "inputs": [
+    "asset.phase",
+    "asset.therapeutic_area",
+    "asset.modality",
+    "asset.capital_position"
+  ],
+  "outputs": ["calibration"],
+  "deps": []
+}
