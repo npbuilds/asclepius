@@ -140,13 +140,14 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
       </div>
 
       <p className="mt-2 font-prose text-[11px] leading-snug text-text-dim">
-        v1.5.2: PubMedBERT-pooled eligibility-criteria embeddings concatenated
+        v1.5.3: PubMedBERT-pooled eligibility-criteria embeddings concatenated
         with 36-dim structured features (804-dim total), supervised on real
         Phase-2/3 outcomes from the HINT clinical-trial corpus (Fu 2022).
-        Now an independent evidence channel — disagreement with the
-        rule-based chain reflects protocol-text + structured-feature signal
-        not encoded by BIO base rates. See methodology/09-ml-pos-prior.md
-        for AUC, calibration, and known limits.
+        Uncertainty band = 90% bootstrap-percentile interval across 10 LGBMs
+        trained on independent bootstrap resamples; the band tightens where
+        the ensemble agrees and widens where it doesn’t. A complementary
+        Mondrian split-conformal coverage check (91.5% marginal on test)
+        lives in the methodology page — see methodology/09-ml-pos-prior.md.
       </p>
     </section>
   );

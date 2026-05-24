@@ -31,15 +31,19 @@ DisagreementLevel = Literal["aligned", "moderate", "divergent"]
 
 
 class MLPosPriorResult(BaseModel):
-    """v1.5.2 ML PoS Prior result — supervised LightGBM over PubMedBERT
+    """v1.5.3 ML PoS Prior result — supervised LightGBM over PubMedBERT
     embeddings of the eligibility-criteria text concatenated with the 36-dim
     structured feature vector (804-dim total), trained on the HINT
     clinical-trial outcome corpus (Fu et al. 2022).
 
-    `uncertainty_low` / `uncertainty_high` remain a fixed-width heuristic
-    band, NOT a calibrated statistical interval — see the field descriptions.
-    Proper coverage intervals (bootstrap or conformal) are deferred to
-    v1.5.3.
+    `uncertainty_low` / `uncertainty_high` are now (v1.5.3) the 90%
+    bootstrap-percentile interval across an ensemble of 10 LightGBM
+    classifiers trained on independent bootstrap resamples of the train
+    split. This is an *epistemic* model-resampling uncertainty (how much
+    the LGBM disagrees with itself under different training-set draws);
+    a complementary Mondrian split-conformal *coverage* interval is
+    recorded in the artifact's `conformal` block and surfaced in
+    methodology/09-ml-pos-prior.md (90% test-set marginal coverage = 91.5%).
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -51,25 +55,33 @@ class MLPosPriorResult(BaseModel):
             "Supervised LightGBM prediction of phase-to-approval "
             "probability. Inputs: PubMedBERT-pooled embedding of the trial's "
             "eligibility-criteria text + 36-dim structured feature vector. "
-            "Trained on HINT clinical-trial outcomes (Fu 2022)."
+            "Trained on HINT clinical-trial outcomes (Fu 2022). The point "
+            "estimate is the single main model's prediction (not the "
+            "ensemble mean) so the disagreement-pp delta stays comparable "
+            "across versions."
         ),
     )
     uncertainty_low: float = Field(
         ge=0.0,
         le=1.0,
         description=(
-            "Lower bound of a fixed-width heuristic band (±0.30 in logit "
-            "space from the point estimate, mapped back to probability). "
-            "NOT a calibrated statistical interval — the width is a "
-            "conservative heuristic, not bootstrap- or conformal-derived. "
-            "See methodology/09-ml-pos-prior.md for the v1.5.3 path to "
-            "proper coverage intervals."
+            "Lower bound of the 90% bootstrap-percentile interval (α=0.10) "
+            "across an ensemble of 10 LightGBM classifiers trained on "
+            "independent bootstrap resamples of the HINT train split. "
+            "Reflects epistemic model-resampling uncertainty: where the "
+            "10 LGBMs agree, the band is tight; where they disagree, the "
+            "band widens. Distinct from frequentist coverage — see "
+            "methodology/09-ml-pos-prior.md for the conformal coverage "
+            "result on the same artifact (91.5% marginal on test)."
         ),
     )
     uncertainty_high: float = Field(
         ge=0.0,
         le=1.0,
-        description="Upper bound of the heuristic uncertainty band.",
+        description=(
+            "Upper bound of the 90% bootstrap-percentile interval — see "
+            "uncertainty_low for the construction."
+        ),
     )
     rule_based_pos: float = Field(
         ge=0.0,

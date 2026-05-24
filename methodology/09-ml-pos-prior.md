@@ -290,6 +290,101 @@ appropriate for the asset's segment.
 That is what an investor-grade PoS estimate looks like. The framework
 delivers it.
 
+## v1.5.3 — calibrated uncertainty (bootstrap + conformal)
+
+v1.5.2 shipped with a fixed-width logit-space heuristic band that was
+openly admitted in `schemas.py` as "NOT a calibrated statistical
+interval." v1.5.3 replaces it with two complementary uncertainty
+measures, each answering a different question:
+
+### Bootstrap-percentile interval (displayed in the UI)
+
+The pipeline trains an ensemble of **10 LightGBM classifiers** on
+independent bootstrap resamples of the HINT train split. Each model
+uses the same hyperparameters as the main model (regularized LGBM,
+500 estimators with early-stopping on the fixed val split) but sees a
+different bootstrap draw. At inference, all 10 models predict; the
+displayed band is the **α/2 and 1-α/2 empirical quantiles** of their
+predictions (α=0.10 → 90% interval).
+
+**What the band measures:** *epistemic* model-resampling uncertainty.
+Where the 10 LGBMs agree, the band is tight; where they disagree, the
+band widens. This reflects the model's self-uncertainty about a
+prediction, which is the most decision-relevant signal for a portfolio
+analyst — *"how stable is this number under reasonable variations in
+the training set."*
+
+**What the band does NOT measure:** label uncertainty (the irreducible
+variance from binary outcomes), distributional shift between HINT and
+new assets, or out-of-domain extrapolation (asking the model about a
+modality it never saw).
+
+**Average band width on the held-out test split: ~18 pp.** On the
+canonical adagrasib record: 24-52% around a 39% point estimate.
+
+### Mondrian split-conformal coverage (recorded in artifact + methodology)
+
+In parallel, the pipeline computes a **Mondrian split-conformal radius
+per phase** (phase_1, phase_2, phase_3) using the val split as the
+calibration set. The algorithm:
+
+1. For each calibration point, compute `|y_true − p̂|` (residual).
+2. Stratify residuals by phase ("Mondrian" partition).
+3. For each phase, take the empirical (1−α) quantile of residuals with
+   the split-conformal finite-sample correction `⌈(n+1)(1−α)⌉ / n`.
+
+This gives a **distribution-free 90% coverage guarantee**: under
+exchangeability with the val split, the true outcome falls within
+`[p̂ − radius, p̂ + radius]` ≥ 90% of the time, per phase.
+
+**Empirical coverage on the held-out test split (n=3133):**
+
+| Phase | n_test | Empirical coverage | Target |
+|---|---|---|---|
+| phase_1 | 595 | **86.7%** | ≥ 90% |
+| phase_2 | 1473 | **93.0%** | ≥ 90% |
+| phase_3 | 1065 | **92.2%** | ≥ 90% |
+| **overall** | **3133** | **91.5%** | ≥ 90% |
+
+phase_1 lands modestly below target (86.7% vs 90%) — expected at the
+small calibration n (105). Marginal coverage and phase_2/3 conditional
+coverage both clear 90%.
+
+**Why we don't display the conformal interval in the UI.** The radii on
+binary outcomes are wide by construction: when y ∈ {0,1} and p̂ ∈ [0,1],
+the (1-α) quantile of `|y - p̂|` is dominated by the wrong predictions
+(where |y - p̂| ≈ 1) rather than the AUC of the classifier. The
+resulting bands for AUC ≈ 0.70 collapse to roughly [0, 1] for any
+prediction near the center. Mathematically correct, practically
+uninformative.
+
+The honest framing: **bootstrap is the user-facing band, conformal is
+the methodology-grade coverage report**. Both numbers are persisted in
+the artifact and exposed at `/api/modules/ml_pos_prior/model_info`.
+
+### Implementation notes
+
+- Bootstrap inflates the artifact from ~330 KB to ~3.1 MB (10× model
+  size). Negligible for a portfolio tool; the Fly container ships a 733
+  MB image where the LGBM models are noise.
+- Inference latency: 10× LGBM predict_proba ≈ 1 ms additional. Cache
+  hits still bypass entirely.
+- The point estimate (`predicted_pos` in the response) is the **single
+  main model's prediction**, not the ensemble mean. This keeps the
+  disagreement-pp metric (ML − rule_based) comparable across versions
+  and stable under bootstrap reseeding. The ensemble is used solely
+  for the band.
+
+### v1.5.4 candidates
+
+- **Locally-adaptive conformal**: scale the conformal residual by a
+  bootstrap-derived heteroskedastic std → tighter bands where the
+  ensemble is confident, wider where it isn't. Gives both the coverage
+  guarantee AND a useful interval shape. ~1 day.
+- **Phase-1 calibration set boost**: the 105 val points in phase_1
+  produce a noisy quantile. Mining additional phase_1 rows from
+  pre-2010 HINT would shrink the under-coverage gap. ~2 days.
+
 ## See also
 
 - [`01-pos-framework.md`](01-pos-framework.md) — the rule-based chain

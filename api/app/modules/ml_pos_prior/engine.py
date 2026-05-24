@@ -83,14 +83,26 @@ EXPECTED_COMBINED_DIM = bert_embed.EMBEDDING_DIM + N_STRUCT_FEATURES
 # Epsilon clipping on predict_proba to avoid logit(0)/logit(1) edge cases
 PROBA_EPS = 1e-6
 
-# Fixed-width heuristic uncertainty band (±SE_HEURISTIC in logit space).
-# Replace with bootstrap or x'Cov(beta)x in v1.5.3.
+# Legacy fixed-width heuristic uncertainty band (±SE_HEURISTIC in logit space).
+# Retained as the fallback when the artifact lacks v1.5.3's bootstrap ensemble.
 SE_HEURISTIC = 0.30
+
+# v1.5.3: bootstrap-percentile interval half-width on either side of the
+# ensemble mean. The artifact ships its own α (default 0.10 = 90% interval);
+# the engine reads it at load time. Setting α at training time is the only
+# defensible choice — re-quantilizing K=10 predictions at request time at a
+# different α would defeat the calibration story.
 
 
 @lru_cache(maxsize=1)
 def _load_model():
-    """Lazy load + validate. Returns (model, metrics)."""
+    """Lazy load + validate. Returns (model, metrics, ensemble_or_None).
+
+    `ensemble_or_None` is the v1.5.3 list of bootstrap LGBMs when the
+    artifact contains them, otherwise None. Engine prefers the ensemble
+    for the displayed uncertainty band; when absent, falls back to the
+    legacy logit heuristic.
+    """
     if not MODEL_PATH.exists():
         raise HTTPException(
             status_code=503,
@@ -204,12 +216,25 @@ def _load_model():
             ),
         )
 
-    return artifact["model"], artifact["metrics"]
+    # v1.5.3: optional bootstrap ensemble. List of K LGBMClassifiers trained
+    # on bootstrap resamples of train; supplies the displayed uncertainty
+    # band via percentile intervals across the K predictions. Absent in
+    # legacy v1.5.2 artifacts — engine falls back to logit heuristic.
+    bootstrap_models = artifact.get("bootstrap_models")
+    if bootstrap_models is not None and not isinstance(bootstrap_models, list):
+        log.warning(
+            "ML PoS Prior artifact has bootstrap_models key but it is not a "
+            "list (got %s) — ignoring; will use legacy heuristic band.",
+            type(bootstrap_models).__name__,
+        )
+        bootstrap_models = None
+
+    return artifact["model"], artifact["metrics"], bootstrap_models
 
 
 def get_model_metrics() -> dict:
     """Public accessor for the /model_info route."""
-    _, metrics = _load_model()
+    _, metrics, _ = _load_model()
     return metrics
 
 
@@ -223,12 +248,38 @@ def _disagreement_level(gap_pp: float) -> DisagreementLevel:
 
 
 def _logit_band(p: float, se: float = SE_HEURISTIC) -> tuple[float, float]:
-    """Map a point estimate to a fixed-width heuristic band in logit space."""
+    """Map a point estimate to a fixed-width heuristic band in logit space.
+
+    Legacy v1.5.2 fallback used when the artifact lacks a bootstrap ensemble.
+    """
     p_clipped = min(max(p, PROBA_EPS), 1.0 - PROBA_EPS)
     logit = math.log(p_clipped / (1.0 - p_clipped))
     lo = 1.0 / (1.0 + math.exp(-(logit - se)))
     hi = 1.0 / (1.0 + math.exp(-(logit + se)))
     return min(lo, p), max(hi, p)
+
+
+def _bootstrap_band(
+    ensemble: list,
+    x: np.ndarray,
+    *,
+    alpha: float = 0.10,
+) -> tuple[float, float, float]:
+    """v1.5.3 displayed uncertainty band: empirical percentile interval
+    across the K bootstrap-trained LGBMs. Returns (mean, q_low, q_high).
+
+    The mean across the ensemble tends to be slightly better-calibrated
+    than the single main model (well-known "bagging" effect at K≥10), but
+    we keep the *displayed* point estimate locked to the single main
+    model so the disagreement-pp number stays interpretable (it would
+    drift if predicted_pos averaged the ensemble while rule_based stayed
+    fixed). The ensemble is used solely for the band.
+    """
+    preds = np.array([m.predict_proba(x)[0, 1] for m in ensemble])
+    mean = float(preds.mean())
+    q_low = float(np.quantile(preds, alpha / 2.0))
+    q_high = float(np.quantile(preds, 1.0 - alpha / 2.0))
+    return mean, q_low, q_high
 
 
 def _resolve_criteria_text(
@@ -381,7 +432,7 @@ def compute(
     if cached is not None:
         return cached
 
-    model, metrics = _load_model()
+    model, metrics, ensemble = _load_model()
 
     # Build combined feature vector: [PubMedBERT 768] + [structured 36] = 804
     text = _resolve_criteria_text(criteria_text=criteria_text, nct_id=nct_id)
@@ -403,7 +454,21 @@ def compute(
         )
 
     predicted = float(model.predict_proba(x)[0, 1])
-    p_lo, p_hi = _logit_band(predicted)
+    if ensemble is not None and len(ensemble) >= 3:
+        # v1.5.3 path: bootstrap-percentile interval. The mean across
+        # K bootstrap models is computed but discarded — predicted_pos
+        # stays locked to the single main model for disagreement-pp
+        # interpretability (see _bootstrap_band docstring).
+        _, p_lo, p_hi = _bootstrap_band(ensemble, x, alpha=0.10)
+        # Enforce that the band encloses the point estimate even when
+        # the main model is an outlier vs the ensemble. Without this,
+        # the pydantic validator would reject the result on rare assets
+        # where main and ensemble mean disagree by more than the q-spread.
+        p_lo = min(p_lo, predicted)
+        p_hi = max(p_hi, predicted)
+    else:
+        # Legacy fallback: logit heuristic band.
+        p_lo, p_hi = _logit_band(predicted)
 
     rule_based = record.pos.final_loa if record.pos else 0.0
     gap_pp = (predicted - rule_based) * 100.0

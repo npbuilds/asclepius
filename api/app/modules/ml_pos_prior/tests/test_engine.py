@@ -411,3 +411,126 @@ def test_get_model_metrics_returns_artifact_metrics(stub_bert_embed):
     metrics = engine.get_model_metrics()
     assert metrics["model_kind"] == "lightgbm_pubmedbert_v0.2.0_42"
     assert "test_auc" in metrics
+
+
+# ---------------------------------------------------------------------------
+# v1.5.3 — bootstrap ensemble path
+# ---------------------------------------------------------------------------
+
+
+class _FakeBootstrapModel:
+    """LightGBM-shaped stub that always returns a fixed prediction. Useful
+    for building an ensemble with controlled disagreement."""
+
+    def __init__(self, predicted_p: float):
+        self._p = predicted_p
+
+    def predict_proba(self, X):
+        n = X.shape[0]
+        return np.tile([1 - self._p, self._p], (n, 1))
+
+
+def _write_artifact_with_bootstrap(
+    path: Path,
+    *,
+    main_p: float = 0.40,
+    ensemble_ps: list[float] | None = None,
+) -> None:
+    """Variant of _write_fake_artifact that includes a `bootstrap_models`
+    list — exercises the v1.5.3 inference path."""
+    if ensemble_ps is None:
+        # Default ensemble with deliberate spread: bracketing main_p
+        ensemble_ps = [0.30, 0.32, 0.35, 0.38, 0.40, 0.42, 0.45, 0.48, 0.50, 0.52]
+    schema = _valid_schema_sidecar()
+    joblib.dump(
+        {
+            "model": _FakeModel(main_p),
+            "metrics": {"model_kind": "lightgbm_pubmedbert_v0.2.0_42", "test_auc": 0.703},
+            "feature_schema": schema,
+            "training_meta": {"sklearn_version": "test", "lightgbm_version": "test"},
+            "bootstrap_models": [_FakeBootstrapModel(p) for p in ensemble_ps],
+        },
+        path,
+    )
+
+
+def test_bootstrap_band_widens_with_ensemble_disagreement(
+    tmp_path: Path, monkeypatch, stub_bert_embed,
+):
+    """When the bootstrap ensemble disagrees, the displayed band widens.
+    Verifies that the v1.5.3 path actually consults the ensemble rather
+    than silently falling back to the logit heuristic."""
+    tight = [0.39, 0.395, 0.40, 0.40, 0.40, 0.40, 0.40, 0.405, 0.41, 0.41]
+    wide = [0.20, 0.25, 0.30, 0.35, 0.40, 0.40, 0.45, 0.50, 0.55, 0.60]
+
+    artifact_tight = tmp_path / "tight.joblib"
+    _write_artifact_with_bootstrap(artifact_tight, main_p=0.40, ensemble_ps=tight)
+    monkeypatch.setattr(engine, "MODEL_PATH", artifact_tight)
+    engine._load_model.cache_clear()
+    out_tight = engine.compute(_record(), criteria_text="dummy criteria")
+
+    artifact_wide = tmp_path / "wide.joblib"
+    _write_artifact_with_bootstrap(artifact_wide, main_p=0.40, ensemble_ps=wide)
+    monkeypatch.setattr(engine, "MODEL_PATH", artifact_wide)
+    engine._load_model.cache_clear()
+    out_wide = engine.compute(_record(), criteria_text="dummy criteria")
+
+    width_tight = out_tight.uncertainty_high - out_tight.uncertainty_low
+    width_wide = out_wide.uncertainty_high - out_wide.uncertainty_low
+
+    assert width_wide > width_tight, (
+        f"Wide ensemble ({width_wide:.3f}) should give a wider band than "
+        f"tight ensemble ({width_tight:.3f}); v1.5.3 bootstrap path may "
+        f"have silently fallen back to the heuristic"
+    )
+
+
+def test_bootstrap_band_encloses_point_estimate(
+    tmp_path: Path, monkeypatch, stub_bert_embed,
+):
+    """Even when the main model is an outlier vs the ensemble (rare but
+    possible because the main model is fit on the full train set, not a
+    bootstrap), the band must still enclose predicted_pos so the pydantic
+    validator accepts the result."""
+    # Main model predicts 0.65; ensemble clustered at 0.20-0.35.
+    ensemble = [0.20, 0.22, 0.25, 0.28, 0.30, 0.30, 0.32, 0.33, 0.34, 0.35]
+    artifact = tmp_path / "outlier.joblib"
+    _write_artifact_with_bootstrap(artifact, main_p=0.65, ensemble_ps=ensemble)
+    monkeypatch.setattr(engine, "MODEL_PATH", artifact)
+    engine._load_model.cache_clear()
+
+    out = engine.compute(_record(), criteria_text="dummy criteria")
+    assert out.uncertainty_low <= out.predicted_pos <= out.uncertainty_high
+
+
+def test_legacy_artifact_without_bootstrap_uses_heuristic_band(
+    tmp_path: Path, monkeypatch, stub_bert_embed,
+):
+    """Backward compat: artifacts without `bootstrap_models` must still
+    work, falling back to the v1.5.2 logit heuristic band."""
+    legacy = tmp_path / "legacy.joblib"
+    _write_fake_artifact(legacy, predicted_p=0.40)  # no bootstrap_models key
+    monkeypatch.setattr(engine, "MODEL_PATH", legacy)
+    engine._load_model.cache_clear()
+
+    out = engine.compute(_record(), criteria_text="dummy criteria")
+    # Heuristic band: at p=0.40 with SE=0.30 in logit space, band is roughly
+    # [0.32, 0.49]. Sanity check it lands somewhere reasonable.
+    assert out.uncertainty_low < 0.40 < out.uncertainty_high
+    assert 0.05 < (out.uncertainty_high - out.uncertainty_low) < 0.30
+
+
+def test_bootstrap_band_bounds_inside_unit_interval(
+    tmp_path: Path, monkeypatch, stub_bert_embed,
+):
+    """Empirical quantiles of probabilities are in [0,1] by construction,
+    but defensive check that the v1.5.3 path never returns out-of-range."""
+    ensemble = [0.01, 0.02, 0.05, 0.10, 0.50, 0.70, 0.85, 0.90, 0.95, 0.99]
+    artifact = tmp_path / "spread.joblib"
+    _write_artifact_with_bootstrap(artifact, main_p=0.50, ensemble_ps=ensemble)
+    monkeypatch.setattr(engine, "MODEL_PATH", artifact)
+    engine._load_model.cache_clear()
+
+    out = engine.compute(_record(), criteria_text="dummy criteria")
+    assert 0.0 <= out.uncertainty_low <= 1.0
+    assert 0.0 <= out.uncertainty_high <= 1.0

@@ -1,8 +1,8 @@
 {
   "id": "ml_pos_prior",
   "name": "ML PoS Prior",
-  "version": "0.2.0",
-  "description": "PubMedBERT-embedded eligibility-criteria text + 36-dim structured features → LightGBM classifier supervised on real HINT clinical-trial outcomes (Fu et al. 2022). 804-dim combined feature space; test AUC 0.7030 on the HINT held-out test split. v0.2.0 replaces v0.1.x's rule-distilled logistic surrogate with the supervised model. The runtime engine embeds eligibility-criteria text in-container (PubMedBERT-base, ~440MB); novel asset inputs supply text via the criteria_text field or fetch via nct_id from ClinicalTrials.gov v2.",
+  "version": "0.3.0",
+  "description": "PubMedBERT-embedded eligibility-criteria text + 36-dim structured features → LightGBM classifier supervised on real HINT clinical-trial outcomes (Fu et al. 2022). 804-dim combined feature space; test AUC 0.7030 on the HINT held-out test split. v0.3.0 (Asclepius v1.5.3) ships calibrated uncertainty: a 90% bootstrap-percentile interval across an ensemble of 10 LGBMs trained on independent bootstrap resamples (epistemic, displayed in UI) plus a Mondrian split-conformal coverage report (91.5% marginal on the test split, recorded in artifact + methodology). v0.2.0 was the supervised baseline; v0.1.x was a rule-distilled logistic surrogate. The runtime engine embeds eligibility-criteria text in-container (PubMedBERT-base, ~440MB); novel asset inputs supply text via the criteria_text field or fetch via nct_id from ClinicalTrials.gov v2.",
   "inputs": [
     "asset.phase",
     "asset.therapeutic_area",

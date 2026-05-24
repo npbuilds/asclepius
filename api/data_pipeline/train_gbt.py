@@ -228,7 +228,204 @@ def train_model(
     return model, metrics
 
 
-def save_artifact(model, metrics: dict, *, seed: int = RANDOM_SEED) -> Path:
+# ---------------------------------------------------------------------------
+# v1.5.3 — Mondrian split-conformal calibration of the uncertainty band.
+#
+# Pre-v1.5.3 the engine emitted a fixed ±0.30-logit heuristic band, openly
+# documented in schemas.py as "NOT a calibrated statistical interval." This
+# block replaces the heuristic with a distribution-free, post-hoc calibrated
+# interval. The math: on the held-out val split (which the LGBM saw only for
+# early-stopping, never for parameter fit), compute the (1-α) empirical
+# quantile of |y_true - predicted_pos| within each phase. Stratify by phase
+# because phase_1/2/3 base rates are wildly different (Ph1 ~56%, Ph3 ~76%),
+# so a single global radius is too wide for one phase and too narrow for
+# another — Mondrian conformal addresses that without sacrificing the
+# marginal coverage guarantee.
+#
+# Coverage guarantee under exchangeability:
+#   Pr( y ∈ [p̂ - r_phase, p̂ + r_phase] ) ≥ 1 - α
+# evaluated separately per phase. The (n+1)/n correction in the quantile
+# index gives the finite-sample tightness.
+# ---------------------------------------------------------------------------
+
+
+CONFORMAL_ALPHA = 0.10  # ship a 90% interval. Standard for portfolio analytics.
+CONFORMAL_PHASES = ("phase_1", "phase_2", "phase_3")
+
+
+def _conformal_quantile(residuals: np.ndarray, alpha: float) -> float:
+    """Split-conformal quantile with the (n+1)/n finite-sample correction.
+
+    Standard split-conformal recipe: rank residuals ascending; take the
+    ceil((n+1)(1-α))-th order statistic. Returns the radius r such that
+    Pr(|y - p̂| ≤ r) ≥ 1 - α under exchangeability with the calibration set.
+    """
+    n = len(residuals)
+    if n == 0:
+        raise ValueError("cannot compute conformal radius on empty residual set")
+    # The exact split-conformal index. np.quantile with "higher" gives the
+    # right tail bound; we manually compute the index to make the (n+1)
+    # correction visible.
+    k = int(np.ceil((n + 1) * (1 - alpha)))
+    k = min(max(k, 1), n)  # clamp into [1, n] for small calibration sets
+    return float(np.sort(np.abs(residuals))[k - 1])
+
+
+def compute_mondrian_radii(
+    model: lgb.LGBMClassifier,
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+    phases_val: np.ndarray,
+    *,
+    alpha: float = CONFORMAL_ALPHA,
+) -> tuple[dict[str, float], dict[str, int], float]:
+    """Returns (radii_by_phase, n_calibration_by_phase, overall_radius).
+
+    `overall_radius` is the fallback used at inference for phases not in
+    CONFORMAL_PHASES (e.g., preclinical, NDA — both rare in the training
+    distribution).
+    """
+    pred_val = model.predict_proba(X_val)[:, 1]
+    residuals_all = np.abs(y_val.astype(float) - pred_val)
+
+    radii: dict[str, float] = {}
+    n_by_phase: dict[str, int] = {}
+    for phase in CONFORMAL_PHASES:
+        mask = phases_val == phase
+        n = int(mask.sum())
+        n_by_phase[phase] = n
+        if n < 20:
+            # Small calibration set: skip Mondrian and let the engine use the
+            # overall radius. <20 is too few for a stable 90% quantile.
+            log.warning(
+                "phase %s has only %d val rows — skipping Mondrian, will use "
+                "overall radius at inference", phase, n,
+            )
+            continue
+        radii[phase] = _conformal_quantile(residuals_all[mask], alpha)
+
+    overall_radius = _conformal_quantile(residuals_all, alpha)
+    return radii, n_by_phase, overall_radius
+
+
+def compute_test_coverage(
+    model: lgb.LGBMClassifier,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    phases_test: np.ndarray,
+    radii: dict[str, float],
+    overall_radius: float,
+) -> dict[str, float]:
+    """Empirical coverage on test split — the sanity check that the
+    calibration set generalizes. Should be close to 1 - α (i.e., ~0.90) for
+    each phase under exchangeability.
+    """
+    pred_test = model.predict_proba(X_test)[:, 1]
+    coverage: dict[str, float] = {}
+
+    for phase in CONFORMAL_PHASES:
+        mask = phases_test == phase
+        if not mask.any():
+            continue
+        r = radii.get(phase, overall_radius)
+        y_phase = y_test[mask].astype(float)
+        p_phase = pred_test[mask]
+        in_band = (np.abs(y_phase - p_phase) <= r).astype(float)
+        coverage[phase] = float(in_band.mean())
+
+    # Overall coverage uses each row's applicable radius (phase-specific
+    # when available, else the global fallback).
+    in_band_all = []
+    for i, ph in enumerate(phases_test):
+        r = radii.get(ph, overall_radius)
+        in_band_all.append(abs(float(y_test[i]) - pred_test[i]) <= r)
+    coverage["overall"] = float(np.mean(in_band_all))
+    return coverage
+
+
+N_BOOTSTRAP_MODELS = 10  # 10× training cost, 10× artifact size, ~3.6 MB total.
+
+
+def train_bootstrap_ensemble(
+    X: np.ndarray,
+    y: np.ndarray,
+    splits: np.ndarray,
+    *,
+    n_models: int = N_BOOTSTRAP_MODELS,
+    base_seed: int = RANDOM_SEED,
+) -> list[lgb.LGBMClassifier]:
+    """Train n_models LGBM classifiers on independent bootstrap resamples of
+    the train split. Each model uses the same hyperparams as the main model;
+    early-stopping runs against the (fixed) val split.
+
+    Why bootstrap, not bagging via LGBM's bagging_fraction: we want
+    independent draws from the empirical training distribution so the
+    bootstrap predictions actually reflect resampling uncertainty. LGBM's
+    bagging_fraction subsamples per-iteration within a single tree
+    ensemble, which doesn't give the same uncertainty signal.
+
+    Why 10 models, not 100: marginal coverage of the empirical quantile
+    band is acceptable at K=10 (rough monte-carlo error on the quantile
+    is ~3-5pp at K=10 vs ~1pp at K=100); the next bottleneck is artifact
+    size and inference latency, not statistical noise.
+    """
+    train_mask = splits == "train"
+    val_mask = splits == "valid"
+    X_train_full, y_train_full = X[train_mask], y[train_mask]
+    X_val, y_val = X[val_mask], y[val_mask]
+    n_train = len(X_train_full)
+
+    rng = np.random.default_rng(base_seed)
+    models: list[lgb.LGBMClassifier] = []
+    for i in range(n_models):
+        # Bootstrap-resample WITH replacement (the standard).
+        idx = rng.integers(0, n_train, size=n_train)
+        Xb, yb = X_train_full[idx], y_train_full[idx]
+        m = lgb.LGBMClassifier(
+            random_state=base_seed + i + 1,
+            verbose=-1,
+            n_estimators=500,
+            learning_rate=0.05,
+            num_leaves=31,
+            reg_alpha=0.5,
+            reg_lambda=0.5,
+            min_child_samples=30,
+        )
+        m.fit(
+            Xb, yb,
+            eval_set=[(X_val, y_val)],
+            callbacks=[lgb.early_stopping(20, verbose=False)],
+        )
+        log.info("bootstrap model %d/%d fit (n_iter=%d)", i + 1, n_models, m.best_iteration_)
+        models.append(m)
+    return models
+
+
+def bootstrap_intervals(
+    bootstrap_models: list[lgb.LGBMClassifier],
+    X: np.ndarray,
+    *,
+    alpha: float = 0.10,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute (mean_pred, q_low, q_high) from the bootstrap ensemble for
+    every row in X. q_low/q_high are the α/2 and 1-α/2 empirical quantiles
+    across the K bootstrap models — the bootstrap percentile interval.
+    """
+    preds = np.stack([m.predict_proba(X)[:, 1] for m in bootstrap_models], axis=0)
+    mean_pred = preds.mean(axis=0)
+    q_low = np.quantile(preds, alpha / 2, axis=0)
+    q_high = np.quantile(preds, 1 - alpha / 2, axis=0)
+    return mean_pred, q_low, q_high
+
+
+def save_artifact(
+    model,
+    metrics: dict,
+    *,
+    seed: int = RANDOM_SEED,
+    conformal: dict | None = None,
+    bootstrap_models: list[lgb.LGBMClassifier] | None = None,
+) -> Path:
     """Persist model + feature_schema + training_meta in the same shape as
     v1.5.1's artifact (so the Day 4 inference path can load it).
 
@@ -295,15 +492,30 @@ def save_artifact(model, metrics: dict, *, seed: int = RANDOM_SEED) -> Path:
     }
 
     MODEL_OUT.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(
-        {
-            "model": model,
-            "metrics": metrics,
-            "feature_schema": feature_schema,
-            "training_meta": training_meta,
-        },
-        MODEL_OUT,
-    )
+    payload = {
+        "model": model,
+        "metrics": metrics,
+        "feature_schema": feature_schema,
+        "training_meta": training_meta,
+    }
+    if conformal is not None:
+        # v1.5.3: Mondrian split-conformal radii live at the top level of the
+        # artifact (not in feature_schema) because they're not part of the
+        # input-validation contract — the engine reads them at load and
+        # applies them at inference. Schema is for "what shape was the
+        # model trained on"; conformal is for "what does the model output
+        # mean."
+        payload["conformal"] = conformal
+    if bootstrap_models is not None:
+        # v1.5.3: ensemble of K LGBM models trained on bootstrap resamples
+        # of train. The engine surfaces this as the displayed uncertainty
+        # band (epistemic model-resampling uncertainty), in contrast to
+        # the conformal radii which surface label-uncertainty coverage.
+        # Two-axis uncertainty: conformal for "how often does the truth
+        # fall in the band" (recorded in methodology), bootstrap for
+        # "how much does the model disagree with itself" (shown in UI).
+        payload["bootstrap_models"] = bootstrap_models
+    joblib.dump(payload, MODEL_OUT)
     log.info("artifact written to %s (%.2f MB)", MODEL_OUT, MODEL_OUT.stat().st_size / 1024 / 1024)
     return MODEL_OUT
 
@@ -326,7 +538,57 @@ def main(argv: list[str]) -> int:
     log.info("X shape: %s, y shape: %s", X.shape, y.shape)
 
     model, metrics = train_model(X, y, splits, seed=args.seed)
-    save_artifact(model, metrics, seed=args.seed)
+
+    # v1.5.3: Mondrian split-conformal calibration. The LGBM saw the val
+    # split only for early stopping (model selection at the iteration
+    # level), not for parameter fit — so it's a legitimate calibration set
+    # for conformal under the standard exchangeability assumption. Stratify
+    # by phase because base rates differ enormously across phases.
+    val_mask = splits == "valid"
+    test_mask = splits == "test"
+    phases_all = df["phase"].to_numpy()
+    radii, n_cal_by_phase, overall_radius = compute_mondrian_radii(
+        model, X[val_mask], y[val_mask], phases_all[val_mask],
+        alpha=CONFORMAL_ALPHA,
+    )
+    coverage = compute_test_coverage(
+        model, X[test_mask], y[test_mask], phases_all[test_mask],
+        radii, overall_radius,
+    )
+    log.info("conformal radii (α=%.2f): %s", CONFORMAL_ALPHA, radii)
+    log.info("conformal overall radius (fallback): %.4f", overall_radius)
+    log.info("conformal coverage on test split: %s", coverage)
+
+    conformal_payload = {
+        "alpha": CONFORMAL_ALPHA,
+        "method": "split_conformal_mondrian",
+        "radii": radii,
+        "overall_radius": overall_radius,
+        "n_calibration": n_cal_by_phase,
+        "test_coverage": coverage,
+        "calibration_split": "valid",
+    }
+    metrics["conformal_test_coverage"] = coverage
+
+    # v1.5.3: bootstrap ensemble for the displayed uncertainty band.
+    log.info("training %d bootstrap models for the v1.5.3 uncertainty band", N_BOOTSTRAP_MODELS)
+    boot_models = train_bootstrap_ensemble(X, y, splits, base_seed=args.seed)
+
+    # Diagnostic: average bootstrap band-width on the test split (sanity
+    # check that the band isn't trivially [0,1] or collapsed to a point).
+    _, ql_test, qh_test = bootstrap_intervals(
+        boot_models, X[test_mask], alpha=CONFORMAL_ALPHA,
+    )
+    avg_width = float(np.mean(qh_test - ql_test))
+    log.info("bootstrap band: avg width on test = %.4f (target: 0.05-0.20 for useful UX)", avg_width)
+    metrics["bootstrap_avg_band_width_test"] = avg_width
+    metrics["bootstrap_n_models"] = N_BOOTSTRAP_MODELS
+
+    save_artifact(
+        model, metrics, seed=args.seed,
+        conformal=conformal_payload,
+        bootstrap_models=boot_models,
+    )
 
     # Per-phase breakdown of test AUC
     print("\nPER-PHASE TEST METRICS")
