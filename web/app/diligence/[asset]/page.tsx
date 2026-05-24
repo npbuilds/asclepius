@@ -90,6 +90,13 @@ export default function DiligencePage({
     rnpv: null,
     scorecard: null,
     comparables: null,
+    // v1.5.2: NCT04685135 = KRYSTAL-1 (the Phase-2 registrational adagrasib
+    // trial). The backend's PubMedBERT path embeds this trial's eligibility
+    // criteria when the feature-fingerprint cache misses; the cached
+    // pre-computed adagrasib.json is used when the asset is the canonical
+    // record verbatim.
+    ml_pos_nct_id: isAdagrasib ? "NCT04685135" : null,
+    ml_pos_criteria_text: null,
   }));
 
   const setRecord = useCallback<

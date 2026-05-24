@@ -241,6 +241,18 @@ def save_artifact(model, metrics: dict, *, seed: int = RANDOM_SEED) -> Path:
 
     import sklearn
 
+    # Capture lightgbm version up front so we can record it both in the
+    # validated feature_schema (engine checks it) and in training_meta
+    # (informational duplicate). v1.5.2.1 (Codex Day 4 MINOR #5): the
+    # version was previously only in training_meta and the runtime
+    # engine didn't check it, allowing silent unpickle-version drift.
+    try:
+        import lightgbm
+
+        lightgbm_version = lightgbm.__version__
+    except ImportError:
+        lightgbm_version = "unknown"
+
     # v1.5.2 Day 4 (Decision D): schema sidecar adds the embedding-pipeline
     # parameters that the runtime engine must match exactly. Any drift
     # between training-time and runtime tokenization / pooling silently
@@ -252,21 +264,18 @@ def save_artifact(model, metrics: dict, *, seed: int = RANDOM_SEED) -> Path:
         "embedding_model_id": EMBEDDING_MODEL_ID,
         "max_length": 512,
         "pool_method": "mean",
+        "lightgbm_version_major": lightgbm_version.split(".")[0]
+            if lightgbm_version != "unknown" else "unknown",
         "phase_order": [p.value for p in PHASE_ORDER],
         "therapeutic_areas": [t.value for t in THERAPEUTIC_AREAS],
         "modalities": [m.value for m in MODALITIES],
         "capital_positions": [c.value for c in CAPITAL_POSITIONS],
         "designation_flags": [d.value for d in DESIGNATION_FLAGS],
     }
-    # Record lightgbm + sklearn versions so the runtime engine can flag
-    # major-version mismatches (joblib pickle compat is sketchy across them)
-    try:
-        import lightgbm
-
-        lightgbm_version = lightgbm.__version__
-    except ImportError:
-        lightgbm_version = "unknown"
-
+    # Note: lightgbm_version was already captured above for the
+    # feature_schema. Reused here in training_meta for informational
+    # transparency (the engine validates only the major-version compatibility
+    # via the schema; this preserves the full version string for audit).
     training_meta = {
         "sklearn_version": sklearn.__version__,
         "lightgbm_version": lightgbm_version,

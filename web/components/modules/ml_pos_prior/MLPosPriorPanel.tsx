@@ -43,7 +43,10 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
         cancelled = true;
       };
     }
-    runMLPosPrior(record.asset, record.pos)
+    runMLPosPrior(record.asset, record.pos, {
+      criteria_text: record.ml_pos_criteria_text ?? null,
+      nct_id: record.ml_pos_nct_id ?? null,
+    })
       .then((r) => !cancelled && setResult(r))
       .catch((e) => !cancelled && setError(String(e)));
     return () => {
@@ -53,6 +56,8 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
   }, [
     JSON.stringify(record.asset),
     record.pos?.final_loa,
+    record.ml_pos_criteria_text,
+    record.ml_pos_nct_id,
   ]);
 
   if (!record.pos) {
@@ -114,7 +119,7 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
           color="bg-cyan-faded"
         />
         <ReadoutRow
-          label="ML surrogate (LR · 10K-sample)"
+          label="ML prior (PubMedBERT + LGBM, HINT)"
           value={ml}
           max={maxVal}
           color="bg-magenta-bright"
@@ -135,12 +140,13 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
       </div>
 
       <p className="mt-2 font-prose text-[11px] leading-snug text-text-dim">
-        Logistic regression trained on 10,000 uniform synthetic feature
-        samples, labeled by the rule-based PoS chain (Bernoulli-sampled).
-        This is rule-distillation, not independent evidence. Disagreement
-        with the rule-based chain reflects composition-rule sensitivity
-        (multiplicative vs. additive log-odds). BioBERT-on-protocol-text
-        with real outcome labels is v1.5.2.
+        v1.5.2: PubMedBERT-pooled eligibility-criteria embeddings concatenated
+        with 36-dim structured features (804-dim total), supervised on real
+        Phase-2/3 outcomes from the HINT clinical-trial corpus (Fu 2022).
+        Now an independent evidence channel — disagreement with the
+        rule-based chain reflects protocol-text + structured-feature signal
+        not encoded by BIO base rates. See methodology/09-ml-pos-prior.md
+        for AUC, calibration, and known limits.
       </p>
     </section>
   );

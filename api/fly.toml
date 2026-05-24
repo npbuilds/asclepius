@@ -15,9 +15,15 @@ primary_region = "iad"
   min_machines_running = 0
 
   [http_service.concurrency]
+    # v1.5.2 Day 4: lowered from soft=200 / hard=250 (defensible for the
+    # pre-ML rule-only API) to soft=8 / hard=16 because the ML PoS Prior
+    # path runs a PubMedBERT forward pass per cache-miss request. On
+    # shared-cpu-2x with OMP_NUM_THREADS=1, a 512-token forward takes
+    # ~3-5 s; queueing more than ~8 concurrent at the proxy lets Fly
+    # spin a second machine instead of head-of-line blocking inside one.
     type = "requests"
-    soft_limit = 200
-    hard_limit = 250
+    soft_limit = 8
+    hard_limit = 16
 
   [[http_service.checks]]
     interval = "30s"

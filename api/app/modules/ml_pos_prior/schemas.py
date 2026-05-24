@@ -1,24 +1,24 @@
 """Schemas for the ML PoS Prior module.
 
-v1.5.1.1 framing: rule-smoothed logistic surrogate. Labels were Bernoulli
-samples from the rule-based PoS chain itself; disagreement reflected
-composition-rule sensitivity (multiplicative vs additive log-odds), not
-independent evidence.
-
-v1.5.2 (this version): supervised on real HINT clinical-trial outcomes
-via the offline LightGBM trainer at api/data_pipeline/train_gbt.py.
-PubMedBERT pooled embeddings of the eligibility-criteria text +
-36-dim structured feature vector → 804-dim combined → LGBM. The
-runtime engine loads PubMedBERT in-container and embeds criteria text
-per request.
+v1.5.2 (current): supervised on real HINT clinical-trial outcomes via the
+offline LightGBM trainer at api/data_pipeline/train_gbt.py. PubMedBERT
+pooled embeddings of the eligibility-criteria text + 36-dim structured
+feature vector → 804-dim combined → LGBM. The runtime engine loads
+PubMedBERT in-container and embeds criteria text per request.
 
 Request schema gains optional criteria_text + nct_id (with NCT-ID
 fallback fetching from ClinicalTrials.gov v2). Both optional — if
-neither is supplied, the engine returns HTTPException(422) because
-the v1.5.2 ML path requires text to embed.
+neither is supplied AND the feature-fingerprint cache misses, the
+engine returns HTTPException(422) because the v1.5.2 ML path requires
+text to embed.
 
-The MLPosPriorResult shape is unchanged from v1.5.1.1 so the existing
-frontend panel renders without modification.
+The MLPosPriorResult shape is unchanged from v1.5.1.1 (only the
+descriptions were rewritten for honesty) so the existing frontend
+panel renders without modification.
+
+v1.5.1.1 (deprecated): rule-smoothed logistic surrogate trained on
+Bernoulli samples of the rule-based chain. Retained in version
+history for context; not part of the current request/response surface.
 """
 
 from __future__ import annotations
@@ -31,11 +31,15 @@ DisagreementLevel = Literal["aligned", "moderate", "divergent"]
 
 
 class MLPosPriorResult(BaseModel):
-    """Rule-smoothed logistic surrogate PoS, with a heuristic uncertainty band.
+    """v1.5.2 ML PoS Prior result — supervised LightGBM over PubMedBERT
+    embeddings of the eligibility-criteria text concatenated with the 36-dim
+    structured feature vector (804-dim total), trained on the HINT
+    clinical-trial outcome corpus (Fu et al. 2022).
 
-    `uncertainty_low` / `uncertainty_high` are NOT a statistical confidence
-    interval — see the field descriptions. The pre-Codex-review version of
-    this schema named these `confidence_low/high` which overclaimed.
+    `uncertainty_low` / `uncertainty_high` remain a fixed-width heuristic
+    band, NOT a calibrated statistical interval — see the field descriptions.
+    Proper coverage intervals (bootstrap or conformal) are deferred to
+    v1.5.3.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -43,7 +47,12 @@ class MLPosPriorResult(BaseModel):
     predicted_pos: float = Field(
         ge=0.0,
         le=1.0,
-        description="Logistic-surrogate estimate of phase-to-approval probability.",
+        description=(
+            "Supervised LightGBM prediction of phase-to-approval "
+            "probability. Inputs: PubMedBERT-pooled embedding of the trial's "
+            "eligibility-criteria text + 36-dim structured feature vector. "
+            "Trained on HINT clinical-trial outcomes (Fu 2022)."
+        ),
     )
     uncertainty_low: float = Field(
         ge=0.0,
@@ -52,9 +61,9 @@ class MLPosPriorResult(BaseModel):
             "Lower bound of a fixed-width heuristic band (±0.30 in logit "
             "space from the point estimate, mapped back to probability). "
             "NOT a calibrated statistical interval — the width is a "
-            "conservative heuristic, not derived from x' Cov(beta) x or "
-            "bootstrap. See methodology/09-ml-pos-prior.md for the v1.5.2 "
-            "path to proper coverage intervals."
+            "conservative heuristic, not bootstrap- or conformal-derived. "
+            "See methodology/09-ml-pos-prior.md for the v1.5.3 path to "
+            "proper coverage intervals."
         ),
     )
     uncertainty_high: float = Field(
@@ -74,8 +83,10 @@ class MLPosPriorResult(BaseModel):
         description=(
             "aligned (|disagreement| < 3pp), "
             "moderate (3-7pp), "
-            "divergent (>7pp). Surfaces composition-rule sensitivity "
-            "(multiplicative vs. additive log-odds) — NOT independent evidence."
+            "divergent (>7pp). For v1.5.2 this surfaces *independent* "
+            "evidence: the rule chain encodes BIO base rates + modality + "
+            "reflexivity, while the ML head encodes protocol-text + "
+            "structured-feature signal supervised on real HINT outcomes."
         )
     )
     model_kind: str

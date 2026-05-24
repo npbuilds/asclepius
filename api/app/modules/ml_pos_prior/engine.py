@@ -34,6 +34,7 @@ v0.2.0-specific fields:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import math
@@ -64,11 +65,17 @@ log = logging.getLogger(__name__)
 MODEL_PATH = Path(__file__).parent / "model.joblib"
 CACHE_DIR = Path(__file__).parent / "cache"
 
-# v1.5.2 Day 4 (Phase 4C): the engine serves cached predictions for known
-# assets without running PubMedBERT inference. Mirrors the agent caches.
-# Cache key is the lowercased asset_name slug; file is cache/<slug>.json
-# containing a serialized MLPosPriorResult payload.
-_CACHED_ASSETS = frozenset({"adagrasib"})
+# v1.5.2 Day 4 (Phase 4C / Codex remediation): the engine serves cached
+# predictions for known assets without running PubMedBERT inference,
+# mirroring the agent-cache pattern. v1.5.2.1 (this commit) fixes two
+# Codex review findings:
+#   1. Cache discovery is now filesystem-based (any `cache/<slug>.json`
+#      present is a valid cache; no hardcoded frozenset). Simpler;
+#      adding a new cached asset is a drop-in JSON file.
+#   2. Cache hits verify a feature_fingerprint hash before returning,
+#      so a request with a modified asset (e.g., user dragged a slider)
+#      falls through to live inference instead of silently serving a
+#      stale precomputed prediction.
 
 # v1.5.2: combined dim = 768 (PubMedBERT) + 36 (structured)
 EXPECTED_COMBINED_DIM = bert_embed.EMBEDDING_DIM + N_STRUCT_FEATURES
@@ -153,6 +160,32 @@ def _load_model():
                 f"{bert_embed.POOL_METHOD!r}."
             ),
         )
+    # v1.5.2.1 (Codex Day 4 MINOR #5): validate the lightgbm major version
+    # matches between training and runtime. joblib pickle compatibility
+    # across LightGBM major versions is not guaranteed; minor-version drift
+    # is fine. Missing field is permitted for backward compat with
+    # artifacts trained before this check was added.
+    schema_lgbm_major = schema.get("lightgbm_version_major")
+    if schema_lgbm_major and schema_lgbm_major != "unknown":
+        try:
+            import lightgbm as _lgb
+
+            runtime_major = _lgb.__version__.split(".")[0]
+            if runtime_major != schema_lgbm_major:
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        f"ML PoS Prior artifact trained on LightGBM major "
+                        f"{schema_lgbm_major}, runtime has major "
+                        f"{runtime_major}. Re-train against the runtime "
+                        f"LightGBM version."
+                    ),
+                )
+        except ImportError:
+            raise HTTPException(
+                status_code=503,
+                detail="ML PoS Prior runtime missing lightgbm dependency.",
+            ) from None
 
     # Structured-feature categorical schema must still match runtime enums
     if (
@@ -233,28 +266,79 @@ def _slugify_asset_name(name: str) -> str:
     return cleaned or "unnamed"
 
 
+def compute_feature_fingerprint(record: DiligenceRecord) -> str:
+    """Hash of the structured-feature encoding of the asset.
+
+    A cached prediction is only valid for a request whose AssetInput
+    encodes to the same 36-dim structured vector that was used at
+    cache-gen time. If the user dragged a slider, changed phase, etc.,
+    the fingerprint mismatches and the engine falls through to the
+    live path (Codex Day 4 MAJOR finding #2).
+
+    Uses SHA-256 truncated to 16 hex chars (64-bit collision resistance —
+    overkill for the cache-key use, but cheap).
+    """
+    try:
+        x = encode(record.asset)
+    except Exception:
+        # If the runtime encoder can't encode the asset, there's no way
+        # a cache entry would be valid. Return a sentinel that can't
+        # match any cache fingerprint.
+        return "uncomputable"
+    return hashlib.sha256(x.tobytes()).hexdigest()[:16]
+
+
+def _list_cached_slugs() -> set[str]:
+    """Discover cached assets from the filesystem. Any `cache/<slug>.json`
+    present is treated as cached; no hardcoded frozenset (Codex Day 4
+    NIT finding #7)."""
+    if not CACHE_DIR.is_dir():
+        return set()
+    return {p.stem for p in CACHE_DIR.glob("*.json")}
+
+
 def _maybe_cached(record: DiligenceRecord) -> MLPosPriorResult | None:
-    """Cache-first read. Returns None if asset is not in the cache set
-    or the cache file is missing/unreadable (in which case the caller
-    falls through to the live path)."""
+    """Cache-first read. Returns None if:
+      - no cache file for this asset's slug exists, OR
+      - the cache file is unreadable / malformed, OR
+      - the cache file's feature_fingerprint doesn't match the request
+
+    In all three cases the caller falls through to the live ML path.
+    """
     slug = _slugify_asset_name(record.asset.asset_name)
-    if slug not in _CACHED_ASSETS:
+    if slug not in _list_cached_slugs():
         return None
     cache_path = CACHE_DIR / f"{slug}.json"
-    if not cache_path.exists():
-        log.warning("ml_pos_prior cache miss: %s declared cached but %s missing",
-                    slug, cache_path)
-        return None
     try:
         payload = json.loads(cache_path.read_text())
     except Exception as exc:
         log.warning("ml_pos_prior cache unreadable for %s: %s", slug, exc)
         return None
+
+    # Verify the request's structured features match what was cached.
+    # Codex Day 4 MAJOR #2: cache by slug alone could serve stale predictions
+    # when the user changed any asset field. Requiring a fingerprint match
+    # makes the cache safe to drag-slider-and-watch-it-update.
+    cached_fp = payload.get("feature_fingerprint")
+    runtime_fp = compute_feature_fingerprint(record)
+    if cached_fp is None:
+        log.warning(
+            "ml_pos_prior cache for %s missing feature_fingerprint — "
+            "treating as stale and falling through to live path", slug,
+        )
+        return None
+    if cached_fp != runtime_fp:
+        log.info(
+            "ml_pos_prior cache miss for %s: fingerprint %s != cache %s "
+            "(asset fields changed since cache-gen)",
+            slug, runtime_fp, cached_fp,
+        )
+        return None
+
     try:
-        # The cache may have been written with the live `rule_based_pos` from
-        # a specific PoS computation. Re-derive against the current record's
-        # PoS so the disagreement-pp surface stays consistent with whatever
-        # PoS slider state the user has set on the diligence page.
+        # The cache stores model outputs; re-derive `rule_based_pos` and
+        # `disagreement_pp` against the live PoS so the panel's
+        # disagreement chip updates as the user drags the PoS slider.
         ml_pred = float(payload["predicted_pos"])
         rule_based = record.pos.final_loa if record.pos else 0.0
         gap_pp = (ml_pred - rule_based) * 100.0

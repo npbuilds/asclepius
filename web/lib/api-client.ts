@@ -72,10 +72,18 @@ export async function runRnpv(
 export async function runMLPosPrior(
   asset: AssetInput,
   pos: PoSResult,
+  opts?: { criteria_text?: string | null; nct_id?: string | null },
 ): Promise<MLPosPriorResult> {
+  // v1.5.2: the backend's ML path needs eligibility-criteria text whenever
+  // the feature-fingerprint cache misses. The cached path (e.g. canonical
+  // adagrasib) ignores both fields. Send them through verbatim — the
+  // backend handles precedence (`criteria_text` wins over `nct_id`).
+  const body: Record<string, unknown> = { asset, pos };
+  if (opts?.criteria_text) body.criteria_text = opts.criteria_text;
+  if (opts?.nct_id) body.nct_id = opts.nct_id;
   return jsonFetch<MLPosPriorResult>("/api/modules/ml_pos_prior", {
     method: "POST",
-    body: JSON.stringify({ asset, pos }),
+    body: JSON.stringify(body),
   });
 }
 
