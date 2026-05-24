@@ -30,6 +30,8 @@ training = [
     "transformers>=4.40",
     "torch>=2.2",
     "huggingface-hub>=0.20",
+    "lightgbm>=4.6",
+    "rdkit>=2025.3",  # held in case v1.5.3 wants chemistry features (v1.5.2 didn't find them helpful)
 ]
 
 [build-system]

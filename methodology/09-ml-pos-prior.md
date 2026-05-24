@@ -123,27 +123,126 @@ deliver the BioBERT-on-protocol-text claim that the plan describes.
 The README and this writeup name the gap explicitly so a recruiter
 reading the codebase can verify what is and isn't real.
 
-## v1.5.2 specification
+## v1.5.2 — the real ML path (Day 3 result, supervised on HINT)
 
-The next iteration delivers the BioBERT path:
+v1.5.2 replaces the rule-distilled surrogate above with a genuine
+supervised classifier trained on real clinical-trial outcomes. **Test
+AUC 0.7030, Brier 0.2075** on the HINT held-out test split (n=3,133
+trials). The model is borderline-ship per the locked decision
+criteria (≥0.74 ship, ≥0.70 borderline, <0.70 don't ship).
 
-- Download HINT / CTOP corpus (~17K labeled trials).
-- Compute BioBERT pooled embeddings offline, store as numpy arrays in
-  the repo or external object storage.
-- Concatenate with the structured-feature vector this module already
-  produces.
-- Fit a larger classifier (gradient-boosted trees on the combined
-  feature set) and report AUC.
-- Replace this module's `model.joblib` with the new artifact; the
-  module structure (manifest, schemas, panel) does not change.
-- Add CT Open benchmark numbers and publish them in a new section of
-  this writeup.
-- Update the Calibration Dashboard to score the ML path independently
-  from the rule-based chain so the dashboard can track which path is
-  better-calibrated over time.
+### What we shipped
 
-That delivers the plan's v1.5 specification. v1.5.1 ships the
-scaffolding that makes v1.5.2 a drop-in swap rather than a rewrite.
+- **Corpus:** [HINT clinical-trial-outcome-prediction](https://github.com/futianfan/clinical-trial-outcome-prediction)
+  (Fu et al. 2022). 11,552 unique trials across Phase I/II/III with
+  binary success/failure labels; HINT's pre-defined train/valid/test
+  splits preserved (7,581 / 838 / 3,133).
+- **Text embedding:** [Microsoft PubMedBERT-base, abstract+fulltext](https://huggingface.co/microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext).
+  Mean-pooled token embeddings of the trial eligibility-criteria text,
+  truncated at 512 wordpiece tokens. PubMedBERT is the
+  trained-from-scratch-on-PubMed variant (BioBERT is BERT-base
+  continued-pretrained on PubMed); the from-scratch vocabulary is more
+  efficient for biomedical-dense text.
+- **Structured features:** the same 36-dim encoder v1.5.1 used (phase,
+  TA from ICD-10 chapter, modality from SMILES + drug-name heuristics,
+  biomarker enrichment from criteria regex, plus four fields that
+  default for HINT data).
+- **Classifier:** LightGBM with L1+L2 regularization (`reg_alpha=0.5,
+  reg_lambda=0.5, min_child_samples=30, n_estimators=500, lr=0.05`),
+  early-stopped against the HINT val split.
+- **Feature dim:** 768 (PubMedBERT) + 36 (structured) = 804.
+
+### Per-phase AUC
+
+| Phase | n | AUC | Brier | Observed rate |
+|---|---:|---:|---:|---:|
+| Phase 1 | 595 | 0.6574 | 0.2294 | 0.561 |
+| Phase 2 | 1,473 | 0.6798 | 0.2243 | 0.549 |
+| Phase 3 | 1,065 | 0.6929 | 0.1720 | 0.760 |
+| **All** | **3,133** | **0.7030** | **0.2075** | **0.623** |
+
+Phase 3 has the lowest Brier despite a similar AUC because its
+class-imbalanced 76% success rate means well-calibrated predictions
+naturally cluster near the right answer for most assets. Phase 1 and
+Phase 2 are nearer the 50/50 boundary, where small prediction errors
+are penalized more heavily.
+
+### What this is honestly NOT
+
+- **Not at the Doane 2025 baseline AUC of 0.74.** The gap (~0.04) is
+  structural — Doane's pipeline includes drug-SMILES embeddings via
+  ChemBERTa-style models, sponsor financial features via SEC EDGAR
+  linkage, and possibly finetuned BERT rather than frozen feature
+  extraction. We tested adding RDKit Morgan fingerprints; they didn't
+  help (likely because BioBERT/PubMedBERT already see drug names in
+  the criteria text). We tested adding criteria-length features and
+  3-seed model ensembling; neither moved the AUC meaningfully. Each
+  of the remaining gaps is multi-day work.
+- **Not benchmarked against CT Open.** The plan's v1.5.2 spec named
+  CT Open as the external benchmark. Running our model against CT
+  Open's test split is mechanically straightforward but requires
+  downloading + normalizing CT Open's data format and reporting
+  calibration metrics per CT Open's protocol. Deferred to v1.5.3.
+- **Honest caveat on structured features.** Four fields
+  (capital_position, regulatory_designations, target_validated,
+  num_competitors) default to constants for every HINT trial because
+  HINT doesn't carry that data. This zeros out their training-time
+  signal; the v1.5.2 model effectively learns from PubMedBERT + phase
+  + TA + modality + biomarker_enrichment (the fields that vary).
+  Backfill via SEC EDGAR + FDA Orange Book + literature lookup would
+  recover the missing signal — v1.5.3 candidate work.
+
+### Why this is still a strict upgrade over v1.5.1.1
+
+The v1.5.1.1 surrogate's training-time AUC was ~0.86 — but that was on
+Bernoulli labels sampled from the rule-based PoS chain itself, not on
+real outcomes. It measured "can logistic regression learn the rule
+chain" not "can the model predict real outcomes." That AUC is not
+comparable to a held-out test AUC on real labels.
+
+v1.5.2 at 0.7030 on real HINT outcomes is unambiguously better
+methodology even though the training-domain AUC is lower:
+
+1. **Real labels** — supervised on actual approved/failed outcomes,
+   not derived ones.
+2. **Independent of the rule chain** — disagreement between the
+   v1.5.2 ML path and the rule-based chain now reflects two
+   independent perspectives on the same asset (one fitted to outcomes,
+   one assembled from cited base rates × multiplicative adjustments).
+3. **Calibration Dashboard adjudicable** — the dashboard's
+   per-segment Brier can now score the v1.5.2 ML path against real
+   outcomes as predictions resolve, finally enabling the empirical
+   adjudication v1.5.1.1's methodology described aspirationally.
+
+The Calibration Dashboard's adagrasib-cohort Brier scores will move
+once we start logging v1.5.2's predictions alongside the rule-based
+chain's. That's the v1.5.3 + v1.6 maintenance work.
+
+### What lands in the codebase
+
+| File | Role |
+|---|---|
+| `api/data_pipeline/build_training_dataset.py` | HINT CSV → parquet with 36-dim structured features + criteria text + outcome label |
+| `api/data_pipeline/embed_biobert.py` | Local CPU embedding script (used for the BioBERT baseline; PubMedBERT was generated via the Colab notebook) |
+| `api/data_pipeline/notebooks/biobert_embed_colab.ipynb` | Colab notebook for the GPU embedding pass — supports either BioBERT or PubMedBERT via the `MODEL_ID` constant |
+| `api/data_pipeline/train_gbt.py` | LightGBM training on combined 804-dim features; saves `model_v152.joblib` |
+| `api/data/training/model_v152.joblib` | Trained artifact — LightGBM + PubMedBERT features + feature-schema sidecar |
+| `api/data/training/embeddings_pubmedbert.npy` | 11,552 × 768 PubMedBERT embeddings (gitignored; ships via Git LFS in Day 4) |
+
+### What's next (Day 4)
+
+Day 4 wires the v1.5.2 model into the runtime inference path:
+
+- Upgrade the Fly machine to `shared-cpu-2x` (1GB RAM) so a
+  PubMedBERT distilled or quantized variant fits.
+- Add a runtime PubMedBERT inference step to
+  `api/app/modules/ml_pos_prior/engine.py` so novel asset inputs can
+  be embedded on demand.
+- Replace `api/app/modules/ml_pos_prior/model.joblib` with the new
+  artifact, update the feature_schema sidecar to expect 804-dim
+  combined features, and regenerate the adagrasib cache.
+- Ship `embeddings_pubmedbert.npy` via Git LFS so the Day 1 HINT
+  training data is reproducible.
 
 ## Why a "rule-smoothed surrogate" matters at all
 
