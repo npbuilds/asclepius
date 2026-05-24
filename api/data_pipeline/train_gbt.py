@@ -80,7 +80,14 @@ RANDOM_SEED = 42
 
 
 def load_aligned_data() -> tuple[pd.DataFrame, np.ndarray]:
-    """Load parquet + embeddings, verify alignment, return both."""
+    """Load parquet + embeddings, verify alignment, return both.
+
+    v1.5.2.1 (Codex F1): all three files are MANDATORY. The previous
+    version made the NCTID sidecar optional, which silently accepted any
+    same-length array. Now an embeddings file without its matching
+    sidecar fails loud — the 0.7030 AUC claim rests on the sidecar
+    matching the parquet order, so we enforce that pairing.
+    """
     if not PARQUET_PATH.exists():
         raise FileNotFoundError(
             f"Training parquet not found at {PARQUET_PATH}. "
@@ -88,36 +95,51 @@ def load_aligned_data() -> tuple[pd.DataFrame, np.ndarray]:
         )
     if not EMBEDDINGS_PATH.exists():
         raise FileNotFoundError(
-            f"BioBERT embeddings not found at {EMBEDDINGS_PATH}. "
-            f"Run Day 2 (Colab notebook or local embed_biobert.py)"
+            f"Embeddings not found at {EMBEDDINGS_PATH}. "
+            f"Run Day 2 (Colab notebook with PubMedBERT, or "
+            f"`python -m data_pipeline.embed_biobert` locally)."
+        )
+    if not NCTID_INDEX_PATH.exists():
+        raise FileNotFoundError(
+            f"Embeddings sidecar (nctid order file) not found at "
+            f"{NCTID_INDEX_PATH}. The sidecar is mandatory — its presence "
+            f"is what guarantees row-by-row alignment with the parquet "
+            f"DataFrame. Re-run the Day 2 producer so both files are "
+            f"emitted together."
         )
 
     df = pd.read_parquet(PARQUET_PATH)
     embeddings = np.load(EMBEDDINGS_PATH)
+    index_nctids = NCTID_INDEX_PATH.read_text().strip().split("\n")
 
-    # Alignment check — must match by both length and nctid order
+    # Alignment check — must match by length, dim, AND nctid order
     if len(df) != embeddings.shape[0]:
         raise ValueError(
             f"row count mismatch: parquet has {len(df)} rows, "
             f"embeddings have {embeddings.shape[0]}"
         )
-    if NCTID_INDEX_PATH.exists():
-        index_nctids = NCTID_INDEX_PATH.read_text().strip().split("\n")
-        if list(df["nctid"]) != index_nctids:
-            raise ValueError(
-                "nctid order mismatch between parquet and embeddings index file"
-            )
-
+    if len(df) != len(index_nctids):
+        raise ValueError(
+            f"sidecar row count mismatch: parquet has {len(df)} rows, "
+            f"sidecar has {len(index_nctids)}"
+        )
+    if list(df["nctid"]) != index_nctids:
+        raise ValueError(
+            "nctid order mismatch between parquet and embeddings sidecar. "
+            "The embeddings file is paired with the wrong sidecar (or vice "
+            "versa). Re-run Day 2 to regenerate both atomically."
+        )
     if embeddings.shape[1] != EMBEDDING_DIM:
         raise ValueError(
-            f"embedding dim mismatch: got {embeddings.shape[1]}, expected {EMBEDDING_DIM}"
+            f"embedding dim mismatch: got {embeddings.shape[1]}, "
+            f"expected {EMBEDDING_DIM}"
         )
 
     return df, embeddings
 
 
 def build_feature_matrix(df: pd.DataFrame, embeddings: np.ndarray) -> np.ndarray:
-    """Concatenate [BioBERT 768] + [structured 36] per row → 804-dim matrix."""
+    """Concatenate [BERT-family embedding 768] + [structured 36] per row → 804-dim matrix."""
     struct_features = np.array(df["feature_vector"].tolist(), dtype=np.float32)
     if struct_features.shape[1] != N_STRUCT_FEATURES:
         raise ValueError(
@@ -206,9 +228,15 @@ def train_model(
     return model, metrics
 
 
-def save_artifact(model, metrics: dict) -> Path:
+def save_artifact(model, metrics: dict, *, seed: int = RANDOM_SEED) -> Path:
     """Persist model + feature_schema + training_meta in the same shape as
-    v1.5.1's artifact (so the Day 4 inference path can load it)."""
+    v1.5.1's artifact (so the Day 4 inference path can load it).
+
+    v1.5.2.1 (Codex F8): the actual seed used at fit time is persisted in
+    training_meta, not the module-level RANDOM_SEED constant. Re-running
+    with --seed now records the actual seed in the artifact metadata,
+    preserving reproducibility.
+    """
     from datetime import datetime, timezone
 
     import sklearn
@@ -227,12 +255,15 @@ def save_artifact(model, metrics: dict) -> Path:
     training_meta = {
         "sklearn_version": sklearn.__version__,
         "trained_at": datetime.now(timezone.utc).isoformat(),
-        "random_seed": RANDOM_SEED,
+        "random_seed": seed,
         "training_label_source": (
             "HINT clinical-trial-outcome-prediction corpus "
             "(Fu et al. 2022); supervised on real success/failure outcomes — "
-            "independent of the rule-based PoS chain. This is the v1.5.2 "
-            "honesty upgrade over v1.5.1's logistic surrogate (rule-distilled)."
+            "not label-derived from the rule chain (the v1.5.1 surrogate's "
+            "labels were Bernoulli samples from the rule chain itself; "
+            "v1.5.2 uses real outcomes instead). See "
+            "methodology/09-ml-pos-prior.md for the precise framing of the "
+            "remaining shared upstream dependencies."
         ),
         "embedding_model_id": EMBEDDING_MODEL_ID,
         "classifier": "LightGBM L1+L2 regularized, n_estimators=500, lr=0.05",
@@ -259,7 +290,9 @@ def main(argv: list[str]) -> int:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    log.info("Day 3: training GBT classifier on combined BioBERT + structured features")
+    log.info(
+        "Day 3: training GBT classifier on combined PubMedBERT + structured features"
+    )
     df, embeddings = load_aligned_data()
     X = build_feature_matrix(df, embeddings)
     y = df["label"].to_numpy()
@@ -268,7 +301,7 @@ def main(argv: list[str]) -> int:
     log.info("X shape: %s, y shape: %s", X.shape, y.shape)
 
     model, metrics = train_model(X, y, splits, seed=args.seed)
-    save_artifact(model, metrics)
+    save_artifact(model, metrics, seed=args.seed)
 
     # Per-phase breakdown of test AUC
     print("\nPER-PHASE TEST METRICS")

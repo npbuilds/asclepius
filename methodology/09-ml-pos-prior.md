@@ -205,10 +205,16 @@ methodology even though the training-domain AUC is lower:
 
 1. **Real labels** — supervised on actual approved/failed outcomes,
    not derived ones.
-2. **Independent of the rule chain** — disagreement between the
-   v1.5.2 ML path and the rule-based chain now reflects two
-   independent perspectives on the same asset (one fitted to outcomes,
-   one assembled from cited base rates × multiplicative adjustments).
+2. **Not label-derived from the rule chain** — the v1.5.2 ML labels
+   come from real FDA-approval / discontinuation outcomes (via HINT),
+   not from Bernoulli samples of the rule chain's own output.
+   Disagreement between the two paths reflects two perspectives
+   informed by *different signals* — one fitted to historical
+   outcomes, one assembled from cited base rates × multiplicative
+   adjustments — though they share the same upstream clinical-
+   development domain (HINT outcomes and BIO base rates are both
+   downstream of the same regulatory process, so the two paths aren't
+   strictly statistically independent).
 3. **Calibration Dashboard adjudicable** — the dashboard's
    per-segment Brier can now score the v1.5.2 ML path against real
    outcomes as predictions resolve, finally enabling the empirical
@@ -218,7 +224,9 @@ The Calibration Dashboard's adagrasib-cohort Brier scores will move
 once we start logging v1.5.2's predictions alongside the rule-based
 chain's. That's the v1.5.3 + v1.6 maintenance work.
 
-### What lands in the codebase
+### What lands in the codebase (Day 3)
+
+Committed (tracked in git):
 
 | File | Role |
 |---|---|
@@ -226,8 +234,15 @@ chain's. That's the v1.5.3 + v1.6 maintenance work.
 | `api/data_pipeline/embed_biobert.py` | Local CPU embedding script (used for the BioBERT baseline; PubMedBERT was generated via the Colab notebook) |
 | `api/data_pipeline/notebooks/biobert_embed_colab.ipynb` | Colab notebook for the GPU embedding pass — supports either BioBERT or PubMedBERT via the `MODEL_ID` constant |
 | `api/data_pipeline/train_gbt.py` | LightGBM training on combined 804-dim features; saves `model_v152.joblib` |
-| `api/data/training/model_v152.joblib` | Trained artifact — LightGBM + PubMedBERT features + feature-schema sidecar |
-| `api/data/training/embeddings_pubmedbert.npy` | 11,552 × 768 PubMedBERT embeddings (gitignored; ships via Git LFS in Day 4) |
+
+Generated artifacts (gitignored — produced by running the Day 1/2/3 pipeline; Day 4 will ship the trained model via the repo and embeddings via Git LFS):
+
+| Generated file | Role | Size |
+|---|---|---|
+| `api/data/training/training_dataset.parquet` | Day 1 output (HINT corpus normalized + structured features) | 14 MB |
+| `api/data/training/embeddings_pubmedbert.npy` | Day 2 output (11,552 × 768 PubMedBERT embeddings) | 35 MB |
+| `api/data/training/embeddings_pubmedbert_nctid.txt` | Day 2 sidecar (one NCT ID per line, ordered with the .npy rows). v1.5.2.1: mandatory for the trainer's alignment check. | 138 KB |
+| `api/data/training/model_v152.joblib` | Day 3 trained artifact (LightGBM + feature_schema + training_meta) | 0.3 MB |
 
 ### What's next (Day 4)
 

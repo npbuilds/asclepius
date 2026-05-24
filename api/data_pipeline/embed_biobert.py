@@ -43,11 +43,25 @@ log = logging.getLogger(__name__)
 API_DIR = Path(__file__).resolve().parent.parent
 TRAINING_DIR = API_DIR / "data" / "training"
 PARQUET_IN = TRAINING_DIR / "training_dataset.parquet"
-EMBEDDINGS_OUT = TRAINING_DIR / "embeddings.npy"
-NCTID_INDEX_OUT = TRAINING_DIR / "embeddings_nctid.txt"
 
+# Output paths default to PubMedBERT's, which is the v1.5.2 ship config.
+# BioBERT is kept as an alternate model for ablation but writes to a
+# differently-named pair so the two never silently overwrite each other.
+# v1.5.2.1 (Codex F1): the sidecar filename now mirrors the embeddings
+# filename exactly — `<x>.npy` paired with `<x>_nctid.txt`. The trainer
+# requires both files (mandatory check, not optional) so a re-run with a
+# mis-paired sidecar fails loud instead of accepting any same-length array.
+EMBEDDINGS_OUT = TRAINING_DIR / "embeddings_pubmedbert.npy"
+NCTID_INDEX_OUT = TRAINING_DIR / "embeddings_pubmedbert_nctid.txt"
+
+# Default to PubMedBERT (the v1.5.2 ship model). The Colab notebook + this
+# script both consume this constant so a swap is a single edit.
+DEFAULT_MODEL_ID = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
+MAX_LENGTH = 512  # PubMedBERT's max wordpiece-token sequence (same as BioBERT)
+# Retained for the BioBERT ablation comparison documented in
+# methodology/09-ml-pos-prior.md. Switch DEFAULT_MODEL_ID + the output
+# filename constants to revert.
 BIOBERT_MODEL_ID = "dmis-lab/biobert-v1.1"
-MAX_LENGTH = 512  # BioBERT's max wordpiece-token sequence
 
 
 def _resolve_device(preferred: str | None) -> str:
@@ -105,9 +119,9 @@ def embed_criteria(
     device = _resolve_device(device)
     log.info("using device: %s", device)
 
-    log.info("loading BioBERT model + tokenizer from %s", BIOBERT_MODEL_ID)
-    tokenizer = AutoTokenizer.from_pretrained(BIOBERT_MODEL_ID)
-    model = AutoModel.from_pretrained(BIOBERT_MODEL_ID).to(device).eval()
+    log.info("loading model + tokenizer from %s", DEFAULT_MODEL_ID)
+    tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL_ID)
+    model = AutoModel.from_pretrained(DEFAULT_MODEL_ID).to(device).eval()
 
     embeddings = np.zeros((len(df), 768), dtype=np.float32)
     nctids: list[str] = []
