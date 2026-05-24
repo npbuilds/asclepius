@@ -32,11 +32,26 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# v1.5.2: install the CPU-only torch wheel explicitly to avoid pulling the
+# v1.5.2.3: install libgomp (OpenMP runtime). LightGBM's manylinux wheel
+# dlopens `libgomp.so.1` at first `import lightgbm`; python:3.11-slim
+# strips system libs by default, so without this the engine crashes at
+# load with `libgomp.so.1: cannot open shared object file`. Cost: ~150 KB.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# v1.5.2.3: install the CPU-only torch wheel explicitly to avoid pulling the
 # default wheel (which includes NVIDIA CUDA runtime libraries ~2 GB).
 # This must happen before `pip install .` reads pyproject.toml, otherwise
 # pip resolves the GPU wheel.
-RUN pip install --no-cache-dir torch==2.4.1+cpu \
+#
+# Torch must be >= 2.6 because transformers >= 4.46 enforces CVE-2025-32434
+# (`torch.load` vulnerability — `check_torch_load_is_safe()` raises on any
+# .bin checkpoint with torch < 2.6, even with `weights_only=True`).
+# PubMedBERT's HF repo only ships `pytorch_model.bin` (no safetensors
+# variant), so the CVE check trips on every cold load unless torch is
+# new enough.
+RUN pip install --no-cache-dir torch==2.6.0+cpu \
     --index-url https://download.pytorch.org/whl/cpu
 
 # Install project deps (pyproject.toml lists transformers + lightgbm in
