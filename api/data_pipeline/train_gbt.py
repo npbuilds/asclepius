@@ -241,19 +241,35 @@ def save_artifact(model, metrics: dict, *, seed: int = RANDOM_SEED) -> Path:
 
     import sklearn
 
+    # v1.5.2 Day 4 (Decision D): schema sidecar adds the embedding-pipeline
+    # parameters that the runtime engine must match exactly. Any drift
+    # between training-time and runtime tokenization / pooling silently
+    # produces wrong embeddings, so we record + validate all of them.
     feature_schema = {
         "n_features": COMBINED_DIM,
         "embedding_dim": EMBEDDING_DIM,
         "structured_dim": N_STRUCT_FEATURES,
         "embedding_model_id": EMBEDDING_MODEL_ID,
+        "max_length": 512,
+        "pool_method": "mean",
         "phase_order": [p.value for p in PHASE_ORDER],
         "therapeutic_areas": [t.value for t in THERAPEUTIC_AREAS],
         "modalities": [m.value for m in MODALITIES],
         "capital_positions": [c.value for c in CAPITAL_POSITIONS],
         "designation_flags": [d.value for d in DESIGNATION_FLAGS],
     }
+    # Record lightgbm + sklearn versions so the runtime engine can flag
+    # major-version mismatches (joblib pickle compat is sketchy across them)
+    try:
+        import lightgbm
+
+        lightgbm_version = lightgbm.__version__
+    except ImportError:
+        lightgbm_version = "unknown"
+
     training_meta = {
         "sklearn_version": sklearn.__version__,
+        "lightgbm_version": lightgbm_version,
         "trained_at": datetime.now(timezone.utc).isoformat(),
         "random_seed": seed,
         "training_label_source": (

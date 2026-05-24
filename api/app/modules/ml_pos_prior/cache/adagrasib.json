@@ -1,0 +1,10 @@
+{
+  "predicted_pos": 0.39420260799355333,
+  "uncertainty_low": 0.3252648252079866,
+  "uncertainty_high": 0.4676252122670929,
+  "model_kind": "lightgbm_pubmedbert_v0.2.0_42",
+  "n_features": 804,
+  "source_nct_id": "NCT04685135",
+  "source_criteria_chars": 560,
+  "note": "Pre-computed v1.5.2 prediction. PubMedBERT-embedded NCT04685135 eligibility criteria + 36-dim structured features ran through LightGBM (lightgbm_pubmedbert_v0.2.0_42). See methodology/09-ml-pos-prior.md."
+}

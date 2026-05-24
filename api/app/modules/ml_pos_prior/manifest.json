@@ -1,8 +1,8 @@
 {
   "id": "ml_pos_prior",
   "name": "ML PoS Prior",
-  "version": "0.1.0",
-  "description": "A structured-feature logistic-regression classifier that estimates phase-to-approval probability from the same inputs the deterministic chain uses (phase, TA, modality, capital position, regulatory designations, biomarker enrichment, target validation, competitor count). Trained on a synthetic dataset sampled from the BIO base rates with stochastic outcomes. Acts as a smoothed, continuous-valued second opinion to the rule-based PoS chain. Disagreement between the two paths surfaces as an uncertainty signal — the plan's 'disagreement-between-methods' beat. The BioBERT/CTOP path is documented as v1.5.2.",
+  "version": "0.2.0",
+  "description": "PubMedBERT-embedded eligibility-criteria text + 36-dim structured features → LightGBM classifier supervised on real HINT clinical-trial outcomes (Fu et al. 2022). 804-dim combined feature space; test AUC 0.7030 on the HINT held-out test split. v0.2.0 replaces v0.1.x's rule-distilled logistic surrogate with the supervised model. The runtime engine embeds eligibility-criteria text in-container (PubMedBERT-base, ~440MB); novel asset inputs supply text via the criteria_text field or fetch via nct_id from ClinicalTrials.gov v2.",
   "inputs": [
     "asset.phase",
     "asset.therapeutic_area",

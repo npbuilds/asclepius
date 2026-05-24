@@ -27,5 +27,9 @@ primary_region = "iad"
     path = "/health"
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+  # v1.5.2 Day 4: upgraded from shared-cpu-1x / 256mb to shared-cpu-2x /
+  # 1024mb to accommodate the in-container PubMedBERT-base load (~440 MB)
+  # used by the ML PoS Prior module. Cost delta: ~$5/mo extra at typical
+  # portfolio traffic.
+  size = "shared-cpu-2x"
+  memory = "1024mb"

@@ -1,12 +1,24 @@
 """Schemas for the ML PoS Prior module.
 
-Naming was revised in response to a Codex review: the module is now framed
-as a "rule-smoothed logistic surrogate" rather than a "second opinion",
-because the training labels are Bernoulli-sampled from the rule-based PoS
-engine — the disagreement signal reflects logistic-regression's additive-
-log-odds inductive bias vs. the rule chain's multiplicative composition,
-not independent clinical evidence. The fields are renamed accordingly so
-downstream code, schemas, and UI cannot drift from the honest framing.
+v1.5.1.1 framing: rule-smoothed logistic surrogate. Labels were Bernoulli
+samples from the rule-based PoS chain itself; disagreement reflected
+composition-rule sensitivity (multiplicative vs additive log-odds), not
+independent evidence.
+
+v1.5.2 (this version): supervised on real HINT clinical-trial outcomes
+via the offline LightGBM trainer at api/data_pipeline/train_gbt.py.
+PubMedBERT pooled embeddings of the eligibility-criteria text +
+36-dim structured feature vector → 804-dim combined → LGBM. The
+runtime engine loads PubMedBERT in-container and embeds criteria text
+per request.
+
+Request schema gains optional criteria_text + nct_id (with NCT-ID
+fallback fetching from ClinicalTrials.gov v2). Both optional — if
+neither is supplied, the engine returns HTTPException(422) because
+the v1.5.2 ML path requires text to embed.
+
+The MLPosPriorResult shape is unchanged from v1.5.1.1 so the existing
+frontend panel renders without modification.
 """
 
 from __future__ import annotations

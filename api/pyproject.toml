@@ -12,25 +12,33 @@ dependencies = [
     "anthropic>=0.40",
     "scikit-learn>=1.5",
     "joblib>=1.4",
+    # v1.5.2 Day 4 (runtime ML): these were in [training] until v1.5.1 because
+    # the v1.5.1.1 inference path was structured-features-only. v1.5.2's
+    # engine runs PubMedBERT in-container for every novel input, so they
+    # become base runtime deps. Total install size on the Fly container is
+    # ~1.4 GB; the machine size in fly.toml was upgraded to shared-cpu-2x
+    # (1 GB RAM) to fit.
+    "httpx>=0.27",
+    "torch>=2.2",
+    "transformers>=4.40",
+    "lightgbm>=4.6",
+    "huggingface-hub>=0.20",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
-    "httpx>=0.27",
     "ruff>=0.5",
 ]
-# v1.5.2 training pipeline only — not loaded at runtime. Heavy deps live here
-# so the production Fly container stays lean (pandas + pyarrow alone are
-# >100MB on disk).
+# v1.5.2 training pipeline — pandas + pyarrow are pipeline-only (the
+# runtime container reads pre-trained joblib artifacts, not parquet).
+# torch + transformers + lightgbm moved to base [dependencies] in
+# v1.5.2 Day 4 because the runtime engine needs them for in-container
+# PubMedBERT inference.
 training = [
     "pandas>=2.2",
     "pyarrow>=15.0",
-    "transformers>=4.40",
-    "torch>=2.2",
-    "huggingface-hub>=0.20",
-    "lightgbm>=4.6",
     # On macOS, LightGBM requires libomp (the LLVM OpenMP runtime). Install
     # with `brew install libomp` before running the training pipeline. The
     # error if missing is a dlopen failure of @rpath/libomp.dylib at first

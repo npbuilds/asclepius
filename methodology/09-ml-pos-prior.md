@@ -54,13 +54,23 @@ For adagrasib at the June 2022 cutoff (Phase 2 oncology, small molecule,
 adequate capital, BTD, biomarker-enriched, target-validated, one
 competitor):
 
-| Path | Estimated PoS |
-|---|---:|
-| BIO base rate (Phase 2 oncology) | 10.6% |
-| Rule-based final LOA (multiplicative chain) | 16.1% |
-| ML prior (logistic regression) | 36.7% |
+| Path | Estimated PoS | Source |
+|---|---:|---|
+| BIO base rate (Phase 2 oncology) | 10.6% | BIO 2021 + Wong 2019 transition table |
+| Rule-based final LOA (multiplicative chain) | 16.1% | base × modality × BTD × biomarker × target_validated × reflexivity |
+| ML prior — v1.5.1.1 (LR surrogate, rule-distilled) | 36.7% | logistic regression on Bernoulli-sampled rule-chain labels |
+| **ML prior — v1.5.2 (LightGBM, PubMedBERT-embedded, real outcomes)** | **39.4%** | NCT04685135 criteria + structured features through `lightgbm_pubmedbert_v0.2.0_42` |
 
-The 20.6pp gap is large enough to be labeled *divergent* in the panel.
+Both surrogate (36.7%) and supervised (39.4%) ML paths land in the same
+neighborhood — significantly higher than the rule-chain's 16.1%. That
+they agree closely while being trained on different label sources is
+mildly reassuring: the additive-log-odds composition produces a similar
+posterior whether the labels are Bernoulli samples from the rule chain
+or real HINT outcomes. v1.5.2's 39.4% is the canonical ML prediction
+the panel now displays.
+
+The ~23pp gap between the rule chain and the v1.5.2 ML prediction is
+*divergent* in the panel.
 Two readings of the gap:
 
 1. **The rule-based chain may be under-adjusting.** The multiplicative
