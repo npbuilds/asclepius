@@ -74,6 +74,34 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
   }
 
   if (error) {
+    // Graceful degrade for the engine's intentional Phase.APPROVED guard
+    // (the LightGBM classifier was trained on phase_1/2/3 → success
+    // transitions; running it on already-approved assets would be silent
+    // out-of-distribution extrapolation). The rule chain returns the
+    // deterministic LOA directly for approved assets, so the right UX
+    // is a soft "not applicable" tile, not a red error.
+    const isApprovedAsset = /Phase\.APPROVED/i.test(error);
+    if (isApprovedAsset) {
+      return (
+        <section className="rounded border border-border-dim bg-bg-panel p-3">
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+              ML PoS Prior · n/a for approved assets
+            </h2>
+            <span className="font-mono text-[9px] uppercase tracking-wider text-text-dim">
+              out of training distribution
+            </span>
+          </div>
+          <p className="font-prose text-[11px] leading-snug text-text-dim">
+            The supervised LightGBM classifier was fit on phase_1/2/3 →
+            approval transitions; running it on assets already at
+            Phase.APPROVED would silently extrapolate out-of-distribution.
+            The rule-based chain above returns the deterministic LOA for
+            approved assets directly — that is the right number to read.
+          </p>
+        </section>
+      );
+    }
     return (
       <section className="rounded border border-red-bright/30 bg-red-bright/10 p-3 text-sm text-red-bright">
         ML PoS Prior unavailable: {error}

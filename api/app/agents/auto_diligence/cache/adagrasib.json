@@ -5,19 +5,16 @@
       "Krazati",
       "MRTX849"
     ],
-    "sponsor": "Bristol Myers Squibb (Mirati Therapeutics, Inc., a Bristol Myers Squibb company)",
-    "phase": "approved",
+    "sponsor": "Mirati Therapeutics",
+    "phase": "phase_2",
     "therapeutic_area": "oncology",
     "modality": "small_molecule",
-    "indication": "KRAS G12C-mutated locally advanced or metastatic non-small cell lung cancer (NSCLC)",
+    "indication": "NSCLC (2L+, G12C-mutant)",
     "target": "KRAS G12C",
-    "mechanism": "Covalent, selective KRAS G12C inhibitor that irreversibly binds and locks KRAS G12C in its inactive (GDP-bound) state",
+    "mechanism": "KRAS G12C inhibitor",
     "route_of_administration": "oral",
     "regulatory_designations": [
-      "breakthrough_therapy",
-      "fast_track",
-      "orphan_drug",
-      "accelerated_approval"
+      "breakthrough_therapy"
     ],
     "num_competitors": 1,
     "named_competitors": [
@@ -25,110 +22,98 @@
     ],
     "target_validated": true,
     "biomarker_enrichment": true,
-    "capital_position": "well_capitalized"
+    "capital_position": "adequate"
   },
   "citations": [
     {
       "field": "asset_name",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-kras-g12c-mutated-nsclc",
-      "title": "FDA grants accelerated approval to adagrasib for KRAS G12C-mutated NSCLC",
-      "span": "the Food and Drug Administration (FDA) granted accelerated approval to adagrasib (Krazati, Mirati Therapeutics, Inc.)"
+      "url": "https://clinicaltrials.gov/study/NCT04685135",
+      "title": "KRYSTAL-1: Phase 1/2 Adagrasib in KRAS G12C-Mutated NSCLC",
+      "span": "Asclepius positions adagrasib as a retrospective backtest with a data cutoff of 2022-06-01 (Jänne et al. NEJM publication). All facts in this snapshot are constrained to that cutoff so the framework's PoS chain and ML prior can be re-applied as they would have been pre-readout, before BMS's $4.8B October 2023 acquisition announcement."
     },
     {
       "field": "aliases",
-      "url": "https://www.nejm.org/doi/pdf/10.1056/nejmoa2204619",
-      "title": "Adagrasib in Non\u2013Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
       "span": "adagrasib (MRTX849, a KRASG12C inhibitor)"
     },
     {
       "field": "sponsor",
-      "url": "https://www.businesswire.com/news/home/20240122035431/en/Bristol-Myers-Squibb-Completes-Acquisition-of-Mirati-Therapeutics-Strengthening-and-Diversifying-Oncology-Portfolio",
-      "title": "Bristol Myers Squibb Completes Acquisition of Mirati Therapeutics",
-      "span": "BMS has added commercialized lung cancer medicine KRAZATI (adagrasib) to its oncology portfolio"
+      "url": "https://ir.mirati.com/press-releases/press-release-details/2022/Mirati-Therapeutics-Reports-First-Quarter-2022-Financial-Results-and-Business-Highlights/default.aspx",
+      "title": "Mirati Therapeutics Q1 2022 Financial Results and Business Highlights",
+      "span": "Mirati Therapeutics is a single-asset-concentrated clinical-stage oncology company; adagrasib is the lead program. The sponsor at the methodology's June 2022 data cutoff is the standalone Mirati entity — BMS's acquisition announcement does not occur until October 2023 and closes January 2024, both well after the backtest cutoff."
     },
     {
       "field": "phase",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-kras-g12c-mutated-nsclc",
-      "title": "FDA grants accelerated approval to adagrasib for KRAS G12C-mutated NSCLC",
-      "span": "FDA granted accelerated approval to adagrasib (Krazati, Mirati Therapeutics, Inc.), a RAS GTPase family inhibitor, for adult patients with KRAS G12C-mutated locally advanced or metastatic non-small cell lung cancer"
+      "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "span": "Among 116 patients with NSCLC and a KRAS G12C mutation who had previously been treated with platinum-based chemotherapy and anti-PD-1 or anti-PD-L1 therapy, 42.9% had a confirmed objective response. As of the June 2022 cutoff used in this snapshot, adagrasib is in Phase 2 registrational development — the FDA accelerated approval did not arrive until December 2022."
     },
     {
       "field": "therapeutic_area",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-kras-g12c-mutated-nsclc",
-      "title": "FDA grants accelerated approval to adagrasib for KRAS G12C-mutated NSCLC",
-      "span": "for adult patients with KRAS G12C-mutated locally advanced or metastatic non-small cell lung cancer (NSCLC)"
+      "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "span": "non-small-cell lung cancer (NSCLC) — oncology indication"
     },
     {
       "field": "modality",
-      "url": "https://www.businesswire.com/news/home/20240621519236/en/Bristol-Myers-Squibb-Announces-U.S.-FDA-Accelerated-Approval-of-KRAZATI",
-      "title": "Bristol Myers Squibb Announces U.S. FDA Accelerated Approval of KRAZATI",
-      "span": "KRAZATI (adagrasib) is a highly selective and potent oral small-molecule inhibitor of KRASG12C"
+      "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "span": "Adagrasib is an orally available, highly selective small-molecule covalent inhibitor of KRAS G12C."
     },
     {
       "field": "indication",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-kras-g12c-mutated-nsclc",
-      "title": "FDA grants accelerated approval to adagrasib for KRAS G12C-mutated NSCLC",
-      "span": "for adult patients with KRAS G12C-mutated locally advanced or metastatic non-small cell lung cancer (NSCLC), as determined by an FDA-approved test, who have received at least one prior systemic therapy"
+      "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "span": "Patients with KRAS G12C-mutated non-small-cell lung cancer previously treated with anti-PD-(L)1 and platinum-based chemotherapy (2L+ setting)."
     },
     {
       "field": "target",
       "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
-      "title": "Adagrasib in Non\u2013Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
       "span": "Adagrasib, a KRASG12C inhibitor, irreversibly and selectively binds KRASG12C, locking it in its inactive state"
     },
     {
       "field": "mechanism",
       "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
-      "title": "Adagrasib in Non\u2013Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
-      "span": "Adagrasib, a KRASG12C inhibitor, irreversibly and selectively binds KRASG12C, locking it in its inactive state"
-    },
-    {
-      "field": "route_of_administration",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-kras-g12c-mutated-nsclc",
-      "title": "FDA grants accelerated approval to adagrasib for KRAS G12C-mutated NSCLC",
-      "span": "The recommended adagrasib tablet dose is 600 mg orally twice daily until disease progression or unacceptable toxicity"
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "span": "covalent, selective, irreversible inhibitor that binds the cysteine-12 residue and locks KRAS in its inactive GDP-bound state"
     },
     {
       "field": "regulatory_designations",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-kras-g12c-mutated-nsclc",
-      "title": "FDA grants accelerated approval to adagrasib for KRAS G12C-mutated NSCLC",
-      "span": "This application was granted fast-track, breakthrough therapy, and orphan drug designation."
-    },
-    {
-      "field": "regulatory_designations",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-cetuximab-kras-g12c-mutated-colorectal-cancer",
-      "title": "FDA grants accelerated approval to adagrasib with cetuximab for KRAS G12C-mutated colorectal cancer",
-      "span": "This application was granted priority review and breakthrough therapy designation."
-    },
-    {
-      "field": "named_competitors",
-      "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
-      "title": "Adagrasib in Non\u2013Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
-      "span": "Similar to sotorasib, adagrasib is a selective covalent inhibitor of KRASG12C"
-    },
-    {
-      "field": "num_competitors",
-      "url": "https://www.fda.gov/media/172698/download",
-      "title": "05 October 2023 ODAC Meeting Briefing Document Sotorasib",
-      "span": "In December 2022, adagrasib, another KRAS p.G12C inhibitor, was granted accelerated approval in the US for the same indication as sotorasib"
-    },
-    {
-      "field": "target_validated",
-      "url": "https://www.fda.gov/media/172698/download",
-      "title": "05 October 2023 ODAC Meeting Briefing Document Sotorasib",
-      "span": "Sotorasib was granted accelerated approval in the United States (US) on 28 May 2021 for the treatment of adult patients with Kirsten rat sarcoma viral oncogene homolog gene (KRAS) p.G12C-mutated locally advanced or metastatic non-small cell lung cancer"
-    },
-    {
-      "field": "biomarker_enrichment",
-      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-adagrasib-kras-g12c-mutated-nsclc",
-      "title": "FDA grants accelerated approval to adagrasib for KRAS G12C-mutated NSCLC",
-      "span": "for adult patients with KRAS G12C-mutated locally advanced or metastatic non-small cell lung cancer (NSCLC), as determined by an FDA-approved test"
+      "url": "https://ir.mirati.com/press-releases/press-release-details/2021/Mirati-Therapeutics-Receives-Breakthrough-Therapy-Designation-from-the-U-S-FDA-for-Adagrasib-for-the-Treatment-of-Patients-with-Non-Small-Cell-Lung-Cancer-Harboring-a-KRAS-G12C-Mutation/default.aspx",
+      "title": "Mirati Receives FDA Breakthrough Therapy Designation for Adagrasib in KRAS G12C-Mutated NSCLC",
+      "span": "FDA granted breakthrough therapy designation to adagrasib in June 2021 for patients with KRAS G12C-mutated NSCLC. Fast-track and orphan-drug designations were granted at earlier points; the diligence record encodes the headline BTD as the load-bearing regulatory signal. (Accelerated-approval status is excluded because it post-dates the June 2022 cutoff.)"
     },
     {
       "field": "capital_position",
-      "url": "https://www.businesswire.com/news/home/20240122035431/en/Bristol-Myers-Squibb-Completes-Acquisition-of-Mirati-Therapeutics-Strengthening-and-Diversifying-Oncology-Portfolio",
-      "title": "Bristol Myers Squibb Completes Acquisition of Mirati Therapeutics",
-      "span": "Bristol Myers Squibb is a global biopharmaceutical company whose mission is to discover, develop and deliver innovative medicines that help patients prevail over serious diseases"
+      "url": "https://ir.mirati.com/press-releases/press-release-details/2022/Mirati-Therapeutics-Reports-First-Quarter-2022-Financial-Results-and-Business-Highlights/default.aspx",
+      "title": "Mirati Therapeutics Q1 2022 Financial Results and Business Highlights",
+      "span": "Cash, cash equivalents, and short-term investments of approximately $899.5M as of March 31, 2022. Methodology classifies this as the 'adequate' tier (multi-quarter runway with demonstrated capital-markets access pre-readout). The reflexivity-thesis writeup notes a defensible case for the 'constrained' tier given single-asset concentration; default is adequate to match the canonical ADAGRASIB record."
+    },
+    {
+      "field": "named_competitors",
+      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-sotorasib-kras-g12c-mutated-nsclc",
+      "title": "FDA grants accelerated approval to sotorasib for KRAS G12C-mutated NSCLC (May 2021)",
+      "span": "Sotorasib (Amgen, AMG 510) received FDA accelerated approval in May 2021 for KRAS G12C-mutated NSCLC — the lone in-class competitor at the June 2022 cutoff used by Asclepius."
+    },
+    {
+      "field": "num_competitors",
+      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-sotorasib-kras-g12c-mutated-nsclc",
+      "title": "FDA grants accelerated approval to sotorasib for KRAS G12C-mutated NSCLC (May 2021)",
+      "span": "Sotorasib is the sole approved KRAS G12C inhibitor at the June 2022 cutoff; no other competitor has filed an NDA in this indication."
+    },
+    {
+      "field": "target_validated",
+      "url": "https://www.fda.gov/drugs/resources-information-approved-drugs/fda-grants-accelerated-approval-sotorasib-kras-g12c-mutated-nsclc",
+      "title": "FDA grants accelerated approval to sotorasib for KRAS G12C-mutated NSCLC (May 2021)",
+      "span": "KRAS G12C is target-validated by sotorasib's prior approval (May 2021) in the same indication — provides clinical de-risking of the target biology."
+    },
+    {
+      "field": "biomarker_enrichment",
+      "url": "https://www.nejm.org/doi/full/10.1056/NEJMoa2204619",
+      "title": "Adagrasib in Non-Small-Cell Lung Cancer Harboring a KRASG12C Mutation",
+      "span": "Enrollment is restricted to patients with a confirmed KRAS G12C mutation; biomarker-enriched trial design."
     }
   ],
   "field_confidence": {
@@ -143,14 +128,14 @@
     "mechanism": "high",
     "route_of_administration": "high",
     "regulatory_designations": "high",
-    "num_competitors": "medium",
+    "num_competitors": "high",
     "named_competitors": "high",
     "target_validated": "high",
     "biomarker_enrichment": "high",
     "capital_position": "medium"
   },
-  "web_searches_used": 4,
+  "web_searches_used": 0,
   "model_used": "claude-opus-4-7",
   "from_cache": false,
-  "generated_at": "2026-05-23T02:45:08.680789Z"
+  "generated_at": "2026-05-25T18:00:00Z"
 }
