@@ -13,6 +13,7 @@ the previous engine enforced is still enforced, plus the new ones.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import joblib
@@ -104,6 +105,30 @@ def _valid_schema_sidecar() -> dict:
     }
 
 
+def _valid_conformal() -> dict:
+    return {
+        "method": "split_conformal_mondrian",
+        "alpha": 0.10,
+        "radii": {"phase_1": 0.70, "phase_2": 0.72, "phase_3": 0.74},
+        "overall_radius": 0.73,
+        "test_coverage": {
+            "phase_1": 0.90,
+            "phase_2": 0.91,
+            "phase_3": 0.92,
+            "overall": 0.91,
+        },
+    }
+
+
+def _training_meta() -> dict:
+    return {
+        "sklearn_version": "test",
+        "lightgbm_version": "test",
+        "trained_at": "2026-05-25T00:00:00+00:00",
+        "random_seed": 42,
+    }
+
+
 class _FakeModel:
     """Stand-in for LightGBM that returns a deterministic prediction."""
 
@@ -126,7 +151,8 @@ def _write_fake_artifact(path: Path, *, predicted_p: float = 0.45, overrides: di
             "model": _FakeModel(predicted_p),
             "metrics": {"model_kind": "lightgbm_pubmedbert_v0.2.0_42", "test_auc": 0.703},
             "feature_schema": schema,
-            "training_meta": {"sklearn_version": "test", "lightgbm_version": "test"},
+            "training_meta": _training_meta(),
+            "conformal": _valid_conformal(),
         },
         path,
     )
@@ -411,6 +437,7 @@ def test_get_model_metrics_returns_artifact_metrics(stub_bert_embed):
     metrics = engine.get_model_metrics()
     assert metrics["model_kind"] == "lightgbm_pubmedbert_v0.2.0_42"
     assert "test_auc" in metrics
+    assert metrics["conformal"] == _valid_conformal()
 
 
 # ---------------------------------------------------------------------------
@@ -445,9 +472,14 @@ def _write_artifact_with_bootstrap(
     joblib.dump(
         {
             "model": _FakeModel(main_p),
-            "metrics": {"model_kind": "lightgbm_pubmedbert_v0.2.0_42", "test_auc": 0.703},
+            "metrics": {
+                "model_kind": "lightgbm_pubmedbert_v0.2.0_42",
+                "test_auc": 0.703,
+                "bootstrap_n_models": len(ensemble_ps),
+            },
             "feature_schema": schema,
-            "training_meta": {"sklearn_version": "test", "lightgbm_version": "test"},
+            "training_meta": _training_meta(),
+            "conformal": _valid_conformal(),
             "bootstrap_models": [_FakeBootstrapModel(p) for p in ensemble_ps],
         },
         path,
@@ -534,3 +566,106 @@ def test_bootstrap_band_bounds_inside_unit_interval(
     out = engine.compute(_record(), criteria_text="dummy criteria")
     assert 0.0 <= out.uncertainty_low <= 1.0
     assert 0.0 <= out.uncertainty_high <= 1.0
+
+
+def test_conformal_coverage_below_floor_rejected(tmp_path: Path, monkeypatch):
+    bad = tmp_path / "bad_conformal.joblib"
+    payload = {
+        "model": _FakeModel(0.40),
+        "metrics": {"model_kind": "lightgbm_pubmedbert_v0.2.0_42"},
+        "feature_schema": _valid_schema_sidecar(),
+        "training_meta": _training_meta(),
+        "conformal": {
+            **_valid_conformal(),
+            "test_coverage": {
+                "phase_1": 0.90,
+                "phase_2": 0.84,
+                "phase_3": 0.91,
+                "overall": 0.90,
+            },
+        },
+    }
+    joblib.dump(payload, bad)
+    monkeypatch.setattr(engine, "MODEL_PATH", bad)
+    engine._load_model.cache_clear()
+
+    with pytest.raises(HTTPException) as exc:
+        engine._load_model()
+    assert exc.value.status_code == 503
+    assert "phase_2" in exc.value.detail
+
+
+def test_cache_requires_matching_artifact_fingerprint(tmp_path: Path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    record = _record()
+    cache_payload = {
+        "predicted_pos": 0.40,
+        "uncertainty_low": 0.30,
+        "uncertainty_high": 0.50,
+        "model_kind": "lightgbm_pubmedbert_v0.2.0_42",
+        "n_features": EXPECTED_COMBINED_DIM,
+        "feature_fingerprint": engine.compute_feature_fingerprint(record),
+        "artifact_fingerprint": {
+            "trained_at": "stale",
+            "random_seed": 999,
+        },
+    }
+    (cache_dir / "test_asset.json").write_text(json.dumps(cache_payload))
+    monkeypatch.setattr(engine, "CACHE_DIR", cache_dir)
+
+    assert engine._maybe_cached(record) is None
+
+
+def test_real_lightgbm_bootstrap_artifact_round_trip(
+    tmp_path: Path, monkeypatch, stub_bert_embed,
+):
+    import lightgbm as lgb
+
+    rng = np.random.default_rng(7)
+    X = rng.normal(size=(48, EXPECTED_COMBINED_DIM)).astype(np.float32)
+    y = (X[:, 0] + X[:, -1] > 0).astype(int)
+
+    def fit_model(seed: int) -> lgb.LGBMClassifier:
+        model = lgb.LGBMClassifier(
+            random_state=seed,
+            verbose=-1,
+            n_estimators=6,
+            learning_rate=0.2,
+            num_leaves=3,
+            min_child_samples=1,
+            min_data_in_bin=1,
+        )
+        model.fit(X, y)
+        return model
+
+    bootstrap_models = [fit_model(100 + i) for i in range(engine.MIN_BOOTSTRAP_MODELS)]
+    artifact = tmp_path / "real_lgbm.joblib"
+    joblib.dump(
+        {
+            "model": fit_model(1),
+            "metrics": {
+                "model_kind": "lightgbm_pubmedbert_v0.2.0_42",
+                "test_auc": 0.75,
+                "bootstrap_n_models": len(bootstrap_models),
+            },
+            "feature_schema": _valid_schema_sidecar(),
+            "training_meta": _training_meta(),
+            "conformal": _valid_conformal(),
+            "bootstrap_models": bootstrap_models,
+        },
+        artifact,
+    )
+    monkeypatch.setattr(engine, "MODEL_PATH", artifact)
+    engine._load_model.cache_clear()
+
+    model, metrics, ensemble, conformal, fingerprint = engine._load_model()
+    assert isinstance(model, lgb.LGBMClassifier)
+    assert len(ensemble) == engine.MIN_BOOTSTRAP_MODELS
+    assert conformal["radii"]["phase_2"] == pytest.approx(0.72)
+    assert fingerprint == engine.artifact_fingerprint_from_meta(_training_meta())
+
+    out = engine.compute(_record(), criteria_text="synthetic KRAS criteria")
+    assert 0.0 <= out.predicted_pos <= 1.0
+    assert out.uncertainty_low <= out.predicted_pos <= out.uncertainty_high
+    assert metrics["bootstrap_n_models"] == engine.MIN_BOOTSTRAP_MODELS

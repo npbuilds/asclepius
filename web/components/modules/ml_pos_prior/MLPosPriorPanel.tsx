@@ -164,7 +164,7 @@ function ReadoutRow({
   value: number;
   max: number;
   color: string;
-  // Heuristic uncertainty band — NOT a statistical CI.
+  // Bootstrap 90% band.
   band?: [number, number];
 }) {
   const width = `${(value / max) * 100}%`;
@@ -175,12 +175,12 @@ function ReadoutRow({
       <div className="truncate text-text-primary">{label}</div>
       <div className="flex items-center gap-2">
         <div className="relative h-3 w-40 rounded bg-bg-panel-hover">
-          {/* Uncertainty band (heuristic, not statistical CI) */}
+          {/* Bootstrap 90% band */}
           {band ? (
             <div
               className="absolute h-full rounded bg-magenta-bright/20"
               style={{ left: bandLeft!, width: bandWidth! }}
-              title={`Heuristic band: ${(band[0] * 100).toFixed(1)}-${(band[1] * 100).toFixed(1)}%`}
+              title={`Bootstrap 90% band: ${(band[0] * 100).toFixed(1)}-${(band[1] * 100).toFixed(1)}%`}
             />
           ) : null}
           <div className={`h-full rounded ${color}`} style={{ width }} />

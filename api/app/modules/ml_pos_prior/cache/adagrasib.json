@@ -1,12 +1,16 @@
 {
-  "predicted_pos": 0.39420260799355333,
-  "uncertainty_low": 0.2354019892987568,
-  "uncertainty_high": 0.5189717501455057,
+  "predicted_pos": 0.23583184414926897,
+  "uncertainty_low": 0.23583184414926897,
+  "uncertainty_high": 0.5346784463631815,
   "model_kind": "lightgbm_pubmedbert_v0.2.0_42",
   "n_features": 804,
   "source_nct_id": "NCT04685135",
-  "source_criteria_chars": 560,
-  "note": "Pre-computed v1.5.2 prediction. PubMedBERT-embedded NCT04685135 eligibility criteria + 36-dim structured features ran through LightGBM (lightgbm_pubmedbert_v0.2.0_42). See methodology/09-ml-pos-prior.md.",
+  "source_criteria_chars": 608,
+  "note": "Pre-computed v1.5.3.1 prediction. PubMedBERT-embedded NCT04685135 eligibility criteria + 36-dim structured features ran through LightGBM (lightgbm_pubmedbert_v0.2.0_42). See methodology/09-ml-pos-prior.md.",
   "feature_fingerprint": "ca895e1f44579fde",
+  "artifact_fingerprint": {
+    "trained_at": "2026-05-25T13:14:13.770378+00:00",
+    "random_seed": 42
+  },
   "uncertainty_method": "bootstrap_percentile_alpha_0.10"
 }

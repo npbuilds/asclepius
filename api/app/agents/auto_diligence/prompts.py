@@ -57,7 +57,12 @@ gene_therapy | cell_therapy_autologous | cell_therapy_allogeneic | mrna | \
 protein | oligonucleotide | peptide | other
 - capital_position: well_capitalized | adequate | constrained | distressed
 - regulatory_designations: any subset of \
-[breakthrough_therapy, fast_track, orphan_drug, regenerative_medicine, accelerated_approval, priority_review]
+[breakthrough_therapy, fast_track, orphan_drug, accelerated_approval, rmat, prime_ema]
+  Note: `rmat` = FDA Regenerative Medicine Advanced Therapy; `prime_ema` = EMA \
+PRIME scheme. **Do NOT emit `priority_review`** — priority review is a \
+post-NDA-acceptance review-pathway decision, not a pre-conferred designation, \
+and is not in the domain enum. **Do NOT emit `regenerative_medicine`** — use \
+`rmat` instead.
 
 After your research, output the result as a fenced JSON block at the end of \
 your response. The structure:

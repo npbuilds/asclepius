@@ -77,6 +77,11 @@ COMBINED_DIM = EMBEDDING_DIM + N_STRUCT_FEATURES  # 768 + 36 = 804
 EMBEDDING_MODEL_ID = "microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext"
 
 RANDOM_SEED = 42
+EARLY_STOP_FRAC = 0.15
+N_BOOTSTRAP_MODELS = 10  # 10x training cost, 10x artifact size, ~3.6 MB total.
+MAX_BOOTSTRAP_MODELS = 20
+MAX_ARTIFACT_SIZE_MB = 50
+MAX_ARTIFACT_SIZE_BYTES = MAX_ARTIFACT_SIZE_MB * 1024 * 1024
 
 
 def load_aligned_data() -> tuple[pd.DataFrame, np.ndarray]:
@@ -151,26 +156,75 @@ def build_feature_matrix(df: pd.DataFrame, embeddings: np.ndarray) -> np.ndarray
     return X
 
 
+def train_early_stop_masks(
+    splits: np.ndarray,
+    y: np.ndarray,
+    *,
+    early_stop_frac: float = EARLY_STOP_FRAC,
+    seed: int = RANDOM_SEED,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Split HINT train rows into fit rows + deterministic early-stop rows.
+
+    The HINT valid split is reserved exclusively for split-conformal
+    calibration. Early stopping is model selection, so it gets its own
+    train-only holdout carved deterministically by seed.
+    """
+    if not 0.0 < early_stop_frac < 0.5:
+        raise ValueError("early_stop_frac must be between 0 and 0.5")
+
+    train_idx = np.flatnonzero(splits == "train")
+    if len(train_idx) < 4:
+        raise ValueError("not enough train rows to carve early-stop split")
+
+    rng = np.random.default_rng(seed)
+    early_idx_parts = []
+    y_train = y[train_idx]
+    for label in np.unique(y_train):
+        label_idx = train_idx[y_train == label]
+        shuffled = rng.permutation(label_idx)
+        n_holdout = int(np.ceil(len(shuffled) * early_stop_frac))
+        if len(shuffled) > 1:
+            n_holdout = min(max(n_holdout, 1), len(shuffled) - 1)
+        early_idx_parts.append(shuffled[:n_holdout])
+
+    early_idx = np.concatenate(early_idx_parts)
+    early_stop_mask = np.zeros_like(splits, dtype=bool)
+    early_stop_mask[early_idx] = True
+    train_fit_mask = splits == "train"
+    train_fit_mask[early_stop_mask] = False
+
+    if not train_fit_mask.any() or not early_stop_mask.any():
+        raise ValueError("early-stop split produced an empty fit or eval set")
+    return train_fit_mask, early_stop_mask
+
+
 def train_model(
     X: np.ndarray,
     y: np.ndarray,
     splits: np.ndarray,
     *,
     seed: int = RANDOM_SEED,
+    early_stop_frac: float = EARLY_STOP_FRAC,
 ) -> tuple[lgb.LGBMClassifier, dict]:
-    """Train LightGBM with L1+L2 regularization on the HINT train split,
-    early-stopping against the val split, evaluate on held-out test."""
+    """Train LightGBM with early stopping carved from train rows only.
+
+    HINT valid rows are kept untouched for split-conformal calibration.
+    """
     train_mask = splits == "train"
     val_mask = splits == "valid"
     test_mask = splits == "test"
+    train_fit_mask, early_stop_mask = train_early_stop_masks(
+        splits, y, early_stop_frac=early_stop_frac, seed=seed,
+    )
 
-    X_train, y_train = X[train_mask], y[train_mask]
-    X_val, y_val = X[val_mask], y[val_mask]
+    X_train_fit, y_train_fit = X[train_fit_mask], y[train_fit_mask]
+    X_train_all, y_train_all = X[train_mask], y[train_mask]
+    X_early, y_early = X[early_stop_mask], y[early_stop_mask]
     X_test, y_test = X[test_mask], y[test_mask]
 
     log.info(
-        "splits: train=%d, valid=%d, test=%d",
-        len(X_train), len(X_val), len(X_test),
+        "splits: train_fit=%d, early_stop=%d, valid_cal=%d, test=%d",
+        len(X_train_fit), len(X_early), int(val_mask.sum()), len(X_test),
     )
 
     # LGBM regularized config — picked via the Day 3 hyperparameter sweep.
@@ -188,8 +242,8 @@ def train_model(
         min_child_samples=30,
     )
     model.fit(
-        X_train, y_train,
-        eval_set=[(X_val, y_val)],
+        X_train_fit, y_train_fit,
+        eval_set=[(X_early, y_early)],
         callbacks=[lgb.early_stopping(20, verbose=False)],
     )
 
@@ -201,13 +255,16 @@ def train_model(
     auc = float(roc_auc_score(y_test, y_pred_proba))
     brier = float(brier_score_loss(y_test, y_pred_proba))
     test_base_rate = float(y_test.mean())
-    train_base_rate = float(y_train.mean())
+    train_base_rate = float(y_train_all.mean())
 
     log.info("test AUC: %.4f, Brier: %.4f", auc, brier)
 
     metrics = {
-        "n_train": int(len(X_train)),
-        "n_val": int(len(X_val)),
+        "n_train": int(len(X_train_all)),
+        "n_train_fit": int(len(X_train_fit)),
+        "n_early_stop": int(len(X_early)),
+        "n_val": int(val_mask.sum()),
+        "early_stop_frac": float(early_stop_frac),
         "n_test": int(len(X_test)),
         "n_iterations": int(model.best_iteration_),
         "test_auc": auc,
@@ -343,7 +400,6 @@ def compute_test_coverage(
     return coverage
 
 
-N_BOOTSTRAP_MODELS = 10  # 10× training cost, 10× artifact size, ~3.6 MB total.
 
 
 def train_bootstrap_ensemble(
@@ -353,10 +409,11 @@ def train_bootstrap_ensemble(
     *,
     n_models: int = N_BOOTSTRAP_MODELS,
     base_seed: int = RANDOM_SEED,
+    early_stop_frac: float = EARLY_STOP_FRAC,
 ) -> list[lgb.LGBMClassifier]:
     """Train n_models LGBM classifiers on independent bootstrap resamples of
-    the train split. Each model uses the same hyperparams as the main model;
-    early-stopping runs against the (fixed) val split.
+    train-fit rows. Each model uses the same hyperparams as the main model;
+    early-stopping runs against a deterministic train-only holdout.
 
     Why bootstrap, not bagging via LGBM's bagging_fraction: we want
     independent draws from the empirical training distribution so the
@@ -369,10 +426,11 @@ def train_bootstrap_ensemble(
     is ~3-5pp at K=10 vs ~1pp at K=100); the next bottleneck is artifact
     size and inference latency, not statistical noise.
     """
-    train_mask = splits == "train"
-    val_mask = splits == "valid"
-    X_train_full, y_train_full = X[train_mask], y[train_mask]
-    X_val, y_val = X[val_mask], y[val_mask]
+    train_fit_mask, early_stop_mask = train_early_stop_masks(
+        splits, y, early_stop_frac=early_stop_frac, seed=base_seed,
+    )
+    X_train_full, y_train_full = X[train_fit_mask], y[train_fit_mask]
+    X_early, y_early = X[early_stop_mask], y[early_stop_mask]
     n_train = len(X_train_full)
 
     rng = np.random.default_rng(base_seed)
@@ -393,7 +451,7 @@ def train_bootstrap_ensemble(
         )
         m.fit(
             Xb, yb,
-            eval_set=[(X_val, y_val)],
+            eval_set=[(X_early, y_early)],
             callbacks=[lgb.early_stopping(20, verbose=False)],
         )
         log.info("bootstrap model %d/%d fit (n_iter=%d)", i + 1, n_models, m.best_iteration_)
@@ -523,7 +581,20 @@ def save_artifact(
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed", type=int, default=RANDOM_SEED)
+    parser.add_argument("--early-stop-frac", type=float, default=EARLY_STOP_FRAC)
+    parser.add_argument("--n-bootstrap-models", type=int, default=N_BOOTSTRAP_MODELS)
+    parser.add_argument(
+        "--override-bootstrap-model-limit",
+        action="store_true",
+        help=f"allow more than {MAX_BOOTSTRAP_MODELS} bootstrap models",
+    )
     args = parser.parse_args(argv)
+    if args.n_bootstrap_models > MAX_BOOTSTRAP_MODELS and not args.override_bootstrap_model_limit:
+        parser.error(
+            f"--n-bootstrap-models={args.n_bootstrap_models} exceeds "
+            f"MAX_BOOTSTRAP_MODELS={MAX_BOOTSTRAP_MODELS}; pass "
+            "--override-bootstrap-model-limit to proceed intentionally"
+        )
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -537,12 +608,13 @@ def main(argv: list[str]) -> int:
 
     log.info("X shape: %s, y shape: %s", X.shape, y.shape)
 
-    model, metrics = train_model(X, y, splits, seed=args.seed)
+    model, metrics = train_model(
+        X, y, splits, seed=args.seed, early_stop_frac=args.early_stop_frac,
+    )
 
-    # v1.5.3: Mondrian split-conformal calibration. The LGBM saw the val
-    # split only for early stopping (model selection at the iteration
-    # level), not for parameter fit — so it's a legitimate calibration set
-    # for conformal under the standard exchangeability assumption. Stratify
+    # v1.5.3.1: Mondrian split-conformal calibration. The HINT valid split
+    # is now untouched by both parameter fit and early stopping; early
+    # stopping uses a deterministic train-only holdout. Stratify
     # by phase because base rates differ enormously across phases.
     val_mask = splits == "valid"
     test_mask = splits == "test"
@@ -571,8 +643,13 @@ def main(argv: list[str]) -> int:
     metrics["conformal_test_coverage"] = coverage
 
     # v1.5.3: bootstrap ensemble for the displayed uncertainty band.
-    log.info("training %d bootstrap models for the v1.5.3 uncertainty band", N_BOOTSTRAP_MODELS)
-    boot_models = train_bootstrap_ensemble(X, y, splits, base_seed=args.seed)
+    log.info("training %d bootstrap models for the v1.5.3 uncertainty band", args.n_bootstrap_models)
+    boot_models = train_bootstrap_ensemble(
+        X, y, splits,
+        n_models=args.n_bootstrap_models,
+        base_seed=args.seed,
+        early_stop_frac=args.early_stop_frac,
+    )
 
     # Diagnostic: average bootstrap band-width on the test split (sanity
     # check that the band isn't trivially [0,1] or collapsed to a point).
@@ -582,13 +659,18 @@ def main(argv: list[str]) -> int:
     avg_width = float(np.mean(qh_test - ql_test))
     log.info("bootstrap band: avg width on test = %.4f (target: 0.05-0.20 for useful UX)", avg_width)
     metrics["bootstrap_avg_band_width_test"] = avg_width
-    metrics["bootstrap_n_models"] = N_BOOTSTRAP_MODELS
+    metrics["bootstrap_n_models"] = args.n_bootstrap_models
 
-    save_artifact(
+    artifact_path = save_artifact(
         model, metrics, seed=args.seed,
         conformal=conformal_payload,
         bootstrap_models=boot_models,
     )
+    if artifact_path.stat().st_size >= MAX_ARTIFACT_SIZE_BYTES:
+        raise RuntimeError(
+            f"artifact size {artifact_path.stat().st_size / 1024 / 1024:.2f} MB "
+            f"exceeds {MAX_ARTIFACT_SIZE_MB} MB ceiling"
+        )
 
     # Per-phase breakdown of test AUC
     print("\nPER-PHASE TEST METRICS")

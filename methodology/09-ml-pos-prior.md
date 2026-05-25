@@ -302,10 +302,13 @@ measures, each answering a different question:
 The pipeline trains an ensemble of **10 LightGBM classifiers** on
 independent bootstrap resamples of the HINT train split. Each model
 uses the same hyperparameters as the main model (regularized LGBM,
-500 estimators with early-stopping on the fixed val split) but sees a
-different bootstrap draw. At inference, all 10 models predict; the
-displayed band is the **α/2 and 1-α/2 empirical quantiles** of their
-predictions (α=0.10 → 90% interval).
+500 estimators with early-stopping on a **deterministic 15% train-only
+holdout** — carved seedwise from train; v1.5.3.1 hotfix replaced the
+prior practice of early-stopping on `valid`, which contaminated the
+conformal calibration set) but sees a different bootstrap draw. At
+inference, all 10 models predict; the displayed band is the
+**α/2 and 1-α/2 empirical quantiles** of their predictions
+(α=0.10 → 90% interval).
 
 **What the band measures:** *epistemic* model-resampling uncertainty.
 Where the 10 LGBMs agree, the band is tight; where they disagree, the
@@ -320,7 +323,14 @@ new assets, or out-of-domain extrapolation (asking the model about a
 modality it never saw).
 
 **Average band width on the held-out test split: ~18 pp.** On the
-canonical adagrasib record: 24-52% around a 39% point estimate.
+canonical adagrasib record (post-v1.5.3.1 retrain with the
+calibration-split fix): 24-53% around a 24% point estimate. The point
+estimate dropped from v1.5.3's pre-fix 39% because the main model now
+trains on the 85% non-early-stop subset of train rather than seeing
+the full train set with `valid` used for early stopping — different
+iteration count, different terminal tree ensemble. The bootstrap
+ensemble sits higher than the main model on this asset, which is why
+`uncertainty_low` clamps exactly to the point estimate.
 
 ### Mondrian split-conformal coverage (recorded in artifact + methodology)
 
@@ -337,18 +347,24 @@ This gives a **distribution-free 90% coverage guarantee**: under
 exchangeability with the val split, the true outcome falls within
 `[p̂ − radius, p̂ + radius]` ≥ 90% of the time, per phase.
 
-**Empirical coverage on the held-out test split (n=3133):**
+**Empirical coverage on the held-out test split (n=3133), post-v1.5.3.1
+calibration-split fix:**
 
 | Phase | n_test | Empirical coverage | Target |
 |---|---|---|---|
-| phase_1 | 595 | **86.7%** | ≥ 90% |
-| phase_2 | 1473 | **93.0%** | ≥ 90% |
-| phase_3 | 1065 | **92.2%** | ≥ 90% |
-| **overall** | **3133** | **91.5%** | ≥ 90% |
+| phase_1 | 595 | **89.1%** | ≥ 90% |
+| phase_2 | 1473 | **92.2%** | ≥ 90% |
+| phase_3 | 1065 | **92.4%** | ≥ 90% |
+| **overall** | **3133** | **91.7%** | ≥ 90% |
 
-phase_1 lands modestly below target (86.7% vs 90%) — expected at the
-small calibration n (105). Marginal coverage and phase_2/3 conditional
-coverage both clear 90%.
+phase_1 lands fractionally below target (89.1% vs 90%) — within the
+finite-sample noise band at calibration n=119 (the post-fix val split
+sees the full 838 HINT-valid rows rather than the 105-row Mondrian-by-
+phase slice the pre-fix code used). Marginal coverage and phase_2/3
+conditional coverage both clear 90%. The pre-v1.5.3.1 (contaminated)
+numbers were 86.7%/93.0%/92.2%/91.5% — phase_1 picked up ~2.4pp from
+removing the early-stop contamination, validating Codex's MAJOR 1
+finding as a real coverage bug not a theoretical one.
 
 **Why we don't display the conformal interval in the UI.** The radii on
 binary outcomes are wide by construction: when y ∈ {0,1} and p̂ ∈ [0,1],

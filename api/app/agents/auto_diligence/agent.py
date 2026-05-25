@@ -18,10 +18,58 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from ...domain import DiligenceRecord
+from ...domain import DiligenceRecord, RegulatoryDesignation
 from ..base import BaseAgent
 from .prompts import ALLOWED_DOMAINS, SYSTEM_PROMPT, build_user_prompt
 from .schemas import AutoDiligenceOutput, Citation, ExtractedAsset
+
+# v1.6.2 (post-v1.5.3 hotfix): the LLM occasionally emits regulatory-
+# designation strings that aren't in the domain enum (most common: the
+# pre-fix prompt's `priority_review` and `regenerative_medicine`; same
+# class of risk for any future drift between the prompt and the enum).
+# The frontend's "Apply Record" button forwards extracted.regulatory_designations
+# verbatim to /api/modules/pos which validates strictly via pydantic and
+# 422s on unknown values, breaking the apply flow. We normalize at the
+# agent boundary: filter to enum members, log drops, optionally remap
+# obvious synonyms. Pure prompt-side fixes are fragile because LLMs can
+# always invent new values; the filter is the actual safety net.
+_REGULATORY_DESIGNATION_SYNONYMS: dict[str, str] = {
+    # synonym → canonical enum value
+    "regenerative_medicine": "rmat",
+    "rmat_designation": "rmat",
+    "regenerative_medicine_advanced_therapy": "rmat",
+    "prime": "prime_ema",
+    "ema_prime": "prime_ema",
+    "btd": "breakthrough_therapy",
+    "breakthrough": "breakthrough_therapy",
+}
+_VALID_REGULATORY_DESIGNATIONS: frozenset[str] = frozenset(
+    rd.value for rd in RegulatoryDesignation
+)
+
+
+def _normalize_regulatory_designations(raw: list[str]) -> list[str]:
+    """Filter LLM-emitted strings to known RegulatoryDesignation enum values.
+    Applies a small synonym map first; drops anything still unrecognized."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for value in raw:
+        if not isinstance(value, str):
+            continue
+        key = value.strip().lower()
+        canonical = _REGULATORY_DESIGNATION_SYNONYMS.get(key, key)
+        if canonical in _VALID_REGULATORY_DESIGNATIONS:
+            if canonical not in seen:
+                out.append(canonical)
+                seen.add(canonical)
+        else:
+            log.warning(
+                "auto_diligence dropping unknown regulatory_designation %r "
+                "(not in RegulatoryDesignation enum; was the agent prompt "
+                "updated without a matching enum?)",
+                value,
+            )
+    return out
 
 log = logging.getLogger(__name__)
 
@@ -78,6 +126,16 @@ def _parse_diligence_response(
             log.warning("auto_diligence returned malformed JSON; degrading to empty")
 
     extracted_raw = parsed.get("extracted") or {}
+    # v1.6.2: normalize regulatory_designations before constructing the
+    # ExtractedAsset so any drift between the LLM's prompt and the domain
+    # enum gets filtered + remapped here (see _normalize_regulatory_designations).
+    if isinstance(extracted_raw.get("regulatory_designations"), list):
+        extracted_raw = {
+            **extracted_raw,
+            "regulatory_designations": _normalize_regulatory_designations(
+                extracted_raw["regulatory_designations"]
+            ),
+        }
     extracted = ExtractedAsset(**{k: v for k, v in extracted_raw.items() if v is not None})
 
     citations: list[Citation] = []
@@ -146,6 +204,20 @@ class Agent(BaseAgent):
             return None
         try:
             data = json.loads(path.read_text())
+            # v1.6.2 hotfix: cache files committed before the regulatory-
+            # designation enum drift fix may still carry invalid values
+            # (e.g., adagrasib.json had `priority_review` until 2026-05-25).
+            # Normalize here so old fixtures are tolerated without
+            # blocking the apply-record flow.
+            extracted = data.get("extracted")
+            if isinstance(extracted, dict) and isinstance(
+                extracted.get("regulatory_designations"), list
+            ):
+                extracted["regulatory_designations"] = (
+                    _normalize_regulatory_designations(
+                        extracted["regulatory_designations"]
+                    )
+                )
             data["from_cache"] = True
             return data
         except Exception as exc:

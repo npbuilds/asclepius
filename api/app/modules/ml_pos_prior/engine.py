@@ -38,6 +38,7 @@ import hashlib
 import json
 import logging
 import math
+import os
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -88,20 +89,100 @@ PROBA_EPS = 1e-6
 SE_HEURISTIC = 0.30
 
 # v1.5.3: bootstrap-percentile interval half-width on either side of the
-# ensemble mean. The artifact ships its own α (default 0.10 = 90% interval);
-# the engine reads it at load time. Setting α at training time is the only
-# defensible choice — re-quantilizing K=10 predictions at request time at a
-# different α would defeat the calibration story.
+# ensemble mean. The artifact ships its own alpha (default 0.10 = 90% interval);
+# the engine reads it at load time. Setting alpha at training time is the only
+# defensible choice: re-quantilizing K=10 predictions at request time at a
+# different alpha would defeat the calibration story.
+MIN_BOOTSTRAP_MODELS = 10
+CONFORMAL_PHASES = ("phase_1", "phase_2", "phase_3")
+CONFORMAL_COVERAGE_FLOOR_ENV = "ML_POS_PRIOR_CONFORMAL_MIN_TEST_COVERAGE"
+DEFAULT_CONFORMAL_COVERAGE_FLOOR = 0.85
+
+
+def artifact_fingerprint_from_meta(training_meta: dict) -> dict[str, object] | None:
+    """Artifact identity used to invalidate precomputed prediction caches."""
+    trained_at = training_meta.get("trained_at")
+    random_seed = training_meta.get("random_seed")
+    if trained_at is None or random_seed is None:
+        return None
+    return {"trained_at": str(trained_at), "random_seed": random_seed}
+
+
+def _conformal_coverage_floor() -> float:
+    raw = os.getenv(CONFORMAL_COVERAGE_FLOOR_ENV)
+    if raw is None:
+        return DEFAULT_CONFORMAL_COVERAGE_FLOOR
+    try:
+        return float(raw)
+    except ValueError:
+        log.warning(
+            "invalid %s=%r; using default %.2f",
+            CONFORMAL_COVERAGE_FLOOR_ENV,
+            raw,
+            DEFAULT_CONFORMAL_COVERAGE_FLOOR,
+        )
+        return DEFAULT_CONFORMAL_COVERAGE_FLOOR
+
+
+def _validate_conformal(conformal: dict | None) -> dict | None:
+    if conformal is None:
+        log.warning("ML PoS Prior artifact missing conformal payload")
+        return None
+    required = {"method", "alpha", "radii", "test_coverage"}
+    missing = required - set(conformal)
+    if missing:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "ML PoS Prior artifact conformal payload missing required "
+                f"keys: {sorted(missing)}"
+            ),
+        )
+    if not isinstance(conformal["radii"], dict):
+        raise HTTPException(
+            status_code=503,
+            detail="ML PoS Prior artifact conformal.radii must be an object",
+        )
+    coverage = conformal["test_coverage"]
+    if not isinstance(coverage, dict):
+        raise HTTPException(
+            status_code=503,
+            detail="ML PoS Prior artifact conformal.test_coverage must be an object",
+        )
+
+    floor = _conformal_coverage_floor()
+    for phase in CONFORMAL_PHASES:
+        if phase not in coverage:
+            raise HTTPException(
+                status_code=503,
+                detail=f"ML PoS Prior conformal coverage missing {phase}",
+            )
+        value = float(coverage[phase])
+        if value < floor:
+            log.warning(
+                "ML PoS Prior conformal test coverage for %s is %.3f below floor %.3f",
+                phase,
+                value,
+                floor,
+            )
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"ML PoS Prior conformal test coverage for {phase} "
+                    f"{value:.3f} below floor {floor:.3f}"
+                ),
+            )
+    return conformal
 
 
 @lru_cache(maxsize=1)
 def _load_model():
-    """Lazy load + validate. Returns (model, metrics, ensemble_or_None).
+    """Lazy load + validate model, metrics, ensemble, conformal, fingerprint.
 
     `ensemble_or_None` is the v1.5.3 list of bootstrap LGBMs when the
-    artifact contains them, otherwise None. Engine prefers the ensemble
-    for the displayed uncertainty band; when absent, falls back to the
-    legacy logit heuristic.
+    artifact contains a complete K>=10 ensemble, otherwise None. Engine
+    prefers the ensemble for the displayed uncertainty band; when absent,
+    falls back to the legacy logit heuristic.
     """
     if not MODEL_PATH.exists():
         raise HTTPException(
@@ -216,6 +297,17 @@ def _load_model():
             ),
         )
 
+    metrics = artifact["metrics"]
+    conformal = _validate_conformal(artifact.get("conformal"))
+    artifact_fingerprint = artifact_fingerprint_from_meta(
+        artifact.get("training_meta") or {},
+    )
+    if artifact_fingerprint is None:
+        log.warning(
+            "ML PoS Prior artifact missing trained_at/random_seed metadata; "
+            "precomputed caches will be treated as stale",
+        )
+
     # v1.5.3: optional bootstrap ensemble. List of K LGBMClassifiers trained
     # on bootstrap resamples of train; supplies the displayed uncertainty
     # band via percentile intervals across the K predictions. Absent in
@@ -228,14 +320,32 @@ def _load_model():
             type(bootstrap_models).__name__,
         )
         bootstrap_models = None
+    if bootstrap_models is not None:
+        expected_n = metrics.get("bootstrap_n_models")
+        if (
+            not isinstance(expected_n, int)
+            or len(bootstrap_models) != expected_n
+            or len(bootstrap_models) < MIN_BOOTSTRAP_MODELS
+        ):
+            log.warning(
+                "ML PoS Prior bootstrap ensemble invalid: len=%d, "
+                "metrics.bootstrap_n_models=%r, min=%d; using heuristic band",
+                len(bootstrap_models),
+                expected_n,
+                MIN_BOOTSTRAP_MODELS,
+            )
+            bootstrap_models = None
 
-    return artifact["model"], artifact["metrics"], bootstrap_models
+    return artifact["model"], metrics, bootstrap_models, conformal, artifact_fingerprint
 
 
 def get_model_metrics() -> dict:
     """Public accessor for the /model_info route."""
-    _, metrics, _ = _load_model()
-    return metrics
+    _, metrics, _, conformal, _ = _load_model()
+    response = dict(metrics)
+    if conformal is not None:
+        response["conformal"] = conformal
+    return response
 
 
 def _disagreement_level(gap_pp: float) -> DisagreementLevel:
@@ -366,6 +476,24 @@ def _maybe_cached(record: DiligenceRecord) -> MLPosPriorResult | None:
         log.warning("ml_pos_prior cache unreadable for %s: %s", slug, exc)
         return None
 
+    _, _, _, _, artifact_fingerprint = _load_model()
+    cached_artifact_fingerprint = payload.get("artifact_fingerprint")
+    if artifact_fingerprint is None:
+        log.warning(
+            "ml_pos_prior cache for %s cannot be validated because the "
+            "loaded artifact lacks identity metadata; falling through",
+            slug,
+        )
+        return None
+    if cached_artifact_fingerprint != artifact_fingerprint:
+        log.warning(
+            "ml_pos_prior cache stale for %s: artifact_fingerprint %r != %r",
+            slug,
+            cached_artifact_fingerprint,
+            artifact_fingerprint,
+        )
+        return None
+
     # Verify the request's structured features match what was cached.
     # Codex Day 4 MAJOR #2: cache by slug alone could serve stale predictions
     # when the user changed any asset field. Requiring a fingerprint match
@@ -432,7 +560,7 @@ def compute(
     if cached is not None:
         return cached
 
-    model, metrics, ensemble = _load_model()
+    model, metrics, ensemble, _, _ = _load_model()
 
     # Build combined feature vector: [PubMedBERT 768] + [structured 36] = 804
     text = _resolve_criteria_text(criteria_text=criteria_text, nct_id=nct_id)
@@ -454,7 +582,7 @@ def compute(
         )
 
     predicted = float(model.predict_proba(x)[0, 1])
-    if ensemble is not None and len(ensemble) >= 3:
+    if ensemble is not None:
         # v1.5.3 path: bootstrap-percentile interval. The mean across
         # K bootstrap models is computed but discarded — predicted_pos
         # stays locked to the single main model for disagreement-pp

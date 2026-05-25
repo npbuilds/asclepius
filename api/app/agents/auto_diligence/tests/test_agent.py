@@ -230,3 +230,88 @@ def test_live_call_with_mocked_anthropic_and_web_search(tmp_path: Path, monkeypa
     assert out["extracted"]["phase"] == "approved"
     assert out["web_searches_used"] == 1
     assert len(out["citations"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# v1.6.2 hotfix — regulatory_designations normalization
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_regulatory_designations_drops_unknown_values():
+    """The LLM occasionally emits values not in the RegulatoryDesignation enum
+    (priority_review, regenerative_medicine, hallucinated labels, etc.).
+    Without this filter, the frontend's Apply-Record flow 422s when the
+    extracted asset is forwarded to /api/modules/pos. Verify the filter
+    drops unknown values and remaps known synonyms."""
+    from app.agents.auto_diligence.agent import _normalize_regulatory_designations
+
+    # Mix of: valid, synonym, unknown, duplicate, non-string
+    raw = [
+        "breakthrough_therapy",        # valid → kept
+        "priority_review",             # invalid (review pathway, not designation) → dropped
+        "regenerative_medicine",       # synonym → remapped to "rmat"
+        "fast_track",                  # valid → kept
+        "BTD",                         # synonym → remapped to "breakthrough_therapy"
+        "fda_made_this_up",            # hallucinated → dropped
+        "fast_track",                  # duplicate → deduped
+        42,                            # non-string → skipped silently
+    ]
+    out = _normalize_regulatory_designations(raw)
+    # Order preserved, dedup applied, synonyms remapped, unknowns dropped.
+    assert out == ["breakthrough_therapy", "rmat", "fast_track"]
+
+
+def test_parse_normalizes_regulatory_designations_from_llm():
+    """End-to-end: a malformed LLM JSON block with priority_review in the
+    regulatory_designations list should still parse, with the bad value
+    dropped before ExtractedAsset is constructed."""
+    raw_text = (
+        "thinking out loud...\n"
+        "```json\n"
+        "{\n"
+        '  "extracted": {\n'
+        '    "asset_name": "adagrasib",\n'
+        '    "regulatory_designations": ['
+        '"breakthrough_therapy", "priority_review", "regenerative_medicine"'
+        "]\n"
+        "  }\n"
+        "}\n"
+        "```"
+    )
+    parsed = _parse_diligence_response(raw_text, [], 0, "claude-test")
+    assert parsed["extracted"]["regulatory_designations"] == [
+        "breakthrough_therapy",
+        "rmat",
+    ]
+
+
+def test_cache_hit_normalizes_stale_designations(tmp_path: Path):
+    """A pre-existing cache file with a now-invalid designation (e.g., the
+    adagrasib.json that shipped before this hotfix) must still load
+    cleanly — the normalization happens at cache-read time too."""
+    agent = _make_agent(tmp_path, cached_assets=["ghostasset"])
+    payload = {
+        "extracted": {
+            "asset_name": "ghostasset",
+            "phase": "phase_2",
+            "regulatory_designations": [
+                "breakthrough_therapy",
+                "priority_review",       # stale; pre-hotfix prompts emitted this
+                "regenerative_medicine",  # synonym
+            ],
+        },
+        "citations": [],
+        "field_confidence": {},
+        "web_searches_used": 0,
+        "model_used": "test",
+        "from_cache": False,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (tmp_path / "cache" / "ghostasset.json").write_text(json.dumps(payload))
+
+    out = agent.run(_make_record("ghostasset"))
+    assert out["from_cache"] is True
+    assert out["extracted"]["regulatory_designations"] == [
+        "breakthrough_therapy",
+        "rmat",
+    ]
