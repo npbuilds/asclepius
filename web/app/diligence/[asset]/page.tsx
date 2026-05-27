@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import ActionSection from "@/components/ActionSection";
 import { AssetForm, labelFor } from "@/components/AssetForm";
 import IcVoterBanner from "@/components/banners/IcVoterBanner";
+import ScientificBanner from "@/components/banners/ScientificBanner";
+import TrialDesignCard from "@/components/cards/TrialDesignCard";
 import HeroBanner from "@/components/HeroBanner";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
 import RiskSection from "@/components/RiskSection";
@@ -245,13 +247,16 @@ export default function DiligencePage({
         ) : null}
       </header>
 
-      {/* v1.7.0: HeroBanner ("30-second read"). v1.8.0 Phase 3: swap to a
-          persona-specific banner when the config calls for it. IC Voter
-          gets a 1-pager with top-3 risks/reasons + headline numbers;
-          Scientific Reviewer + Quant get their own variants in Phases
-          4-5. Default (VC Associate) stays on the v1.7.0 HeroBanner. */}
+      {/* v1.7.0: HeroBanner ("30-second read"). v1.8.0: swap to a
+          persona-specific banner when the config calls for it.
+            ic_voter → IcVoterBanner (1-page summary, Phase 3)
+            scientific → ScientificBanner (science + trial design, Phase 4)
+            quant → QuantBanner (Phase 5, pending)
+            vc (default) → HeroBanner (the v1.7.0 reading-journey banner) */}
       {personaConfig.bannerVariant === "ic_voter" ? (
         <IcVoterBanner record={record} />
+      ) : personaConfig.bannerVariant === "scientific" ? (
+        <ScientificBanner record={record} />
       ) : (
         <HeroBanner record={record} />
       )}
@@ -323,6 +328,14 @@ export default function DiligencePage({
                     updateAsset({ ...record.asset, capital_position })
                   }
                 />
+              ) : null}
+              {/* v1.8.0 Phase 4: TrialDesignCard as the Science section's
+                  leading element (Scientific Reviewer persona only). Surfaces
+                  the NCT ID + protocol context that informs the ML PoS Prior's
+                  supervised signal — auditable trial design, biomarker
+                  enrichment + target-validation flags, link out to CT.gov. */}
+              {section.id === "science" ? (
+                <TrialDesignCard record={record} />
               ) : null}
               {sectionManifests.map((m) => {
                 const Panel = getPanelFor(m);
