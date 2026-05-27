@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import ActionSection from "@/components/ActionSection";
 import { AssetForm, labelFor } from "@/components/AssetForm";
 import HeroBanner from "@/components/HeroBanner";
-import { LimitationsPanel } from "@/components/LimitationsPanel";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
-import { AdversaryPanel } from "@/components/agents/AdversaryPanel";
-import { AutoDiligencePanel } from "@/components/agents/AutoDiligencePanel";
-import { MemoPanel } from "@/components/agents/MemoPanel";
+import RiskSection from "@/components/RiskSection";
 import { listModules } from "@/lib/api-client";
 import {
   ClientDiligenceRecord,
@@ -229,8 +227,6 @@ export default function DiligencePage({
             </div>
           ) : null}
 
-          <AutoDiligencePanel record={record} setRecord={setRecord} />
-
           {/* v1.7.0: section-grouped module rendering. Each section answers
               one specific question, in equity-research / IC-memo order:
               thesis → valuation → operational. The Risk and Action surfaces
@@ -285,13 +281,18 @@ export default function DiligencePage({
             </div>
           ))}
 
-          {/* v1.7.0 Phase 4: LimitationsPanel moved out of the aside, into
-              the main flow near the bottom. Phase 5 absorbs it + AdversaryPanel
-              into a consolidated RiskSection. */}
-          <LimitationsPanel />
+          {/* v1.7.0 Phase 5: RiskSection — consolidates LimitationsPanel +
+              AdversaryPanel under one named section matching the Phase 2
+              pattern. Per the healthcare-VC research this is the "section
+              that determines a yes/no vote" — visually co-equal with
+              Valuation, not a sidebar afterthought. */}
+          <RiskSection record={record} />
 
-          <MemoPanel record={record} />
-          <AdversaryPanel record={record} />
+          {/* v1.7.0 Phase 6: ActionSection — Auto-Diligence + Memo Writer +
+              methodology link + PDF stub consolidated as the journey's
+              final beat. Frames active controls as "what you DO with the
+              diligence" rather than analysis modules. */}
+          <ActionSection record={record} setRecord={setRecord} />
         </div>
       </div>
   );
