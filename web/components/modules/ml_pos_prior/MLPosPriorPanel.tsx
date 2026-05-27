@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 
 import { runMLPosPrior } from "@/lib/api-client";
 import type { ModulePanelProps } from "@/lib/module-registry";
-import type { DisagreementLevel, MLPosPriorResult } from "@/lib/types";
+import type { DisagreementLevel } from "@/lib/types";
 
 const DISAGREEMENT_COLOR: Record<DisagreementLevel, string> = {
   aligned: "bg-green-bright/15 text-green-bright border-green-bright/30",
@@ -30,8 +30,11 @@ function pct(v: number): string {
   return `${(v * 100).toFixed(1)}%`;
 }
 
-export default function MLPosPriorPanel({ record }: ModulePanelProps) {
-  const [result, setResult] = useState<MLPosPriorResult | null>(null);
+export default function MLPosPriorPanel({ record, setRecord }: ModulePanelProps) {
+  // v1.7.0: result lifted to ClientDiligenceRecord so HeroBanner can read
+  // the same value. Errors stay local — they don't need to live in the
+  // shared record. Pattern matches PoSWaterfallPanel/RnpvPanel/etc.
+  const result = record.ml_pos;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,8 +50,14 @@ export default function MLPosPriorPanel({ record }: ModulePanelProps) {
       criteria_text: record.ml_pos_criteria_text ?? null,
       nct_id: record.ml_pos_nct_id ?? null,
     })
-      .then((r) => !cancelled && setResult(r))
-      .catch((e) => !cancelled && setError(String(e)));
+      .then((r) => !cancelled && setRecord({ ml_pos: r }))
+      .catch((e) => {
+        if (cancelled) return;
+        setError(String(e));
+        // Clear any stale ml_pos result on error so the banner doesn't
+        // keep showing the previous prediction after a failing edit.
+        setRecord({ ml_pos: null });
+      });
     return () => {
       cancelled = true;
     };
