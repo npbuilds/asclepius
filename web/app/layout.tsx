@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
 import Link from "next/link";
 
+import { PersonaToggle } from "@/components/PersonaToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PERSONA_ANTI_FOUC_SCRIPT } from "@/lib/persona";
 import { ANTI_FOUC_SCRIPT } from "@/lib/theme";
 
 import "./globals.css";
@@ -56,8 +58,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Anti-FOUC: set data-theme before paint based on localStorage */}
+        {/* Anti-FOUC: set data-theme + data-persona before paint based on
+            localStorage. Both scripts are tiny synchronous reads + DOM
+            attribute writes; running them inline in <head> eliminates the
+            flash-of-wrong-theme / flash-of-wrong-persona on deep links. */}
         <script dangerouslySetInnerHTML={{ __html: ANTI_FOUC_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: PERSONA_ANTI_FOUC_SCRIPT }} />
       </head>
       <body className="min-h-screen antialiased">
         <header className="border-b border-border-dim bg-bg-panel">
@@ -95,6 +101,7 @@ export default function RootLayout({
               >
                 GitHub
               </a>
+              <PersonaToggle />
               <ThemeToggle />
             </nav>
           </div>
