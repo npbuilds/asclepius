@@ -7,18 +7,16 @@
 // Tinted MAGENTA because reflexivity is the framework's headline differentiator
 // — semantically distinct from the cyan flow of base-rate-and-modality math.
 //
-// NOTE: The multipliers below mirror api/app/data/reflexivity_adjustments.json.
-// `test_reflexivity_parity` in api/tests/test_registry.py asserts they stay in
-// sync — if you change one side, update the other and the test will pass again.
+// v1.7.1: tier table moved to `web/lib/reflexivity-tiers.ts` so the
+// HeroBanner (and any future surface) shares a single TypeScript source
+// of truth. The Python parity test (`test_reflexivity_parity` in
+// `api/tests/test_registry.py`) now grep-asserts that shared module
+// against the backend JSON.
 
 import type { CapitalPosition } from "@/lib/types";
+import { REFLEXIVITY_TIERS } from "@/lib/reflexivity-tiers";
 
-const TIERS: { value: CapitalPosition; label: string; multiplier: number; runway: string }[] = [
-  { value: "distressed", label: "Distressed", multiplier: 0.78, runway: "<6 mo" },
-  { value: "constrained", label: "Constrained", multiplier: 0.88, runway: "6–12 mo" },
-  { value: "adequate", label: "Adequate", multiplier: 1.0, runway: "12–24 mo" },
-  { value: "well_capitalized", label: "Well capitalized", multiplier: 1.08, runway: "≥24 mo" },
-];
+const TIERS = REFLEXIVITY_TIERS;
 
 export function ReflexivitySlider({
   value,

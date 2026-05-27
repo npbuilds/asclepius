@@ -12,7 +12,11 @@
 // + decision rationale, and methodology/00-product-thesis.md for the
 // public-facing summary.
 
-import type { CapitalPosition, Recommendation } from "./types";
+import {
+  REFLEXIVITY_TIER_BY_VALUE,
+  formatReflexivityMultiplier,
+} from "./reflexivity-tiers";
+import type { Recommendation } from "./types";
 import type { ClientDiligenceRecord } from "./module-registry";
 
 // ---------------------------------------------------------------------------
@@ -130,17 +134,21 @@ export interface ReflexivityDisplay {
   multiplier: string; // "×1.00"
 }
 
-const REFLEXIVITY_TIERS: Record<CapitalPosition, { tier: string; multiplier: string }> = {
-  well_capitalized: { tier: "WELL CAPITALIZED", multiplier: "×1.08" },
-  adequate: { tier: "ADEQUATE", multiplier: "×1.00" },
-  constrained: { tier: "CONSTRAINED", multiplier: "×0.88" },
-  distressed: { tier: "DISTRESSED", multiplier: "×0.72" },
-};
-
+// v1.7.1: tier values pulled from lib/reflexivity-tiers.ts (the shared
+// TypeScript source-of-truth that mirrors api/app/data/reflexivity_adjustments.json
+// and is guarded by the test_reflexivity_parity Python test). Pre-v1.7.1
+// this function had its own table that silently used `×0.72` for the
+// distressed tier (the JSON's range_low) instead of the canonical
+// multiplier `×0.78` — a drift the parity test couldn't catch because
+// it only covered ReflexivitySlider.tsx.
 export function reflexivityDisplay(
   record: ClientDiligenceRecord,
 ): ReflexivityDisplay {
-  return REFLEXIVITY_TIERS[record.asset.capital_position];
+  const tier = REFLEXIVITY_TIER_BY_VALUE[record.asset.capital_position];
+  return {
+    tier: tier.bannerTier,
+    multiplier: formatReflexivityMultiplier(tier),
+  };
 }
 
 // ---------------------------------------------------------------------------

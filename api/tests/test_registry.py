@@ -43,15 +43,22 @@ def test_edgar_shim_unknown_sponsor_returns_error() -> None:
     assert "available_sponsors" in result
 
 
-def test_reflexivity_parity_between_backend_json_and_frontend_slider() -> None:
+def test_reflexivity_parity_between_backend_json_and_frontend_constants() -> None:
     """Reflexivity multipliers are duplicated between the backend JSON
-    (api/app/data/reflexivity_adjustments.json — the source of truth) and the
-    frontend ReflexivitySlider component (web/components/ReflexivitySlider.tsx —
-    a copy for snappy UI). If they drift, the slider's tooltip will silently
-    lie about what the PoS engine is computing. This test grep-asserts parity.
+    (api/app/data/reflexivity_adjustments.json — the source of truth) and a
+    shared frontend constants module (web/lib/reflexivity-tiers.ts — imported
+    by ReflexivitySlider, HeroBanner, and any future consumer). If they drift,
+    the UI will silently lie about what the PoS engine is computing. This
+    test grep-asserts parity.
 
-    If this test fails: either update web/components/ReflexivitySlider.tsx's
-    TIERS array to match reflexivity_adjustments.json, or vice versa.
+    v1.7.1: the parity target moved from ReflexivitySlider.tsx to the new
+    lib/reflexivity-tiers.ts module after v1.7.0 introduced banner-stats.ts
+    with a duplicate (drifting) table. Consolidating into one module means
+    one grep target instead of chasing every new consumer.
+
+    If this test fails: either update web/lib/reflexivity-tiers.ts's
+    REFLEXIVITY_TIERS array to match reflexivity_adjustments.json, or
+    vice versa.
     """
     import json
     import re
@@ -59,11 +66,11 @@ def test_reflexivity_parity_between_backend_json_and_frontend_slider() -> None:
 
     repo_root = Path(__file__).resolve().parent.parent.parent
     backend_json = repo_root / "api" / "app" / "data" / "reflexivity_adjustments.json"
-    frontend_tsx = repo_root / "web" / "components" / "ReflexivitySlider.tsx"
+    frontend_ts = repo_root / "web" / "lib" / "reflexivity-tiers.ts"
 
     # If the web/ directory doesn't exist yet (or isn't on this checkout),
     # skip rather than fail — backend tests shouldn't be blocked on frontend.
-    if not frontend_tsx.exists():
+    if not frontend_ts.exists():
         return
 
     backend = {
@@ -71,15 +78,17 @@ def test_reflexivity_parity_between_backend_json_and_frontend_slider() -> None:
         for a in json.loads(backend_json.read_text())["adjustments"]
     }
 
-    # Parse TIERS entries from the TSX with a simple regex
-    tsx = frontend_tsx.read_text()
+    # Parse REFLEXIVITY_TIERS entries from the TS with a simple regex.
+    # Same shape as the TSX-era table but in a module-level array literal:
+    #   { value: "distressed", label: "Distressed", multiplier: 0.78, ... }
+    ts = frontend_ts.read_text()
     pattern = re.compile(
         r'value:\s*"(\w+)".*?multiplier:\s*([\d.]+)',
         re.DOTALL,
     )
-    frontend = {m.group(1): float(m.group(2)) for m in pattern.finditer(tsx)}
+    frontend = {m.group(1): float(m.group(2)) for m in pattern.finditer(ts)}
 
-    assert frontend, "Could not parse TIERS from ReflexivitySlider.tsx"
+    assert frontend, "Could not parse REFLEXIVITY_TIERS from reflexivity-tiers.ts"
     assert set(frontend.keys()) == set(backend.keys()), (
         f"capital_position keys diverged. backend={sorted(backend)}, "
         f"frontend={sorted(frontend)}"
@@ -88,7 +97,7 @@ def test_reflexivity_parity_between_backend_json_and_frontend_slider() -> None:
         front_mult = frontend[k]
         assert abs(front_mult - backend_mult) < 1e-6, (
             f"reflexivity multiplier for '{k}' drifted: "
-            f"backend JSON has {backend_mult}, frontend TSX has {front_mult}"
+            f"backend JSON has {backend_mult}, frontend has {front_mult}"
         )
 
 
