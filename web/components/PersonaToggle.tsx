@@ -19,13 +19,9 @@
 import { useEffect, useState } from "react";
 import { Users } from "lucide-react";
 
-import {
-  DEFAULT_PERSONA,
-  getCurrentPersona,
-  setPersona,
-  type PersonaId,
-} from "@/lib/persona";
+import { setPersona, type PersonaId } from "@/lib/persona";
 import { PERSONA_CONFIGS } from "@/lib/persona-config";
+import { useCurrentPersona } from "@/lib/use-persona";
 
 const PERSONA_ORDER: PersonaId[] = [
   "vc_associate",
@@ -35,19 +31,20 @@ const PERSONA_ORDER: PersonaId[] = [
 ];
 
 export function PersonaToggle() {
-  const [persona, setLocalPersona] = useState<PersonaId>(DEFAULT_PERSONA);
+  const persona = useCurrentPersona();
   const [mounted, setMounted] = useState(false);
 
-  // Sync from DOM after hydration. Same pattern as ThemeToggle — the anti-FOUC
-  // inline script has already set the correct data-persona; we just observe it.
+  // The mounted flag still matters for the placeholder render — useCurrentPersona
+  // returns DEFAULT_PERSONA on the first render before its useEffect fires, so
+  // a placeholder for one frame prevents a label-flip flicker.
   useEffect(() => {
-    setLocalPersona(getCurrentPersona());
     setMounted(true);
   }, []);
 
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value as PersonaId;
-    setLocalPersona(next);
+    // setPersona() updates DOM + localStorage AND fires PERSONA_CHANGE_EVENT;
+    // the hook above re-reads on the event, so we don't need local state.
     setPersona(next);
   }
 

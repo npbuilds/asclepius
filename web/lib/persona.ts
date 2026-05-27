@@ -35,6 +35,12 @@ function isValidPersona(value: string): value is PersonaId {
   return (VALID_PERSONAS as string[]).includes(value);
 }
 
+// v1.8.0 Phase 3: setPersona dispatches a window event after writing to
+// DOM + localStorage so subscribers (e.g. the diligence page) can branch
+// on persona changes without polling. The event name is namespaced to
+// avoid collisions with native or third-party events.
+export const PERSONA_CHANGE_EVENT = "asclepius:personachange";
+
 export function setPersona(persona: PersonaId): void {
   if (typeof document !== "undefined") {
     document.documentElement.dataset.persona = persona;
@@ -45,6 +51,9 @@ export function setPersona(persona: PersonaId): void {
     } catch {
       // localStorage may be unavailable (private mode, iframe, etc.) — ignore.
     }
+    window.dispatchEvent(
+      new CustomEvent(PERSONA_CHANGE_EVENT, { detail: { persona } }),
+    );
   }
 }
 

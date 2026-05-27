@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import ActionSection from "@/components/ActionSection";
 import { AssetForm, labelFor } from "@/components/AssetForm";
+import IcVoterBanner from "@/components/banners/IcVoterBanner";
 import HeroBanner from "@/components/HeroBanner";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
 import RiskSection from "@/components/RiskSection";
@@ -13,7 +14,10 @@ import {
   getPanelFor,
   groupModulesBySection,
   orderModules,
+  type SectionWithManifests,
 } from "@/lib/module-registry";
+import { getPersonaConfig, type PersonaSection } from "@/lib/persona-config";
+import { useCurrentPersona } from "@/lib/use-persona";
 import type { AssetInput, ModuleManifest, RnpvInputs } from "@/lib/types";
 
 const ADAGRASIB: AssetInput = {
@@ -81,6 +85,36 @@ function assetSummaryLine(asset: AssetInput): string {
   return parts.join(" · ");
 }
 
+// v1.8.0 Phase 3: turn a persona's PersonaSection[] config into the
+// SectionWithManifests shape the section render loop already expects.
+// Each PersonaSection lists module IDs to render in order; we look up
+// the corresponding manifest from the (already filtered) list and skip
+// any moduleId that isn't backend-discovered. Empty sections (zero
+// resolved modules) are dropped so we don't render a dangling header.
+function adaptPersonaSections(
+  personaSections: PersonaSection[],
+  manifests: ModuleManifest[],
+): SectionWithManifests[] {
+  const byId = new Map(manifests.map((m) => [m.id, m]));
+  const out: SectionWithManifests[] = [];
+  for (const section of personaSections) {
+    const sectionManifests = section.moduleIds
+      .map((id) => byId.get(id))
+      .filter((m): m is ModuleManifest => Boolean(m));
+    if (sectionManifests.length === 0) continue;
+    out.push({
+      section: {
+        id: section.id,
+        label: section.label,
+        question: section.question,
+        moduleIds: section.moduleIds,
+      },
+      manifests: sectionManifests,
+    });
+  }
+  return out;
+}
+
 function blankAsset(name: string): AssetInput {
   return {
     asset_name: name,
@@ -142,6 +176,36 @@ export default function DiligencePage({
   // `onToggle` handler so the choice sticks across record updates.
   const [assetFormOpen, setAssetFormOpen] = useState(!isAdagrasib);
 
+  // v1.8.0 Phase 3: persona-driven layout. The page reads the current
+  // persona on every render and looks up its config (module ordering,
+  // hidden modules, banner variant, ActionSection visibility). For the
+  // default VC Associate persona the config produces the v1.7.0 layout
+  // unchanged; for IC Voter / Scientific Reviewer / Quant it diverges
+  // per persona-config.ts. The `useCurrentPersona` hook subscribes to
+  // the PERSONA_CHANGE_EVENT dispatched by `setPersona` in lib/persona.ts,
+  // so dropdown changes in the global header re-render this page live.
+  const persona = useCurrentPersona();
+  const personaConfig = getPersonaConfig(persona);
+
+  // Filter modules per persona's hiddenModules. The registry pattern's
+  // promise — "any backend-discovered module is visible" — is preserved
+  // for personas with hiddenModules == [], and intentionally narrowed
+  // for personas that drop modules they don't care about (e.g.
+  // Scientific Reviewer drops rnpv + comparables).
+  const visibleManifests = personaConfig.hiddenModules.length === 0
+    ? manifests
+    : manifests.filter((m) => !personaConfig.hiddenModules.includes(m.id));
+
+  // Section grouping override. Empty `sections` → use the v1.7.0 default
+  // (MODULE_SECTIONS from module-registry.ts). Non-empty → adapt the
+  // persona's sections to the SectionWithManifests shape that the
+  // existing render loop expects. PersonaSection has the same shape as
+  // the registry's ModuleSection, so the adapter is just a shallow
+  // re-wrap with the filtered manifests list.
+  const sections: SectionWithManifests[] = personaConfig.sections.length === 0
+    ? groupModulesBySection(visibleManifests)
+    : adaptPersonaSections(personaConfig.sections, visibleManifests);
+
   useEffect(() => {
     let cancelled = false;
     listModules()
@@ -181,11 +245,16 @@ export default function DiligencePage({
         ) : null}
       </header>
 
-      {/* v1.7.0: HeroBanner — "30-second read" surface. Recommendation chip
-          + stat grid (rNPV range / LOA microsplit / reflexivity tier /
-          catalyst). Reads from record only; progressively populates as
-          modules below settle. See docs/ia-redesign-notes.md. */}
-      <HeroBanner record={record} />
+      {/* v1.7.0: HeroBanner ("30-second read"). v1.8.0 Phase 3: swap to a
+          persona-specific banner when the config calls for it. IC Voter
+          gets a 1-pager with top-3 risks/reasons + headline numbers;
+          Scientific Reviewer + Quant get their own variants in Phases
+          4-5. Default (VC Associate) stays on the v1.7.0 HeroBanner. */}
+      {personaConfig.bannerVariant === "ic_voter" ? (
+        <IcVoterBanner record={record} />
+      ) : (
+        <HeroBanner record={record} />
+      )}
 
       {/* v1.7.0 Phase 4: Asset form collapsed to a top strip with a
           one-line summary. Default-open on non-adagrasib assets (the user
@@ -227,12 +296,13 @@ export default function DiligencePage({
             </div>
           ) : null}
 
-          {/* v1.7.0: section-grouped module rendering. Each section answers
-              one specific question, in equity-research / IC-memo order:
-              thesis → valuation → operational. The Risk and Action surfaces
-              live outside the module system (LimitationsPanel + Adversary
-              + Memo + AutoDiligence) and consolidate in later phases. */}
-          {groupModulesBySection(manifests).map(({ section, manifests: sectionManifests }) => (
+          {/* v1.7.0 + v1.8.0 Phase 3: section-grouped module rendering with
+              persona override. `sections` is computed at the top of the
+              component — VC Associate uses MODULE_SECTIONS, the other 3
+              personas override via persona-config.ts. The Risk and Action
+              surfaces live outside the module system; ActionSection
+              renders only when personaConfig.showActionSection is true. */}
+          {sections.map(({ section, manifests: sectionManifests }) => (
             <div key={section.id} className="space-y-3">
               <div className="border-b border-border-dim/60 pb-1">
                 <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
@@ -288,11 +358,13 @@ export default function DiligencePage({
               Valuation, not a sidebar afterthought. */}
           <RiskSection record={record} />
 
-          {/* v1.7.0 Phase 6: ActionSection — Auto-Diligence + Memo Writer +
-              methodology link + PDF stub consolidated as the journey's
-              final beat. Frames active controls as "what you DO with the
-              diligence" rather than analysis modules. */}
-          <ActionSection record={record} setRecord={setRecord} />
+          {/* v1.7.0 Phase 6 + v1.8.0 Phase 3: ActionSection renders for
+              personas whose config flags showActionSection true. IC Voter
+              hides it (one-page summary target); VC / Scientific / Quant
+              show it. */}
+          {personaConfig.showActionSection ? (
+            <ActionSection record={record} setRecord={setRecord} />
+          ) : null}
         </div>
       </div>
   );
