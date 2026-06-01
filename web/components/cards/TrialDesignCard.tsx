@@ -40,6 +40,11 @@ export default function TrialDesignCard({ record }: TrialDesignCardProps) {
   const ctGovUrl = nctId
     ? `https://clinicaltrials.gov/study/${nctId}`
     : null;
+  // v1.8.0-rc3.1 (Codex MINOR #4): blank-asset proxy. Treat unset
+  // indication as "the user hasn't filled this in yet" and render
+  // target_validated / biomarker_enrichment as neutral "unknown"
+  // instead of misleading amber-toned warnings on a fresh record.
+  const assetIsBlank = asset.indication === null;
 
   return (
     <section
@@ -71,7 +76,11 @@ export default function TrialDesignCard({ record }: TrialDesignCardProps) {
         <li>
           <span className="font-mono font-bold text-text-bright">Target.</span>{" "}
           {asset.target ?? "—"}
-          {asset.target_validated ? (
+          {assetIsBlank ? (
+            <span className="ml-1 text-text-dim">
+              — target-validation status not yet recorded
+            </span>
+          ) : asset.target_validated ? (
             <span className="ml-1 text-green-bright">
               ✓ target-validated by prior approval in the same indication
             </span>
@@ -97,7 +106,11 @@ export default function TrialDesignCard({ record }: TrialDesignCardProps) {
           <span className="font-mono font-bold text-text-bright">
             Enrichment.
           </span>{" "}
-          {asset.biomarker_enrichment ? (
+          {assetIsBlank ? (
+            <span className="text-text-dim">
+              — biomarker-enrichment status not yet recorded
+            </span>
+          ) : asset.biomarker_enrichment ? (
             <>
               Biomarker-enriched enrollment.{" "}
               <span className="text-green-bright">

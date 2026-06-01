@@ -59,18 +59,30 @@ export interface PersonaConfig {
   // Modules entirely filtered out of the manifests list. Used to drop rNPV +
   // Comparables for Scientific Reviewer (the science-focused read), or to
   // drop the recommendation chip's source for Quant (raw numbers only).
+  //
+  // v1.8.0-rc3.1: every module NOT listed in any section AND intentionally
+  // suppressed should be in this list. The earlier rc1-rc3 versions allowed
+  // "silent drop" (a module in neither `sections[].moduleIds` nor
+  // `hiddenModules`) to be invisible just by being unlisted. That was
+  // confusing — config wasn't self-describing. Now every hidden module is
+  // explicit here so a reader can audit visibility from the config alone.
   hiddenModules: string[];
   // Section grouping override. If empty, the page uses the default
   // MODULE_SECTIONS from module-registry.ts (the v1.7.0 layout).
   sections: PersonaSection[];
-  // IC Voter mode: single-screen target. Panels collapse tornado/MC details,
-  // recommendation chip is enlarged, action strip is hidden in favor of
-  // a "decision rationale" card. Other personas leave this false.
-  compactMode: boolean;
   // Whether to render the v1.7.0 ActionSection (Auto-Diligence + Memo Writer
   // + methodology link + PDF stub) as a final beat. IC Voter hides it
   // (one-page target); others show it.
   showActionSection: boolean;
+  //
+  // Note (v1.8.0-rc3.1, Codex MAJOR fix): the earlier rc1-rc3 versions
+  // declared a `compactMode: boolean` field intended to drive panel-level
+  // compression (hide tornado / MC histogram / audit-trail expansion). It
+  // was never wired — modules ignored it — so IC Voter mode delivered the
+  // banner-as-1-pager promise but full-size panels below it. Field removed
+  // until the panel-compression work actually ships; for v1.8.0 the
+  // IcVoterBanner alone is the 1-page summary and below-banner modules are
+  // intentionally full-size. Re-introduce when panel compression is wired.
 }
 
 // ---------------------------------------------------------------------------
@@ -136,18 +148,22 @@ export const PERSONA_CONFIGS: Record<PersonaId, PersonaConfig> = {
     bannerVariant: "vc",
     hiddenModules: [],
     sections: VC_ASSOCIATE_SECTIONS,
-    compactMode: false,
     showActionSection: true,
   },
   ic_voter: {
     id: "ic_voter",
     label: "IC Voter",
     description:
-      "1-page summary mode for senior partners. Recommendation + top-3 risks + top-3 reasons + catalyst — no tornado, no MC histogram, no methodology footnotes. ~2 minute read.",
+      "1-page summary mode for senior partners. Recommendation + top-3 risks + top-3 reasons + catalyst. Modules below the banner are limited to the decision essentials (pos + rnpv + scorecard). ~2 minute read.",
     bannerVariant: "ic_voter",
-    hiddenModules: ["calibration"],
+    // v1.8.0-rc3.1 (Codex MINOR #3): ml_pos_prior + comparables are
+    // intentionally absent from IC_VOTER_SECTIONS (the banner already
+    // carries the top-line risks/reasons; comps + ML detail are noise
+    // at the IC vote moment). Adding them to hiddenModules makes that
+    // intent explicit instead of relying on adaptPersonaSections to
+    // silently drop them.
+    hiddenModules: ["calibration", "ml_pos_prior", "comparables"],
     sections: IC_VOTER_SECTIONS,
-    compactMode: true,
     showActionSection: false,
   },
   scientific_reviewer: {
@@ -156,9 +172,10 @@ export const PERSONA_CONFIGS: Record<PersonaId, PersonaConfig> = {
     description:
       "Mechanism + target + trial design focus. Elevates the ML PoS Prior (the protocol-embedding signal). Hides rNPV + deal comparables — not the science reviewer's question.",
     bannerVariant: "scientific",
-    hiddenModules: ["rnpv", "comparables"],
+    // v1.8.0-rc3.1: calibration is similarly not in
+    // SCIENTIFIC_REVIEWER_SECTIONS — explicit hide for self-describing config.
+    hiddenModules: ["rnpv", "comparables", "calibration"],
     sections: SCIENTIFIC_REVIEWER_SECTIONS,
-    compactMode: false,
     showActionSection: true,
   },
   quant: {
@@ -169,7 +186,6 @@ export const PERSONA_CONFIGS: Record<PersonaId, PersonaConfig> = {
     bannerVariant: "quant",
     hiddenModules: [],
     sections: QUANT_SECTIONS,
-    compactMode: false,
     showActionSection: true,
   },
 };

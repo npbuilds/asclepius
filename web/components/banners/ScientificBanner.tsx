@@ -41,6 +41,12 @@ export default function ScientificBanner({ record }: ScientificBannerProps) {
   const subtitle = subtitleLine(record);
   const catalyst = catalystLine(record);
   const ml = record.ml_pos;
+  // v1.8.0-rc3.1: blank-asset proxy. The canonical staged record
+  // (ADAGRASIB) + Auto-Diligence Apply-Record all populate
+  // `indication`; only `blankAsset()` from page.tsx leaves it null.
+  // Treat null indication as "the user hasn't filled this in yet" and
+  // render science flags as neutral "unknown" instead of warnings.
+  const assetIsBlank = asset.indication === null;
 
   return (
     <section
@@ -79,15 +85,47 @@ export default function ScientificBanner({ record }: ScientificBannerProps) {
           label="Modality"
           value={asset.modality.replace(/_/g, " ")}
         />
+        {/* v1.8.0-rc3.1 (Codex MINOR #4): on a fresh blankAsset() the
+            target_validated + biomarker_enrichment booleans default to false,
+            which would surface here as misleading amber "✗ all-comers" /
+            "✗ unvalidated" warnings — but the truth is "user hasn't told us
+            yet". Detect blank-ish state via `indication === null` (the
+            canonical AssetForm/Apply-Record/cached records all populate it;
+            only blankAsset() leaves it null) and render a neutral
+            "unknown" copy instead of warning. */}
         <Field
           label="Biomarker enrichment"
-          value={asset.biomarker_enrichment ? "✓ enriched" : "✗ all-comers"}
-          tone={asset.biomarker_enrichment ? "good" : "warn"}
+          value={
+            assetIsBlank
+              ? "— unknown"
+              : asset.biomarker_enrichment
+                ? "✓ enriched"
+                : "✗ all-comers"
+          }
+          tone={
+            assetIsBlank
+              ? null
+              : asset.biomarker_enrichment
+                ? "good"
+                : "warn"
+          }
         />
         <Field
           label="Target validated"
-          value={asset.target_validated ? "✓ prior approval" : "✗ unvalidated"}
-          tone={asset.target_validated ? "good" : "warn"}
+          value={
+            assetIsBlank
+              ? "— unknown"
+              : asset.target_validated
+                ? "✓ prior approval"
+                : "✗ unvalidated"
+          }
+          tone={
+            assetIsBlank
+              ? null
+              : asset.target_validated
+                ? "good"
+                : "warn"
+          }
         />
         <Field
           label="In-class competitors"

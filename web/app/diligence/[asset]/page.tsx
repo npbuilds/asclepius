@@ -186,8 +186,22 @@ export default function DiligencePage({
   // per persona-config.ts. The `useCurrentPersona` hook subscribes to
   // the PERSONA_CHANGE_EVENT dispatched by `setPersona` in lib/persona.ts,
   // so dropdown changes in the global header re-render this page live.
+  //
+  // v1.8.0-rc3.1 (Codex MINOR #2 fix): the hook returns DEFAULT_PERSONA on
+  // the initial render to keep SSR + client-hydration in agreement; it
+  // updates to the persisted persona only after its useEffect fires. For
+  // users with a persisted non-default persona, that previously caused a
+  // visible "HeroBanner → IcVoterBanner" flash on deep-link refresh. The
+  // `personaResolved` gate now defers persona-aware rendering until the
+  // hook has resolved — the page shows a single-row skeleton during the
+  // brief hydration window instead of the wrong banner. Eliminates the
+  // flash without breaking SSR.
   const persona = useCurrentPersona();
   const personaConfig = getPersonaConfig(persona);
+  const [personaResolved, setPersonaResolved] = useState(false);
+  useEffect(() => {
+    setPersonaResolved(true);
+  }, []);
 
   // Filter modules per persona's hiddenModules. The registry pattern's
   // promise — "any backend-discovered module is visible" — is preserved
@@ -252,8 +266,14 @@ export default function DiligencePage({
             ic_voter → IcVoterBanner (1-page summary, Phase 3)
             scientific → ScientificBanner (science + trial design, Phase 4)
             quant → QuantBanner (Phase 5, pending)
-            vc (default) → HeroBanner (the v1.7.0 reading-journey banner) */}
-      {personaConfig.bannerVariant === "ic_voter" ? (
+            vc (default) → HeroBanner (the v1.7.0 reading-journey banner)
+          v1.8.0-rc3.1: skeleton banner during the brief pre-mount window
+          so a persisted non-default persona doesn't flash through
+          HeroBanner first. After `personaResolved` flips true (post-mount),
+          the correct persona banner mounts directly. */}
+      {!personaResolved ? (
+        <div className="mb-4 h-32 animate-pulse rounded border border-border-dim bg-bg-panel" />
+      ) : personaConfig.bannerVariant === "ic_voter" ? (
         <IcVoterBanner record={record} />
       ) : personaConfig.bannerVariant === "scientific" ? (
         <ScientificBanner record={record} />
