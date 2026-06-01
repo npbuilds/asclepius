@@ -117,3 +117,9 @@ api/app/methodology/
 # lands.
 api/data/hint/
 api/data/training/
+
+# v1.5.5 — CT Open benchmark data (Gao et al. 2024, ~19 MB CTO CSVs +
+# downstream artifacts). Downloaded from
+# https://huggingface.co/datasets/chufangao/CTO via the helper script at
+# api/data_pipeline/cto_download.sh. Not vendored into the repo.
+api/data/cto/
