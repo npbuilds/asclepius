@@ -5,7 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import ActionSection from "@/components/ActionSection";
 import { AssetForm, labelFor } from "@/components/AssetForm";
 import IcVoterBanner from "@/components/banners/IcVoterBanner";
+import QuantBanner from "@/components/banners/QuantBanner";
 import ScientificBanner from "@/components/banners/ScientificBanner";
+import ModelInfoRawCard from "@/components/cards/ModelInfoRawCard";
 import TrialDesignCard from "@/components/cards/TrialDesignCard";
 import HeroBanner from "@/components/HeroBanner";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
@@ -277,6 +279,8 @@ export default function DiligencePage({
         <IcVoterBanner record={record} />
       ) : personaConfig.bannerVariant === "scientific" ? (
         <ScientificBanner record={record} />
+      ) : personaConfig.bannerVariant === "quant" ? (
+        <QuantBanner record={record} />
       ) : (
         <HeroBanner record={record} />
       )}
@@ -357,6 +361,12 @@ export default function DiligencePage({
               {section.id === "science" ? (
                 <TrialDesignCard record={record} />
               ) : null}
+              {/* v1.8.0 Phase 5: ModelInfoRawCard as the Calibration section's
+                  leading element (Quant persona only). Lazy-fetches the
+                  /model_info JSON when the user expands the <details>
+                  primitive. The "show me your work" surface for readers who
+                  want raw artifact metadata over the QuantBanner's summary. */}
+              {section.id === "calibration" ? <ModelInfoRawCard /> : null}
               {sectionManifests.map((m) => {
                 const Panel = getPanelFor(m);
                 if (!Panel) {

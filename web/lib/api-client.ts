@@ -69,6 +69,15 @@ export async function runRnpv(
   return data.rnpv;
 }
 
+// v1.8.0 Phase 5: getMLPosPriorModelInfo() hits the /model_info endpoint
+// that's been live since v1.5.3.1 and exposes the full artifact metadata
+// (AUC, Brier, conformal coverage, bootstrap band width, n_features, etc.).
+// QuantBanner + ModelInfoRawCard both consume this — typed as a permissive
+// Record so the live JSON can evolve without breaking the types.
+export async function getMLPosPriorModelInfo(): Promise<Record<string, unknown>> {
+  return jsonFetch<Record<string, unknown>>("/api/modules/ml_pos_prior/model_info");
+}
+
 export async function runMLPosPrior(
   asset: AssetInput,
   pos: PoSResult,
