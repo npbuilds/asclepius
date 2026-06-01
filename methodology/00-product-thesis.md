@@ -278,6 +278,55 @@ internal research notes that informed this design live at
 [`docs/ia-redesign-notes.md`](../docs/ia-redesign-notes.md) for any
 reviewer who wants the audit trail.
 
+### Persona modes — different investors, different first questions
+
+v1.7.0's "reading order" assumes a single reader: the VC associate. But
+Asclepius's actual readership is multi-modal — a senior IC voter, a
+scientific advisor, and a quant-skeptic each have *different first
+questions*, not just different cosmetic preferences. v1.8.0 surfaces
+this by offering four persona modes selectable from the global header.
+Each persona reads the same underlying diligence record but presents
+it through a different banner + different module ordering + different
+elevated cards.
+
+This is the same product-thesis idea — methodology applied to its own
+presentation — extended one level. The framework's *math* doesn't
+change with persona; only the *surface that wraps the math* does.
+
+The four personas:
+
+| Persona | First question | What the banner elevates | What it hides |
+|---|---|---|---|
+| **VC Associate** (default) | "Should I keep reading? Is this in my fund's mandate?" | Recommendation chip + rNPV range + LOA + reflexivity tier + catalyst | Nothing |
+| **IC Voter** | "What's the recommendation? Top 3 risks? Top 3 reasons? Do I trust the analyst?" | Large recommendation chip + plain-English sentence + top-3 risks (red) + top-3 reasons (green) + catalyst — auto-derived from the scorecard's `red_flags` / `green_flags` arrays | Action surface, Monte Carlo internals, audit-trail expansion. Targets a ~2-minute read. |
+| **Scientific Reviewer** | "Is the science real? Is the trial design defensible?" | Mechanism + target + indication + biomarker-enrichment + target-validated flags + ML PoS Prior (the protocol-text embedding signal) + rule LOA. Trial-design card with NCT ID link to ClinicalTrials.gov as the science section's leading element | rNPV, deal comparables, recommendation chip. The reviewer's job is the science, not the deal economics. |
+| **Quant / Calibration-focused** | "Is the model honest? Where's the calibration?" | Test AUC + Brier + per-phase Mondrian split-conformal coverage (color-coded against the 90% target) + ML-vs-rule disagreement in pp. Raw `/model_info` JSON exposed in a lazy-loading collapsible card | Recommendation chip entirely. Quant reader is suspicious of opaque synthesis; banner exposes the inputs that let them synthesize their own view. |
+
+The persona-mode lever is the recognition that **a tool for biotech VC
+diligence isn't actually used by "a biotech VC" — it's used by a stack
+of roles**: associate → partner (IC voter) → scientific advisor → quant
+risk reviewer. Each looks at the same asset and asks different
+questions first. Single-persona tools force every reader through one
+sequence; persona-aware tools meet readers where they are.
+
+Why this matters for the productization thesis: the same methodology
+discipline that informs WHICH numbers to compute (BIO base rates,
+reflexivity, conformal coverage) also informs HOW to PRESENT those
+numbers to each reader. The persona system is the methodology layer
+admitting its readers are not interchangeable.
+
+Implementation note: persona state is persisted client-side in
+`localStorage` under `asclepius_persona` with an inline anti-FOUC
+script in the `<head>` mirroring the theme system's pattern. A
+custom window event (`asclepius:personachange`) propagates dropdown
+changes to the diligence page's React tree without a full reload.
+The four personas are declaratively defined in
+`web/lib/persona-config.ts` — each declares its banner variant,
+hidden modules, section grouping, and ActionSection visibility.
+Adding a fifth persona is a one-config-entry change plus one
+banner component (architecturally similar to adding a new analysis
+module via the registry pattern).
+
 ## What this changes about the build plan
 
 Concrete adjustments to consider, listed in descending order of leverage:
