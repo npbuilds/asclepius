@@ -330,8 +330,21 @@ export default function DiligencePage({
               component — VC Associate uses MODULE_SECTIONS, the other 3
               personas override via persona-config.ts. The Risk and Action
               surfaces live outside the module system; ActionSection
-              renders only when personaConfig.showActionSection is true. */}
-          {sections.map(({ section, manifests: sectionManifests }) => (
+              renders only when personaConfig.showActionSection is true.
+
+              v1.8.0-rc4.1 (Codex Part A follow-up on the hydration gate):
+              extending `personaResolved` to wrap the sections list AND
+              ActionSection below — the rc3.1 gate only covered the banner,
+              which left a visible layout shift below it for users with
+              persisted non-default personas. Now every persona-aware
+              region waits for the post-mount persona resolve uniformly. */}
+          {!personaResolved ? (
+            <div className="space-y-3" aria-hidden="true">
+              <div className="h-24 animate-pulse rounded border border-border-dim bg-bg-panel" />
+              <div className="h-24 animate-pulse rounded border border-border-dim bg-bg-panel" />
+              <div className="h-24 animate-pulse rounded border border-border-dim bg-bg-panel" />
+            </div>
+          ) : sections.map(({ section, manifests: sectionManifests }) => (
             <div key={section.id} className="space-y-3">
               <div className="border-b border-border-dim/60 pb-1">
                 <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
@@ -404,8 +417,11 @@ export default function DiligencePage({
           {/* v1.7.0 Phase 6 + v1.8.0 Phase 3: ActionSection renders for
               personas whose config flags showActionSection true. IC Voter
               hides it (one-page summary target); VC / Scientific / Quant
-              show it. */}
-          {personaConfig.showActionSection ? (
+              show it.
+              v1.8.0-rc4.1 (Codex Part A follow-up): also gate on
+              personaResolved so the action strip doesn't flash-in for
+              IC Voter users (whose config hides it post-resolve). */}
+          {personaResolved && personaConfig.showActionSection ? (
             <ActionSection record={record} setRecord={setRecord} />
           ) : null}
         </div>

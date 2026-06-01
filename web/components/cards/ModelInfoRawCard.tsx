@@ -26,7 +26,7 @@
 // and the indirection of sharing state across two components in the
 // same section isn't worth the abstraction.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getMLPosPriorModelInfo } from "@/lib/api-client";
 
@@ -35,17 +35,29 @@ export default function ModelInfoRawCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // v1.8.0-rc4.1 (Codex Part B Concern 3): the user can switch personas
+  // mid-fetch — e.g. expand the card under Quant, then switch to VC
+  // Associate which unmounts the Calibration section while the fetch
+  // is still in flight. Without this guard, the async continuation
+  // would setState on an unmounted component, producing a React warning.
+  const mounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   async function loadIfNeeded(e: React.SyntheticEvent<HTMLDetailsElement>) {
     if (!e.currentTarget.open || info || loading) return;
     setLoading(true);
     setError(null);
     try {
       const data = await getMLPosPriorModelInfo();
-      setInfo(data);
+      if (mounted.current) setInfo(data);
     } catch (err) {
-      setError(String(err));
+      if (mounted.current) setError(String(err));
     } finally {
-      setLoading(false);
+      if (mounted.current) setLoading(false);
     }
   }
 
