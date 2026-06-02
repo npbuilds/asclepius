@@ -401,6 +401,23 @@ the artifact and exposed at `/api/modules/ml_pos_prior/model_info`.
   produce a noisy quantile. Mining additional phase_1 rows from
   pre-2010 HINT would shrink the under-coverage gap. ~2 days.
 
+## v1.5.5 — external validation against CT Open
+
+[`13-ct-open-benchmark.md`](13-ct-open-benchmark.md) documents the
+v1.5.5 external benchmark of this same model against Gao et al. 2024's
+manually-annotated CTO uncontaminated subset (n=2,429 trials,
+completion year ≥ 2023, no HINT overlap). **External AUC: 0.600** —
+a −10.3 pp drop from the internal HINT-test 0.703 reported above. The
+linked writeup unpacks why (feature-derivation gap + distribution
+shift + label-source noise, in that order of impact) and what it
+means for how to read the ML prior on assets outside HINT's coverage.
+
+The honest framing: internal-test AUC tells you what your model
+learned. External-test AUC tells you whether it generalizes. v1.5.x
+internal-test was a borderline ship (0.703 vs Doane 2025's 0.7404);
+external-test is a sub-baseline result (0.600 vs the same 0.7404).
+Both numbers are real and worth knowing.
+
 ## See also
 
 - [`01-pos-framework.md`](01-pos-framework.md) — the rule-based chain
@@ -409,5 +426,6 @@ the artifact and exposed at `/api/modules/ml_pos_prior/model_info`.
   capital-position adjustment that drives most of the rule-based ML
   disagreement on well-capitalized assets.
 - [`08-calibration-dashboard.md`](08-calibration-dashboard.md) — the
-  empirical adjudicator between the two paths. v1.5.2 will score them
-  independently.
+  empirical adjudicator between the two paths.
+- [`13-ct-open-benchmark.md`](13-ct-open-benchmark.md) — the v1.5.5
+  external benchmark and its honest negative result.

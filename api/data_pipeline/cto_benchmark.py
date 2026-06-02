@@ -113,12 +113,20 @@ def _load_embeddings(npy: Path, nctids: Path) -> dict[str, np.ndarray]:
     return {ids[i].upper(): arr[i] for i in range(len(ids))}
 
 
-def _load_model() -> tuple[object, dict]:
-    """Load the current v1.5.x artifact. Returns (model, feature_schema)."""
+def _load_model() -> tuple[object, dict, dict]:
+    """Load the current v1.5.x artifact. Returns (model, metrics,
+    feature_schema). The benchmark script reads model_kind +
+    embedding_model_id from `metrics` (NOT `feature_schema`) — that's
+    where the trainer's save_artifact actually writes them. Returning
+    both dicts here lets the caller pull from whichever is appropriate."""
     if not MODEL_ARTIFACT.exists():
         raise FileNotFoundError(f"model artifact not found at {MODEL_ARTIFACT}")
     artifact = joblib.load(MODEL_ARTIFACT)
-    return artifact["model"], artifact.get("feature_schema", {})
+    return (
+        artifact["model"],
+        artifact.get("metrics", {}),
+        artifact.get("feature_schema", {}),
+    )
 
 
 def _build_feature_vector(
@@ -171,8 +179,12 @@ def run() -> dict:
     embeddings = _load_embeddings(EMBEDDINGS_NPY, EMBEDDINGS_NCTIDS)
 
     log.info("loading model artifact…")
-    model, schema = _load_model()
-    log.info("model schema: %s", {k: v for k, v in schema.items() if k != "phase_order"})
+    model, metrics, schema = _load_model()
+    log.info(
+        "model_kind: %s, embedding_model_id: %s",
+        metrics.get("model_kind", "unknown"),
+        schema.get("embedding_model_id", "unknown"),
+    )
 
     # Build feature matrix; skip trials missing metadata or embeddings
     rows: list[tuple[str, str, int, float]] = []
@@ -210,10 +222,12 @@ def run() -> dict:
     per_phase = _per_phase_metrics(y_true, y_pred, phase_arr)
 
     results = {
-        "model_kind": schema.get("model_kind", "unknown"),
+        "model_kind": metrics.get("model_kind", "unknown"),
         "embedding_model_id": schema.get(
             "embedding_model_id", "microsoft/BiomedNLP-PubMedBERT-..."
         ),
+        "test_set": "CTO human_labels_2020_2024, phase_1/2/3, "
+        "completion_year >= 2023, not in HINT (uncontaminated)",
         "n_scored": len(rows),
         "skipped": skipped,
         "overall": {

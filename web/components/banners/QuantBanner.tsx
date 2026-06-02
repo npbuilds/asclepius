@@ -124,7 +124,7 @@ export default function QuantBanner({ record }: QuantBannerProps) {
       {/* Accuracy stats — AUC + Brier + bootstrap band width */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-4">
         <Stat
-          label="Test AUC"
+          label="Test AUC (HINT)"
           value={num(unpacked.testAuc, 4)}
           secondary="vs Doane 2025: 0.7404"
         />
@@ -161,6 +161,37 @@ export default function QuantBanner({ record }: QuantBannerProps) {
           <CoverageCell label="phase_2" value={unpacked.coverage.phase_2} />
           <CoverageCell label="phase_3" value={unpacked.coverage.phase_3} />
           <CoverageCell label="overall" value={unpacked.coverage.overall} />
+        </div>
+
+        {/* v1.5.5: external validation row. CTO uncontaminated AUC is a
+            fixed offline result, hardcoded with a methodology link. The
+            HINT-internal numbers above are model-artifact-derived (live
+            from /model_info); CTO is a static benchmark figure. */}
+        <div className="mt-3 border-t border-border-dim/60 pt-2">
+          <div className="mb-1.5 flex items-baseline justify-between gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
+              External validation · CT Open (Gao 2024)
+            </span>
+            <a
+              href="/methodology/13-ct-open-benchmark"
+              className="font-mono text-[9px] uppercase tracking-wider text-cyan-bright hover:underline"
+            >
+              writeup →
+            </a>
+          </div>
+          <div className="grid grid-cols-4 gap-x-3 font-mono text-[12px] tabular-nums">
+            <ExternalCell label="AUC" value="0.600" tone="red" />
+            <ExternalCell label="Brier" value="0.300" tone="neutral" />
+            <ExternalCell label="n" value="2,429" tone="neutral" />
+            <ExternalCell label="vs HINT" value="−10.3pp" tone="red" />
+          </div>
+          <p className="mt-1 font-prose text-[10px] leading-snug text-text-dim">
+            Uncontaminated subset of CTO human-labeled gold tier (Phase 1/2/3,
+            completion ≥ 2023, not in HINT). The −10.3pp gap vs HINT-internal
+            is the model's honest generalization story — read the writeup
+            before taking the ML prior at face value for assets outside
+            HINT's distribution.
+          </p>
         </div>
       </div>
 
@@ -230,6 +261,29 @@ function CoverageCell({ label, value }: CoverageCellProps) {
         {label}
       </span>
       <span className={`font-bold ${color}`}>{pct(value, 1)}</span>
+    </div>
+  );
+}
+
+interface ExternalCellProps {
+  label: string;
+  value: string;
+  tone: "red" | "neutral" | "green";
+}
+
+function ExternalCell({ label, value, tone }: ExternalCellProps) {
+  const color =
+    tone === "red"
+      ? "text-red-bright"
+      : tone === "green"
+        ? "text-green-bright"
+        : "text-text-bright";
+  return (
+    <div className="flex flex-col">
+      <span className="text-[10px] uppercase tracking-[0.1em] text-text-dim">
+        {label}
+      </span>
+      <span className={`font-bold ${color}`}>{value}</span>
     </div>
   );
 }

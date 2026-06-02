@@ -10,12 +10,14 @@
 A biotech venture valuation workbench: phase-gated probability of success with an explicit
 **reflexivity adjustment**, risk-adjusted NPV with 10,000-path Monte Carlo and tornado
 sensitivity, a supervised **ML PoS Prior** on real HINT clinical-trial outcomes (PubMedBERT +
-LightGBM, AUC 0.7030 + bootstrap-percentile uncertainty bands + Mondrian split-conformal
-coverage), an 8-pillar diligence scorecard, cited deal comparables, three runtime agents
+LightGBM, internal AUC 0.7030 + bootstrap-percentile uncertainty bands + Mondrian split-conformal
+coverage; **externally validated against CTO uncontaminated at AUC 0.600 — see
+[methodology/13](methodology/13-ct-open-benchmark.md) for the honest generalization-gap
+analysis**), an 8-pillar diligence scorecard, cited deal comparables, three runtime agents
 (Auto-Diligence, Memo Writer, Game-Theory Adversary), and **four persona-aware reader views**
 (VC Associate, IC Voter, Scientific Reviewer, Quant) — all built on a **modular registry
-pattern** that has now successfully absorbed three major feature lines (v1.5 calibrated ML,
-v1.7 reader-journey IA, v1.8 persona views) without core edits.
+pattern** that has now successfully absorbed four major feature lines (v1.5 calibrated ML,
+v1.5.5 external validation, v1.7 reader-journey IA, v1.8 persona views) without core edits.
 
 The architecture is intentional and replicable. Every methodology decision is documented in
 [`methodology/`](methodology/); every reference value is in versioned JSON with a `source` field;
@@ -259,7 +261,7 @@ contract.
 
 ## Reading the methodology folder
 
-Twelve writeups, designed to be read in any order. For a first pass:
+Thirteen writeups, designed to be read in any order. For a first pass:
 
 1. [`02-reflexivity-thesis.md`](methodology/02-reflexivity-thesis.md) — the framework's
    load-bearing intellectual claim. Reads as an investor memo.
@@ -273,7 +275,11 @@ Twelve writeups, designed to be read in any order. For a first pass:
 4. [`09-ml-pos-prior.md`](methodology/09-ml-pos-prior.md) — the supervised ML PoS Prior
    on real HINT outcomes, including the bootstrap-percentile + Mondrian-split-conformal
    two-axis uncertainty story.
-5. [`00-product-thesis.md`](methodology/00-product-thesis.md) — strategic framing of the
+5. [`13-ct-open-benchmark.md`](methodology/13-ct-open-benchmark.md) — the v1.5.5 honest
+   external validation against CTO's manually-annotated uncontaminated tier. AUC drops
+   10.3 pp on out-of-distribution data; the writeup unpacks why and what it means for
+   how to read the ML prior on assets outside HINT's coverage.
+6. [`00-product-thesis.md`](methodology/00-product-thesis.md) — strategic framing of the
    project itself, via The Loom's six-phase AI-native product framework. Includes the
    v1.7 "Reading order" and v1.8 "Persona modes" subsections explaining the
    audience-modeling thesis behind the UI itself.
