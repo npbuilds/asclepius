@@ -117,9 +117,56 @@ export async function listAgents(): Promise<AgentManifest[]> {
   return data.agents;
 }
 
+// Fields ClientDiligenceRecord carries that the canonical pydantic
+// DiligenceRecord doesn't accept. These are UI-state and module-input
+// holders; the backend's strict (extra="forbid") schema 422s if any
+// reach the route. Strip them before POSTing to the agent endpoint.
+const CLIENT_ONLY_RECORD_FIELDS = [
+  "rnpv_inputs",        // user-editable rNPV input bundle (lives in record on the client)
+  "ml_pos",             // ml prior output cached on the client for HeroBanner
+  "ml_pos_nct_id",      // NCT ID for the on-demand criteria fetch
+  "ml_pos_criteria_text", // raw criteria text override
+] as const;
+
+function stripClientOnlyFields(
+  record: Record<string, unknown>,
+): Record<string, unknown> {
+  const out = { ...record };
+  for (const field of CLIENT_ONLY_RECORD_FIELDS) {
+    delete out[field];
+  }
+  return out;
+}
+
+// FastAPI's 422 returns `detail: Array<{loc: [...], msg: "...", type: "..."}>`,
+// not a string. The previous implementation read it as a string and the
+// UI rendered `"[object Object],[object Object],…"`. Format it readably:
+// "field msg; field msg; …" so the surfaced error is actionable.
+function formatErrorDetail(detail: unknown): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => {
+        if (typeof d === "string") return d;
+        const obj = d as { loc?: unknown[]; msg?: string; type?: string };
+        const loc = Array.isArray(obj.loc)
+          ? obj.loc.filter((x) => x !== "body").join(".")
+          : "";
+        const msg = obj.msg ?? "validation error";
+        return loc ? `${loc}: ${msg}` : msg;
+      })
+      .join("; ");
+  }
+  try {
+    return JSON.stringify(detail);
+  } catch {
+    return String(detail);
+  }
+}
+
 // The agent endpoint differs from modules: it expects the full DiligenceRecord
 // shape, not the {asset, pos, …} envelope each module uses. We accept a record
-// shape from the caller and forward it verbatim.
+// shape from the caller, strip the client-only fields, and POST the result.
 export async function runAgent<T>(
   agentId: string,
   record: Record<string, unknown>,
@@ -128,13 +175,13 @@ export async function runAgent<T>(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
-    body: JSON.stringify(record),
+    body: JSON.stringify(stripClientOnlyFields(record)),
   });
   if (!res.ok) {
-    let detail = res.statusText;
+    let detail: string = res.statusText;
     try {
-      const body = (await res.json()) as { detail?: string };
-      if (body.detail) detail = body.detail;
+      const body = (await res.json()) as { detail?: unknown };
+      if (body.detail !== undefined) detail = formatErrorDetail(body.detail);
     } catch {
       // body wasn't JSON; keep statusText
     }
