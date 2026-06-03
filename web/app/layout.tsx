@@ -40,10 +40,31 @@ const inter = Inter({
   display: "swap",
 });
 
+// metadataBase resolves relative URLs (including the auto-generated
+// opengraph-image.tsx) against the canonical production URL so social
+// crawlers (LinkedIn, Twitter, Slack) get absolute links. Next.js falls
+// back to localhost otherwise, which produces broken previews. The
+// opengraph-image / twitter-image route conventions auto-populate the
+// images: [] arrays so we don't have to list them here.
 export const metadata: Metadata = {
+  metadataBase: new URL("https://asclepius-bio.vercel.app"),
   title: "Asclepius — Biotech Venture Valuation",
   description:
     "Phase-gated PoS with a reflexivity adjustment, rNPV with Monte Carlo, 8-pillar diligence scorecard, and cited deal comparables.",
+  openGraph: {
+    title: "Asclepius — Biotech Venture Valuation",
+    description:
+      "Reflexivity-adjusted PoS · phase-gated rNPV · ML prior externally validated against CT Open · 16 cited methodology writeups.",
+    url: "https://asclepius-bio.vercel.app",
+    siteName: "Asclepius",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Asclepius — Biotech Venture Valuation",
+    description:
+      "Reflexivity-adjusted PoS · phase-gated rNPV · ML prior externally validated against CT Open.",
+  },
 };
 
 export default function RootLayout({

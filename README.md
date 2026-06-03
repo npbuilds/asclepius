@@ -1,6 +1,6 @@
 # Asclepius
 
-**Live:** <https://asclepius-lyart.vercel.app> · [methodology index](https://asclepius-lyart.vercel.app/methodology) · [worked example](https://asclepius-lyart.vercel.app/diligence/adagrasib)
+**Live:** <https://asclepius-bio.vercel.app> · [methodology index](https://asclepius-bio.vercel.app/methodology) · [worked example](https://asclepius-bio.vercel.app/diligence/adagrasib)
 
 > Asclepius is the first open rNPV tool that prices the path-dependency between a sponsor's
 > balance sheet and their trial's probability of success. Capital-constrained sponsors run
@@ -183,7 +183,7 @@ inline script). Persona toggle ships with two Codex review passes addressed.
 ### v2.0 — Portfolio Sizing (shipped, separate audience)
 
 Kelly + conviction multiplier + barbell allocation. Targets the biotech *fund manager*
-(not single-asset diligence). Lives at [`/portfolio`](https://asclepius-lyart.vercel.app/portfolio).
+(not single-asset diligence). Lives at [`/portfolio`](https://asclepius-bio.vercel.app/portfolio).
 
 ## Roadmap
 
@@ -291,7 +291,7 @@ Sixteen writeups, designed to be read in any order. For a first pass:
    v1.7 "Reading order" and v1.8 "Persona modes" subsections explaining the
    audience-modeling thesis behind the UI itself.
 
-Or browse the [methodology index](https://asclepius-lyart.vercel.app/methodology) on the live
+Or browse the [methodology index](https://asclepius-bio.vercel.app/methodology) on the live
 deployment.
 
 ## Stack

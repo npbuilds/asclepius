@@ -8,7 +8,7 @@ Asclepius is deployed as two independent services:
 
 | Service | Platform | What runs there |
 |---|---|---|
-| **Web** (Next.js 14) | Vercel — live at `asclepius-lyart.vercel.app` | The `/diligence/[asset]` workbench, the methodology page, the landing page. Static + Edge. |
+| **Web** (Next.js 14) | Vercel — live at `asclepius-bio.vercel.app` | The `/diligence/[asset]` workbench, the methodology page, the landing page. Static + Edge. |
 | **API** (FastAPI) | Fly.io — live at `asclepius-api.fly.dev` | The four module routes (`/api/modules/pos`, `/rnpv`, `/scorecard`, `/comparables`), the manifest endpoint, the data-source registry. Containerized Python service. |
 
 The frontend talks to the API via Next.js [rewrites](../web/next.config.js) configured by the `ASCLEPIUS_API_BASE` env var. **No CORS headers required** — the rewrite rule makes the API appear to be on the same origin as the web app.
@@ -88,7 +88,7 @@ Fly runs the API as a containerized service from the [`Dockerfile`](../api/Docke
    This reads the existing `api/fly.toml`. Pick a region close to your Vercel edge — `iad` (Ashburn) pairs well with most US deploys.
 4. **Set environment variables**:
    ```bash
-   fly secrets set ASCLEPIUS_CORS_ORIGINS="https://asclepius-lyart.vercel.app,https://*.vercel.app"
+   fly secrets set ASCLEPIUS_CORS_ORIGINS="https://asclepius-bio.vercel.app,https://*.vercel.app"
    ```
    The wildcard handles Vercel preview deploys.
 5. **Deploy**:
@@ -135,10 +135,10 @@ Vercel auto-detects Next.js. The only configuration needed is the API base URL.
    ASCLEPIUS_API_BASE=https://asclepius-api.fly.dev
    ```
    Use the Fly URL from the API deploy step.
-5. **Deploy.** Vercel gives you a public URL like `https://asclepius-lyart.vercel.app`.
+5. **Deploy.** Vercel gives you a public URL like `https://asclepius-bio.vercel.app`.
 6. **Update Fly's CORS** to allow the Vercel URL:
    ```bash
-   fly secrets set ASCLEPIUS_CORS_ORIGINS="https://asclepius-lyart.vercel.app"
+   fly secrets set ASCLEPIUS_CORS_ORIGINS="https://asclepius-bio.vercel.app"
    ```
 
 ### Custom domains
@@ -214,11 +214,11 @@ curl -X POST https://asclepius-api.fly.dev/api/modules/pos \
 # Expected: PoS result with audit trail
 
 # 4. Web → API proxy
-curl https://asclepius-lyart.vercel.app/api/modules
+curl https://asclepius-bio.vercel.app/api/modules
 # Should return the same response as step 2 (proxied through Next.js rewrites)
 
 # 5. Browser test
-# Open https://asclepius-lyart.vercel.app/diligence/adagrasib
+# Open https://asclepius-bio.vercel.app/diligence/adagrasib
 # Verify: page loads, all four panels render, reflexivity slider responds, no console errors
 ```
 
