@@ -54,6 +54,22 @@ information available before the KRYSTAL-12 Phase 3 readout (June 2022 cutoff):
 as strategic KRAS-franchise value, but no margin of safety for a financial buyer. Read the
 [full worked example](methodology/05-worked-example-adagrasib.md).
 
+**The forward prediction** — divarasib (Roche, NCT06497556, KRAS G12C+ NSCLC Phase 3 head-to-head
+vs sotorasib/adagrasib, primary completion **2027-09-30**). The framework's *pre-registered*
+prediction, committed to git on 2026-06-03, before any outcome is known:
+
+| Metric | Framework value |
+|---|---:|
+| PoS final LOA | **59.3%** [95% CI 54.8% – 63.4%] |
+| rNPV base case | **$948M** |
+| Monte Carlo P25 / P50 / P75 | $637M / $935M / $1,337M |
+| Resolution date | 2027-09-30 (estimated PCD) |
+
+This is the discipline that converts the methodology layer from "calibrated against history" to
+"auditable against the future." The prediction record lives at
+[`predictions/2026-06-03-divarasib-…json`](predictions/2026-06-03-divarasib-divarasib_nct06497556_2026_06.json);
+the full reasoning is in [`methodology/18-divarasib-live-forward-prediction.md`](methodology/18-divarasib-live-forward-prediction.md).
+
 ## Try it
 
 ```bash
@@ -271,7 +287,7 @@ contract.
 
 ## Reading the methodology folder
 
-Seventeen writeups, designed to be read in any order. For a first pass:
+Eighteen writeups, designed to be read in any order. For a first pass:
 
 1. [`02-reflexivity-thesis.md`](methodology/02-reflexivity-thesis.md) — the framework's
    load-bearing intellectual claim. Reads as an investor memo.
