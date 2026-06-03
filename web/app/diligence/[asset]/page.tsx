@@ -53,6 +53,47 @@ const ADAGRASIB_RNPV: RnpvInputs = {
   years_per_phase: { phase_1: 0, phase_2: 0, phase_3: 3, regulatory: 1 },
 };
 
+// v1.6: divarasib is the live FORWARD prediction (NCT06497556, Roche, Phase 3,
+// KRAS G12C+ NSCLC head-to-head vs sotorasib/adagrasib, PCD 2027-09-30).
+// Values MUST match scripts/log_divarasib_prediction.py so the workbench
+// numbers reproduce the public predictions/2026-06-03-divarasib-...json
+// record. See methodology/18-divarasib-live-forward-prediction.md for the
+// per-field citations. The agent cache (if precomputed) is keyed by the
+// asset_name slug so this exact AssetInput is what the cached memo /
+// adversary / auto-diligence outputs were grounded on.
+const DIVARASIB: AssetInput = {
+  asset_name: "divarasib",
+  sponsor: "Hoffmann-La Roche",
+  phase: "phase_3",
+  therapeutic_area: "oncology",
+  modality: "small_molecule",
+  capital_position: "well_capitalized",
+  mechanism: "KRAS G12C inhibitor (covalent, second-generation)",
+  target: "KRAS G12C",
+  indication: "Previously treated KRAS G12C+ advanced/metastatic NSCLC",
+  regulatory_designations: [],
+  num_competitors: 3,
+  target_validated: true,
+  biomarker_enrichment: true,
+};
+
+const DIVARASIB_RNPV: RnpvInputs = {
+  peak_sales_usd_m: 700,
+  years_to_peak: 5,
+  years_of_exclusivity: 12,
+  cogs_pct: 0.20,
+  wacc: 0.10,
+  dev_cost_phase_1_usd_m: 0,
+  dev_cost_phase_2_usd_m: 0,
+  // Phase 3 enrollment is complete (ACTUAL n=338), so the development cost is
+  // effectively the trial-conduct + analysis residual rather than the full
+  // ~$250M cohort baseline. We use the framework default to stay
+  // comparable to the rest of the cohort.
+  dev_cost_phase_3_usd_m: 250,
+  launch_cost_usd_m: 150,
+  years_per_phase: { phase_1: 0, phase_2: 0, phase_3: 1.5, regulatory: 1 },
+};
+
 const DEFAULT_RNPV: RnpvInputs = {
   peak_sales_usd_m: 1000,
   years_to_peak: 5,
@@ -142,12 +183,34 @@ export default function DiligencePage({
 }: {
   params: { asset: string };
 }) {
-  const isAdagrasib = params.asset.toLowerCase() === "adagrasib";
+  const assetSlug = params.asset.toLowerCase();
+  const isAdagrasib = assetSlug === "adagrasib";
+  const isDivarasib = assetSlug === "divarasib";
+
+  // Pre-staged asset wiring: each known showcase asset gets its hardcoded
+  // AssetInput + RnpvInputs + (optionally) an NCT ID for the PubMedBERT
+  // criteria fetch path. Any unknown asset falls through to the blank-
+  // form path, which renders an editable form for the analyst persona.
+  const stagedAsset: AssetInput = isAdagrasib
+    ? ADAGRASIB
+    : isDivarasib
+      ? DIVARASIB
+      : blankAsset(decodeURIComponent(params.asset));
+  const stagedRnpv: RnpvInputs = isAdagrasib
+    ? ADAGRASIB_RNPV
+    : isDivarasib
+      ? DIVARASIB_RNPV
+      : DEFAULT_RNPV;
+  const stagedNctId: string | null = isAdagrasib
+    ? "NCT04685135"  // KRYSTAL-1, the Ph-2 registrational adagrasib trial
+    : isDivarasib
+      ? "NCT06497556" // divarasib vs sotorasib/adagrasib Ph 3
+      : null;
 
   const [record, setRecordState] = useState<ClientDiligenceRecord>(() => ({
-    asset: isAdagrasib ? ADAGRASIB : blankAsset(decodeURIComponent(params.asset)),
+    asset: stagedAsset,
     pos: null,
-    rnpv_inputs: isAdagrasib ? ADAGRASIB_RNPV : DEFAULT_RNPV,
+    rnpv_inputs: stagedRnpv,
     rnpv: null,
     scorecard: null,
     comparables: null,
@@ -155,12 +218,11 @@ export default function DiligencePage({
     // can surface the LOA microsplit (BIO → Reflexivity → ML) from a single
     // source. Populated by MLPosPriorPanel's fetch effect.
     ml_pos: null,
-    // v1.5.2: NCT04685135 = KRYSTAL-1 (the Phase-2 registrational adagrasib
-    // trial). The backend's PubMedBERT path embeds this trial's eligibility
-    // criteria when the feature-fingerprint cache misses; the cached
-    // pre-computed adagrasib.json is used when the asset is the canonical
+    // The backend's PubMedBERT path embeds this trial's eligibility
+    // criteria when the feature-fingerprint cache misses; cached
+    // pre-computed agent JSON is used when the asset is the canonical
     // record verbatim.
-    ml_pos_nct_id: isAdagrasib ? "NCT04685135" : null,
+    ml_pos_nct_id: stagedNctId,
     ml_pos_criteria_text: null,
   }));
 
@@ -178,7 +240,12 @@ export default function DiligencePage({
   // for pre-staged assets like adagrasib (already populated, summary
   // line communicates the state). Browser then handles toggle via the
   // `onToggle` handler so the choice sticks across record updates.
-  const [assetFormOpen, setAssetFormOpen] = useState(!isAdagrasib);
+  // Pre-staged assets (adagrasib, divarasib) get the form default-closed —
+  // the values are already correct; an analyst would only open the form to
+  // sensitivity-test, not to populate. Unknown assets default-open because
+  // the form is the only way to populate them.
+  const isStaged = isAdagrasib || isDivarasib;
+  const [assetFormOpen, setAssetFormOpen] = useState(!isStaged);
 
   // v1.8.0 Phase 3: persona-driven layout. The page reads the current
   // persona on every render and looks up its config (module ordering,
@@ -259,6 +326,21 @@ export default function DiligencePage({
             Phase 3 readout (June 2022 cutoff). This is calibration, not
             prediction — framework outputs should bracket BMS's actual $4.8B
             acquisition price for the post-readout (NDA) scenario.
+          </p>
+        ) : isDivarasib ? (
+          <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
+            <strong className="text-text-bright">Live forward prediction.</strong>{" "}
+            Phase 3 NCT06497556 head-to-head vs sotorasib/adagrasib. Enrollment
+            complete (ACTUAL n=338); primary completion 2027-09-30. Framework
+            output committed to git on 2026-06-03 before any outcome was known
+            — see {" "}
+            <a
+              href="/methodology/18-divarasib-live-forward-prediction"
+              className="underline hover:text-cyan-bright"
+            >
+              methodology/18
+            </a>{" "}
+            for the pre-registered prediction with resolution criteria.
           </p>
         ) : null}
       </header>
