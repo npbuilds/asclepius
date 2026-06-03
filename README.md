@@ -15,8 +15,10 @@ coverage; **externally validated against CTO uncontaminated at AUC 0.600, then r
 HINT ∪ CTO with one model per phase → 0.660 on held-out CTO (+6pp) — see
 [methodology/13](methodology/13-ct-open-benchmark.md) +
 [/14](methodology/14-phase-stratified-retrain.md) for the honest generalization-gap and
-Simpson's-paradox analysis, and [/15](methodology/15-trial-design-features-negative-result.md)
-for a documented label-leak discovery and negative result on trial-design features**), an
+Simpson's-paradox analysis, [/15](methodology/15-trial-design-features-negative-result.md)
+for a documented label-leak discovery, and
+[/16](methodology/16-planned-enrollment-null-effect.md) for the leak-free planned-enrollment
+counterfactual showing the lift was training-noise**), an
 8-pillar diligence scorecard, cited deal comparables, three
 runtime agents (Auto-Diligence, Memo Writer, Game-Theory Adversary), and **four persona-aware
 reader views** (VC Associate, IC Voter, Scientific Reviewer, Quant) — all built on a **modular
@@ -266,7 +268,7 @@ contract.
 
 ## Reading the methodology folder
 
-Fifteen writeups, designed to be read in any order. For a first pass:
+Sixteen writeups, designed to be read in any order. For a first pass:
 
 1. [`02-reflexivity-thesis.md`](methodology/02-reflexivity-thesis.md) — the framework's
    load-bearing intellectual claim. Reads as an investor memo.
