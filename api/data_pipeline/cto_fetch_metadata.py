@@ -56,8 +56,49 @@ class CtGovMetadata:
     intervention_names: list[str]      # e.g. ["adagrasib", "placebo"]
     mesh_terms: list[str]              # condition MeSH terms if available
     enrollment_count: int | None
+    # v1.5.7 trial-design features (the within-phase AUC lever per /14):
+    num_arms: int | None = None        # count of armGroups
+    allocation: str | None = None      # "RANDOMIZED" | "NON_RANDOMIZED" | None
+    masking: str | None = None         # "NONE" | "SINGLE" | "DOUBLE" | "TRIPLE" | "QUADRUPLE"
     # Raw payload for downstream debugging / future feature extraction
-    raw: dict
+    raw: dict = None  # type: ignore[assignment]
+
+
+_MASKING_ORDINAL = {
+    "NONE": 0,
+    "SINGLE": 1,
+    "DOUBLE": 2,
+    "TRIPLE": 3,
+    "QUADRUPLE": 4,
+}
+
+
+def design_fields_from_metadata(meta: "CtGovMetadata | None") -> dict:
+    """Map a CtGovMetadata's trial-design fields → AssetInput kwargs.
+
+    Shared by both HINT and CTO feature derivation (v1.5.7) so the two
+    corpora encode design features identically — the whole point is that
+    enrollment/arms/randomization/masking carry trial-design signal, not
+    a HINT-vs-CTO domain proxy. Returns {} when meta is None so callers
+    can spread it unconditionally: AssetInput(..., **design_fields).
+    """
+    if meta is None:
+        return {}
+    randomized: bool | None
+    alloc = (meta.allocation or "").upper()
+    if alloc == "RANDOMIZED":
+        randomized = True
+    elif alloc == "NON_RANDOMIZED":
+        randomized = False
+    else:
+        randomized = None
+    masking_level = _MASKING_ORDINAL.get((meta.masking or "").upper())
+    return {
+        "enrollment": meta.enrollment_count,
+        "num_arms": meta.num_arms,
+        "randomized": randomized,
+        "masking_level": masking_level,
+    }
 
 
 def _curl_fetch(url: str) -> tuple[int, str | None]:
@@ -121,7 +162,9 @@ def fetch_ctgov_metadata(nct_id: str) -> CtGovMetadata | None:
         "protocolSection.conditionsModule.conditions,"
         "protocolSection.conditionsModule.keywords,"
         "protocolSection.armsInterventionsModule.interventions,"
+        "protocolSection.armsInterventionsModule.armGroups,"
         "protocolSection.designModule.enrollmentInfo,"
+        "protocolSection.designModule.designInfo,"
         "derivedSection.conditionBrowseModule.meshes"
     )
     query = urllib.parse.urlencode({"fields": fields, "format": "json"})
@@ -169,6 +212,15 @@ def fetch_ctgov_metadata(nct_id: str) -> CtGovMetadata | None:
         except (TypeError, ValueError):
             pass
 
+    # v1.5.7 trial-design features
+    arm_groups = (proto.get("armsInterventionsModule") or {}).get("armGroups") or []
+    num_arms: int | None = len(arm_groups) if arm_groups else None
+
+    design_info = (proto.get("designModule") or {}).get("designInfo") or {}
+    allocation = design_info.get("allocation")  # "RANDOMIZED" / "NON_RANDOMIZED"
+    masking_info = design_info.get("maskingInfo") or {}
+    masking = masking_info.get("masking")  # "NONE" / "SINGLE" / "DOUBLE" / ...
+
     return CtGovMetadata(
         nct_id=nct_id_clean,
         eligibility_criteria=str(elig).strip() if elig else None,
@@ -177,6 +229,9 @@ def fetch_ctgov_metadata(nct_id: str) -> CtGovMetadata | None:
         intervention_names=intervention_names,
         mesh_terms=mesh_terms + keywords,  # MeSH + keywords are both useful for TA
         enrollment_count=enrollment_count,
+        num_arms=num_arms,
+        allocation=str(allocation).strip() if allocation else None,
+        masking=str(masking).strip() if masking else None,
         raw=payload,
     )
 
