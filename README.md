@@ -214,10 +214,10 @@ Asclepius is positioned as a maintained tool, not a frozen artifact:
 
 | Trigger | Effort |
 |---|---|
-| BIO/Informa publishes the next annual cohort (typically Q2) | 30 min — refresh `api/app/data/base_rates.json` |
+| BIO/Informa publishes the next annual cohort (typically Q2) | 30 min — refresh `api/app/data/base_rates.json`, then run `python scripts/check_methodology_parity.py` to surface any methodology citations that drifted |
 | Damodaran's January cost-of-capital update | 15 min — refresh `api/app/data/wacc_benchmarks.json` |
 | Major biotech M&A closes | 30 min per deal — add a new JSON to `api/app/data/comparables/` |
-| Semi-annual methodology sweep | 2–3 hours — re-read writeups against current values |
+| Semi-annual methodology sweep | 2–3 hours — re-read writeups against current values; the parity lint flags orphan percentages in 5 seconds |
 | Framework run on a public asset | 1 min — log_prediction, then `python api/scripts/sync_predictions_to_public_log.py` + commit. See [`methodology/10-public-prediction-log.md`](methodology/10-public-prediction-log.md). |
 | Public catalyst lands (FDA action, M&A, readout) | 5 min — resolve_prediction with source citation, sync + commit |
 
