@@ -348,12 +348,38 @@ def _load_model():
     else:
         log.info("ML PoS Prior: no phase_models in artifact — using overall model for all phases")
 
-    return artifact["model"], phase_models, metrics, bootstrap_models, conformal, artifact_fingerprint
+    # v1.5.9: optional per-phase isotonic calibrators fit on the CTO valid
+    # split. Corrects the +12-15pp systematic over-prediction caused by
+    # training-set base-rate domination by HINT (49% Ph2) vs the modern
+    # CTO distribution (23% Ph2). Engine applies the per-phase calibrator
+    # at inference. Absent → legacy raw-prediction path. See
+    # methodology/17 for the full diagnosis + Brier-improvement analysis.
+    calibrators: dict[str, object] = {}
+    raw_calibrators = artifact.get("calibrators")
+    if isinstance(raw_calibrators, dict):
+        for ph, cal in raw_calibrators.items():
+            if cal is not None and hasattr(cal, "predict"):
+                calibrators[ph] = cal
+        if calibrators:
+            log.info(
+                "ML PoS Prior v1.5.9: loaded isotonic calibrators for %s",
+                sorted(calibrators),
+            )
+
+    return (
+        artifact["model"],
+        phase_models,
+        metrics,
+        bootstrap_models,
+        conformal,
+        artifact_fingerprint,
+        calibrators,
+    )
 
 
 def get_model_metrics() -> dict:
     """Public accessor for the /model_info route."""
-    _, _, metrics, _, conformal, _ = _load_model()
+    _, _, metrics, _, conformal, _, _ = _load_model()
     response = dict(metrics)
     if conformal is not None:
         response["conformal"] = conformal
@@ -488,7 +514,7 @@ def _maybe_cached(record: DiligenceRecord) -> MLPosPriorResult | None:
         log.warning("ml_pos_prior cache unreadable for %s: %s", slug, exc)
         return None
 
-    _, _, _, _, _, artifact_fingerprint = _load_model()
+    _, _, _, _, _, artifact_fingerprint, _ = _load_model()
     cached_artifact_fingerprint = payload.get("artifact_fingerprint")
     if artifact_fingerprint is None:
         log.warning(
@@ -572,7 +598,7 @@ def compute(
     if cached is not None:
         return cached
 
-    overall_model, phase_models, metrics, ensemble, _, _ = _load_model()
+    overall_model, phase_models, metrics, ensemble, _, _, calibrators = _load_model()
 
     # v1.5.6: route to the phase-specific model when available. The phase
     # model was trained exclusively on data from that phase, so its decision
@@ -604,22 +630,41 @@ def compute(
             ),
         )
 
-    predicted = float(model.predict_proba(x)[0, 1])
+    raw_predicted = float(model.predict_proba(x)[0, 1])
     if ensemble is not None:
         # v1.5.3 path: bootstrap-percentile interval. The mean across
         # K bootstrap models is computed but discarded — predicted_pos
         # stays locked to the single main model for disagreement-pp
         # interpretability (see _bootstrap_band docstring).
-        _, p_lo, p_hi = _bootstrap_band(ensemble, x, alpha=0.10)
+        _, raw_p_lo, raw_p_hi = _bootstrap_band(ensemble, x, alpha=0.10)
         # Enforce that the band encloses the point estimate even when
         # the main model is an outlier vs the ensemble. Without this,
         # the pydantic validator would reject the result on rare assets
         # where main and ensemble mean disagree by more than the q-spread.
+        raw_p_lo = min(raw_p_lo, raw_predicted)
+        raw_p_hi = max(raw_p_hi, raw_predicted)
+    else:
+        # Legacy fallback: logit heuristic band.
+        raw_p_lo, raw_p_hi = _logit_band(raw_predicted)
+
+    # v1.5.9: apply per-phase isotonic calibrator if present. Isotonic is
+    # monotonic, so transforming the band endpoints by the same calibrator
+    # preserves the coverage guarantee (q-low/q-high stay valid quantiles
+    # after the transform, just on the calibrated scale). The raw point
+    # estimate is still computed above for transparency / debugging; the
+    # returned predicted_pos is the calibrated value.
+    calibrator = calibrators.get(phase_key) if calibrators else None
+    if calibrator is not None:
+        predicted = float(calibrator.predict([raw_predicted])[0])
+        p_lo = float(calibrator.predict([raw_p_lo])[0])
+        p_hi = float(calibrator.predict([raw_p_hi])[0])
+        # The transform can flatten close-to-degenerate intervals; re-clamp
+        # so predicted_pos still falls within [p_lo, p_hi] for the pydantic
+        # validator (same invariant as the raw path above).
         p_lo = min(p_lo, predicted)
         p_hi = max(p_hi, predicted)
     else:
-        # Legacy fallback: logit heuristic band.
-        p_lo, p_hi = _logit_band(predicted)
+        predicted, p_lo, p_hi = raw_predicted, raw_p_lo, raw_p_hi
 
     rule_based = record.pos.final_loa if record.pos else 0.0
     gap_pp = (predicted - rule_based) * 100.0

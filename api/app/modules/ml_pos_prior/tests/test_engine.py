@@ -659,11 +659,17 @@ def test_real_lightgbm_bootstrap_artifact_round_trip(
     monkeypatch.setattr(engine, "MODEL_PATH", artifact)
     engine._load_model.cache_clear()
 
-    model, phase_models, metrics, ensemble, conformal, fingerprint = engine._load_model()
+    model, phase_models, metrics, ensemble, conformal, fingerprint, calibrators = (
+        engine._load_model()
+    )
     assert isinstance(model, lgb.LGBMClassifier)
     assert len(ensemble) == engine.MIN_BOOTSTRAP_MODELS
     assert conformal["radii"]["phase_2"] == pytest.approx(0.72)
     assert fingerprint == engine.artifact_fingerprint_from_meta(_training_meta())
+    # v1.5.9: calibrators are an optional sidecar; this synthetic artifact
+    # doesn't include them, so the load path returns an empty dict and the
+    # compute() path silently falls through to the raw-prediction branch.
+    assert calibrators == {}
 
     out = engine.compute(_record(), criteria_text="synthetic KRAS criteria")
     assert 0.0 <= out.predicted_pos <= 1.0
