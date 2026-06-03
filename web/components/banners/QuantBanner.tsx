@@ -124,9 +124,9 @@ export default function QuantBanner({ record }: QuantBannerProps) {
       {/* Accuracy stats — AUC + Brier + bootstrap band width */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-4">
         <Stat
-          label="Test AUC (HINT)"
+          label="Test AUC (union)"
           value={num(unpacked.testAuc, 4)}
-          secondary="vs Doane 2025: 0.7404"
+          secondary="HINT∪CTO held-out"
         />
         <Stat
           label="Test Brier"
@@ -163,34 +163,35 @@ export default function QuantBanner({ record }: QuantBannerProps) {
           <CoverageCell label="overall" value={unpacked.coverage.overall} />
         </div>
 
-        {/* v1.5.5: external validation row. CTO uncontaminated AUC is a
-            fixed offline result, hardcoded with a methodology link. The
-            HINT-internal numbers above are model-artifact-derived (live
-            from /model_info); CTO is a static benchmark figure. */}
+        {/* v1.5.6: the external→trained progression. These are fixed offline
+            results (v1.5.5 benchmark + v1.5.6 retrain), hardcoded with a
+            methodology link. The conformal numbers above are live from
+            /model_info; these are static historical figures. */}
         <div className="mt-3 border-t border-border-dim/60 pt-2">
           <div className="mb-1.5 flex items-baseline justify-between gap-2">
             <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
-              External validation · CT Open (Gao 2024)
+              CT Open generalization (Gao 2024)
             </span>
             <a
-              href="/methodology/13-ct-open-benchmark"
+              href="/methodology/14-phase-stratified-retrain"
               className="font-mono text-[9px] uppercase tracking-wider text-cyan-bright hover:underline"
             >
               writeup →
             </a>
           </div>
           <div className="grid grid-cols-4 gap-x-3 font-mono text-[12px] tabular-nums">
-            <ExternalCell label="AUC" value="0.600" tone="red" />
-            <ExternalCell label="Brier" value="0.300" tone="neutral" />
-            <ExternalCell label="n" value="2,429" tone="neutral" />
-            <ExternalCell label="vs HINT" value="−10.3pp" tone="red" />
+            <ExternalCell label="v1.5.5 ext" value="0.600" tone="red" />
+            <ExternalCell label="v1.5.6 held" value="0.660" tone="amber" />
+            <ExternalCell label="Ph2 within" value="0.554" tone="red" />
+            <ExternalCell label="n test" value="486" tone="neutral" />
           </div>
           <p className="mt-1 font-prose text-[10px] leading-snug text-text-dim">
-            Uncontaminated subset of CTO human-labeled gold tier (Phase 1/2/3,
-            completion ≥ 2023, not in HINT). The −10.3pp gap vs HINT-internal
-            is the model's honest generalization story — read the writeup
-            before taking the ML prior at face value for assets outside
-            HINT's distribution.
+            v1.5.5 measured AUC 0.600 on CTO trials the model had never seen
+            (true out-of-distribution). v1.5.6 is phase-stratified and trains
+            on CTO → +6pp on held-out CTO (0.660). But within-Phase-2
+            discrimination is still 0.554 — the headline gain is partly
+            Simpson&apos;s-paradox (between-phase ranking). Read the writeup
+            before trusting a standalone Phase-2 call.
           </p>
         </div>
       </div>
@@ -268,7 +269,7 @@ function CoverageCell({ label, value }: CoverageCellProps) {
 interface ExternalCellProps {
   label: string;
   value: string;
-  tone: "red" | "neutral" | "green";
+  tone: "red" | "neutral" | "green" | "amber";
 }
 
 function ExternalCell({ label, value, tone }: ExternalCellProps) {
@@ -277,7 +278,9 @@ function ExternalCell({ label, value, tone }: ExternalCellProps) {
       ? "text-red-bright"
       : tone === "green"
         ? "text-green-bright"
-        : "text-text-bright";
+        : tone === "amber"
+          ? "text-amber-bright"
+          : "text-text-bright";
   return (
     <div className="flex flex-col">
       <span className="text-[10px] uppercase tracking-[0.1em] text-text-dim">

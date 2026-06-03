@@ -209,12 +209,13 @@ would actually want to see.
 
 ## Next steps
 
-The natural follow-up is **v1.5.6**: retrain on HINT ∪ CTO. The
-expected lift is bounded by the feature-derivation gap (which
-retraining doesn't close — both HINT and CTO would still use
-heterogeneous feature derivations) but should close some of the
-distribution-shift gap. Plausible v1.5.6 AUC range on CTO held-out:
-**0.62-0.68**.
+**v1.5.6 shipped** — see [/14 Phase-stratified retrain](14-phase-stratified-retrain.md).
+We retrained on HINT ∪ CTO with one LightGBM per phase. Held-out CTO AUC
+rose **0.600 → 0.660** (+6 pp), landing in the lower half of the
+predicted 0.62-0.68 range. The honest caveat: the gain is partly
+Simpson's-paradox (between-phase ranking); within-Phase-2 discrimination
+stayed at 0.554, confirming the feature-derivation gap below is the real
+ceiling, not model architecture.
 
 A v1.5.7 could close the feature-derivation gap by re-deriving HINT's
 features through CT.gov v2 metadata (matching the CTO pipeline). That's

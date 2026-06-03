@@ -10,14 +10,17 @@
 A biotech venture valuation workbench: phase-gated probability of success with an explicit
 **reflexivity adjustment**, risk-adjusted NPV with 10,000-path Monte Carlo and tornado
 sensitivity, a supervised **ML PoS Prior** on real HINT clinical-trial outcomes (PubMedBERT +
-LightGBM, internal AUC 0.7030 + bootstrap-percentile uncertainty bands + Mondrian split-conformal
-coverage; **externally validated against CTO uncontaminated at AUC 0.600 — see
-[methodology/13](methodology/13-ct-open-benchmark.md) for the honest generalization-gap
-analysis**), an 8-pillar diligence scorecard, cited deal comparables, three runtime agents
-(Auto-Diligence, Memo Writer, Game-Theory Adversary), and **four persona-aware reader views**
-(VC Associate, IC Voter, Scientific Reviewer, Quant) — all built on a **modular registry
-pattern** that has now successfully absorbed four major feature lines (v1.5 calibrated ML,
-v1.5.5 external validation, v1.7 reader-journey IA, v1.8 persona views) without core edits.
+**phase-stratified LightGBM**, bootstrap-percentile uncertainty bands + Mondrian split-conformal
+coverage; **externally validated against CTO uncontaminated at AUC 0.600, then retrained on
+HINT ∪ CTO with one model per phase → 0.660 on held-out CTO (+6pp) — see
+[methodology/13](methodology/13-ct-open-benchmark.md) +
+[/14](methodology/14-phase-stratified-retrain.md) for the honest generalization-gap and
+Simpson's-paradox analysis**), an 8-pillar diligence scorecard, cited deal comparables, three
+runtime agents (Auto-Diligence, Memo Writer, Game-Theory Adversary), and **four persona-aware
+reader views** (VC Associate, IC Voter, Scientific Reviewer, Quant) — all built on a **modular
+registry pattern** that has now successfully absorbed five major feature lines (v1.5 calibrated
+ML, v1.5.5 external validation, v1.5.6 phase-stratified retrain, v1.7 reader-journey IA, v1.8
+persona views) without core edits.
 
 The architecture is intentional and replicable. Every methodology decision is documented in
 [`methodology/`](methodology/); every reference value is in versioned JSON with a `source` field;
@@ -261,7 +264,7 @@ contract.
 
 ## Reading the methodology folder
 
-Thirteen writeups, designed to be read in any order. For a first pass:
+Fourteen writeups, designed to be read in any order. For a first pass:
 
 1. [`02-reflexivity-thesis.md`](methodology/02-reflexivity-thesis.md) — the framework's
    load-bearing intellectual claim. Reads as an investor memo.
