@@ -1,4 +1,4 @@
-"""ML PoS Prior — v1.5.2 inference engine.
+"""ML PoS Prior — v1.5.6 inference engine (phase-stratified).
 
 The v1.5.1.1 inference path was structured-features-only (36-dim).
 v1.5.2 adds PubMedBERT pooled embeddings of the eligibility-criteria
@@ -336,12 +336,24 @@ def _load_model():
             )
             bootstrap_models = None
 
-    return artifact["model"], metrics, bootstrap_models, conformal, artifact_fingerprint
+    # v1.5.6: phase-stratified models (optional — backward-compatible with v1.5.2/3 artifacts)
+    phase_models: dict[str, object] = {}
+    raw_phase_models = artifact.get("phase_models")
+    if isinstance(raw_phase_models, dict):
+        for ph, pm in raw_phase_models.items():
+            if pm is not None:
+                phase_models[ph] = pm
+        if phase_models:
+            log.info("ML PoS Prior v1.5.6: loaded phase models for %s", sorted(phase_models))
+    else:
+        log.info("ML PoS Prior: no phase_models in artifact — using overall model for all phases")
+
+    return artifact["model"], phase_models, metrics, bootstrap_models, conformal, artifact_fingerprint
 
 
 def get_model_metrics() -> dict:
     """Public accessor for the /model_info route."""
-    _, metrics, _, conformal, _ = _load_model()
+    _, _, metrics, _, conformal, _ = _load_model()
     response = dict(metrics)
     if conformal is not None:
         response["conformal"] = conformal
@@ -476,7 +488,7 @@ def _maybe_cached(record: DiligenceRecord) -> MLPosPriorResult | None:
         log.warning("ml_pos_prior cache unreadable for %s: %s", slug, exc)
         return None
 
-    _, _, _, _, artifact_fingerprint = _load_model()
+    _, _, _, _, _, artifact_fingerprint = _load_model()
     cached_artifact_fingerprint = payload.get("artifact_fingerprint")
     if artifact_fingerprint is None:
         log.warning(
@@ -560,7 +572,18 @@ def compute(
     if cached is not None:
         return cached
 
-    model, metrics, ensemble, _, _ = _load_model()
+    overall_model, phase_models, metrics, ensemble, _, _ = _load_model()
+
+    # v1.5.6: route to the phase-specific model when available. The phase
+    # model was trained exclusively on data from that phase, so its decision
+    # boundary is calibrated to the correct base rate. Falls back to the
+    # overall model for non-standard phases (preclinical, NDA, approved).
+    phase_key = record.asset.phase.value  # e.g. "phase_1", "phase_2"
+    model = phase_models.get(phase_key, overall_model)
+    if phase_key in phase_models:
+        log.debug("ML PoS Prior: using phase model for %s", phase_key)
+    else:
+        log.debug("ML PoS Prior: using overall model (no phase model for %s)", phase_key)
 
     # Build combined feature vector: [PubMedBERT 768] + [structured 36] = 804
     text = _resolve_criteria_text(criteria_text=criteria_text, nct_id=nct_id)

@@ -659,7 +659,7 @@ def test_real_lightgbm_bootstrap_artifact_round_trip(
     monkeypatch.setattr(engine, "MODEL_PATH", artifact)
     engine._load_model.cache_clear()
 
-    model, metrics, ensemble, conformal, fingerprint = engine._load_model()
+    model, phase_models, metrics, ensemble, conformal, fingerprint = engine._load_model()
     assert isinstance(model, lgb.LGBMClassifier)
     assert len(ensemble) == engine.MIN_BOOTSTRAP_MODELS
     assert conformal["radii"]["phase_2"] == pytest.approx(0.72)
