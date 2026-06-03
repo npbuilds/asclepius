@@ -87,7 +87,7 @@ Running the v1.5.9 calibrated framework on these inputs, today
 - × 1.15  (target validated — two FDA-approved KRAS G12C inhibitors)
 - × 0.90  (3 direct competitors)
 - × 1.08  (reflexivity: well_capitalized)
-- = **Final LOA: 59.3%** [95% CI 54.8% — 63.4%]
+- = **Final LOA: 59.3%** [95% CI 54.8% — 63.4%] <!-- parity-allow: ci-bound -->
 
 **rNPV** (assuming $700M peak sales, 12yr exclusivity, 10% WACC, 20% COGS):
 - Base case: **$948M**
@@ -131,7 +131,7 @@ The framework's 59% LOA is committed. The interesting cases are
 the deviations we'd update on:
 
 **Surprise (outcome = 0):**
-- Divarasib's Phase 1/2 data (ORR 56%, mPFS 13.1mo) was on a
+- Divarasib's Phase 1/2 data (ORR 56%, mPFS 13.1mo) was on a <!-- parity-allow: external-stat -->
   selected, smaller cohort. The Phase 3 head-to-head might show
   the differentiation collapsing — sotorasib/adagrasib could pull
   closer in a 338-patient randomized setting than in cross-trial

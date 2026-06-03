@@ -30,7 +30,7 @@ For one asset:
    where conviction is the analyst's 0.5×–1.5× scaling on the
    framework's numbers.
 4. **Barbell cap/floor**: cap at `fund.max_position_pct` (typical 20%),
-   floor at `fund.min_position_pct` (typical 2%). Positions below the
+   floor at `fund.min_position_pct` (typical 2%). Positions below the <!-- parity-allow: fund-config -->
    floor are dropped; positions above the cap are pinned at the cap.
 
 For the portfolio: the per-asset sizings are computed independently
@@ -79,7 +79,7 @@ and fund-parameter sliders. Default behavior produces:
 | | Adagrasib | Sotorasib | Selpercatinib | Larotrectinib | Encorafenib |
 |---|---:|---:|---:|---:|---:|
 | Conviction | 1.0 | 0.8 | 1.2 | 1.0 | 0.9 |
-| Final weight | 3.0% | 2.4% | 3.6% | 3.0% | 2.7% |
+| Final weight | 3.0% | 2.4% | 3.6% | 3.0% | 2.7% | <!-- parity-allow: worked-example -->
 | Status | rec | rec | rec | rec | rec |
 
 Total deployed ≈ 14.7%; cash residual 85.3%. This is the *barbell*

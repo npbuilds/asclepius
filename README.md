@@ -233,10 +233,10 @@ Asclepius is positioned as a maintained tool, not a frozen artifact:
 
 | Trigger | Effort |
 |---|---|
-| BIO/Informa publishes the next annual cohort (typically Q2) | 30 min — refresh `api/app/data/base_rates.json`, then run `python scripts/check_methodology_parity.py` to surface any methodology citations that drifted |
-| Damodaran's January cost-of-capital update | 15 min — refresh `api/app/data/wacc_benchmarks.json` |
+| BIO/Informa publishes the next annual cohort (typically Q2) | 30 min — refresh `api/app/data/base_rates.json`. CI auto-runs `python scripts/check_methodology_parity.py` on push — any methodology citation that now drifts from the new JSON fails the build until updated or marked `<!-- parity-allow: <category> -->`. |
+| Damodaran's January cost-of-capital update | 15 min — refresh `api/app/data/wacc_benchmarks.json` (same parity-lint gate applies) |
 | Major biotech M&A closes | 30 min per deal — add a new JSON to `api/app/data/comparables/` |
-| Semi-annual methodology sweep | 2–3 hours — re-read writeups against current values; the parity lint flags orphan percentages in 5 seconds |
+| Semi-annual methodology sweep | 2–3 hours — re-read writeups against current values; the parity lint runs in CI and the orphan list is enforced (zero tolerance, with explicit `parity-allow` markers for documented exemptions) |
 | Framework run on a public asset | 1 min — log_prediction, then `python api/scripts/sync_predictions_to_public_log.py` + commit. See [`methodology/10-public-prediction-log.md`](methodology/10-public-prediction-log.md). |
 | Public catalyst lands (FDA action, M&A, readout) | 5 min — resolve_prediction with source citation, sync + commit |
 

@@ -51,7 +51,8 @@ The framework builds the cumulative likelihood of approval as a multiplicative c
 | **Biomarker enrichment**: KRAS G12C inclusion | ×1.20 | 12.7% | The trial enrolls only KRAS G12C-mutant patients (definitional biomarker enrichment). Wong 2019 §4.3 documents ~20% higher P2→P3 transition for biomarker-enriched trials. |
 | **Target validated**: sotorasib precedent | ×1.15 | 14.7% | The same target was clinically validated by FDA accelerated approval of sotorasib thirteen months before cutoff. The target is no longer a target-validation question; it is a competitive-positioning question. |
 | **Breakthrough Therapy Designation** | ×1.10 | 16.1% | BTD granted June 2021. Practitioner-observed PoS uplift from BTD reflects FDA agreement on preliminary clinical evidence and unlocks more intensive regulatory engagement. |
-| **Reflexivity**: adequate capital | ×1.00 | **16.1%** | Adequate capital tier. No structural adjustment. (If we had classified Mirati as "well capitalized," the multiplier would have been ×1.08 → 17.4% final.) |
+| **Reflexivity**: adequate capital | ×1.00 | **16.1%** | Adequate capital tier. No structural adjustment. (If we had classified Mirati as "well capitalized," the multiplier would have been ×1.08 → 17.4% final.) | <!-- parity-allow: worked-example -->
+
 
 The framework's pre-readout PoS estimate for adagrasib is **16.1%, against a population-prior of 10.6%.** The full uplift (~50% relative) comes from three observable, documentable features of the trial and target — none of them speculative.
 

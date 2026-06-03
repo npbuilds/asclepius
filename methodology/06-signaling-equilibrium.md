@@ -57,7 +57,7 @@ The single-crossing condition deserves the most attention because it is the tech
 
 The cost differential operates through multiple channels:
 
-- **Direct capital cost.** A $400M Phase 3 program against a $2B cash balance is a 20% allocation; against a $200M cash balance it is a 200% allocation — i.e., infeasible without dilutive financing. The two sponsors face different effective costs of the same nominal trial budget.
+- **Direct capital cost.** A $400M Phase 3 program against a $2B cash balance is a 20% allocation; against a $200M cash balance it is a 200% allocation — i.e., infeasible without dilutive financing. The two sponsors face different effective costs of the same nominal trial budget. <!-- parity-allow: rhetorical-illustration -->
 
 - **Cost of dilution.** Capital-constrained sponsors who choose the rigorous design must raise to fund it; the cost of capital at low share prices is substantially higher than at high share prices, and well-capitalized sponsors typically trade at higher multiples. Same rigorous trial costs more in real dilution terms for the constrained sponsor.
 

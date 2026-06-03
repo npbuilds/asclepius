@@ -11,7 +11,7 @@ How it works:
      source path so we can report which file backs which number.
   2. For each `methodology/*.md`, extract every percentage token
      (e.g. "28.9%", "10%") and convert to a probability decimal.
-  3. Each extracted percentage falls into one of four classes:
+  3. Each extracted percentage falls into one of five classes:
        - MATCH       — value within ±tolerance of some indexed number
        - CITATION    — line cites an external paper (Doane / Wong / BIO 20XX
                        / Informa / Damodaran / Williamson / etc.); these
@@ -19,19 +19,32 @@ How it works:
        - COMPARISON  — line uses comparison markers (">", "<", "≥", "≤",
                        "around", "approximately", "~", "≈") which signal
                        the number is descriptive, not a precise lookup
+       - ALLOW       — line carries `<!-- parity-allow: <category> -->` —
+                       explicit author-declared exemption. The category is
+                       a controlled vocabulary (worked-example, rhetorical
+                       -illustration, model-output, range-description,
+                       fund-config, bootstrap-statistic, ci-bound,
+                       external-citation). Documents WHY the number can't
+                       match the data layer.
        - ORPHAN      — neither matched nor explainable; deserves human eyes
-  4. Print a digest. Exit 0 on success (orphans are informational, not
-     errors); exit 2 only when the data-layer index is empty (script bug).
+                       (CI-gates on this — any ORPHAN fails the lint)
 
-This is `detect, don't prevent`. False positives are acceptable — every
-orphan is a 30-second human check, not a CI failure. The MVP design from
-the plan: "tiny lint script... cheap insurance against drift."
+CI behavior: exit 1 if any ORPHAN remains; exit 0 otherwise. Use the
+ALLOW marker mechanism to make legitimate non-data-layer numbers
+silent. Exit 2 only when the data-layer index is empty (script bug).
 
 Run with:
-    python scripts/check_methodology_parity.py
-    python scripts/check_methodology_parity.py --verbose       # show MATCH+CITATION lines
+    python scripts/check_methodology_parity.py                   # CI-gated by default
+    python scripts/check_methodology_parity.py --verbose         # show MATCH+CITATION+ALLOW lines
     python scripts/check_methodology_parity.py --tolerance 0.01  # ±1pp instead of ±0.5pp
     python scripts/check_methodology_parity.py --files methodology/01-pos-framework.md
+    python scripts/check_methodology_parity.py --no-gate         # exit 0 even with orphans (legacy)
+
+Adding an allow-marker:
+    Inline next to the orphan token in the markdown source:
+        | Final weight | 3.0% | 2.4% | <!-- parity-allow: example-portfolio-weight -->
+    The marker matches anywhere on the LINE, so for table rows put it at
+    end-of-line. Vocabulary intentionally constrained — see ALLOW_CATEGORIES.
 """
 
 from __future__ import annotations
@@ -103,6 +116,25 @@ COMPARISON_MARKERS = (
 ENGINE_CONST_RE = re.compile(
     r"^([A-Z_][A-Z0-9_]*)\s*=\s*(-?\d+\.\d+)\b", re.MULTILINE
 )
+
+# Allow-marker: `<!-- parity-allow: <category> -->`. The category is
+# constrained to the controlled vocabulary below so the lint output can
+# also summarize WHICH kinds of orphans the corpus carries.
+ALLOW_MARKER_RE = re.compile(
+    r"<!--\s*parity-allow(?::\s*([a-z0-9-]+))?\s*-->",
+    re.IGNORECASE,
+)
+ALLOW_CATEGORIES = {
+    "worked-example",          # framework outputs computed on a specific asset
+    "rhetorical-illustration", # narrative examples (e.g. "200% allocation = infeasible")
+    "model-output",            # ML predictions; published cache values
+    "range-description",       # e.g. "between 16% and 37%"
+    "fund-config",             # typical user-set fund / portfolio config values
+    "bootstrap-statistic",     # bootstrap-positive-fraction, % of resamples, etc.
+    "ci-bound",                # 95% CI upper/lower bounds on computed values
+    "external-citation",       # paper citation the regex didn't catch
+    "external-stat",           # external trial / corpus statistics
+}
 
 
 @dataclass
@@ -194,6 +226,24 @@ def classify_line(line: str) -> str | None:
     return None
 
 
+def extract_allow_marker(line: str) -> tuple[bool, str | None]:
+    """If the line carries a `<!-- parity-allow[:category] -->` marker,
+    return (True, category-or-None). The category is validated against
+    the ALLOW_CATEGORIES controlled vocabulary; unknown categories print
+    a warning but still count as ALLOWED (forward-compat with future
+    vocabulary additions; the lint shouldn't break the build on a typo).
+    """
+    m = ALLOW_MARKER_RE.search(line)
+    if not m:
+        return (False, None)
+    raw = (m.group(1) or "").strip().lower() or None
+    if raw and raw not in ALLOW_CATEGORIES:
+        print(f"WARN: unknown parity-allow category '{raw}'; treating as bare allow",
+              file=sys.stderr)
+        return (True, raw)  # still allow; surface category for review
+    return (True, raw)
+
+
 def strip_code_and_inline_code(md: str) -> str:
     """Remove fenced code blocks + inline-code spans. Numeric values inside
     code are usually examples (e.g., LightGBM hyperparams), not data-layer
@@ -234,8 +284,16 @@ def lint_file(
                 classification = "MATCH"
                 source = best.source
             else:
-                ctx = classify_line(line)
-                classification = ctx or "ORPHAN"
+                # Author-declared exemption takes precedence over the
+                # heuristic citation/comparison classifiers — it's the
+                # explicit signal.
+                allowed, allow_cat = extract_allow_marker(line)
+                if allowed:
+                    classification = "ALLOW"
+                    source = f"allow:{allow_cat or 'unspecified'}"
+                else:
+                    ctx = classify_line(line)
+                    classification = ctx or "ORPHAN"
 
             claims.append(ExtractedClaim(
                 line_no=line_no,
@@ -254,9 +312,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--tolerance", type=float, default=0.005,
                     help="Match tolerance in decimal probability units (default 0.005 = ±0.5pp).")
     ap.add_argument("--verbose", action="store_true",
-                    help="Print MATCH + CITATION + COMPARISON lines, not just ORPHANS.")
+                    help="Print MATCH + CITATION + COMPARISON + ALLOW lines, not just ORPHANS.")
     ap.add_argument("--files", nargs="*",
                     help="Specific methodology files to lint; default all.")
+    ap.add_argument("--no-gate", action="store_true",
+                    help="Exit 0 even when orphans exist (informational mode). "
+                         "Default is to exit 1 on any orphan — the CI gate.")
     args = ap.parse_args(argv)
 
     if not METHODOLOGY_DIR.is_dir():
@@ -279,7 +340,8 @@ def main(argv: list[str]) -> int:
     else:
         targets = sorted(METHODOLOGY_DIR.glob("*.md"))
 
-    totals = {"MATCH": 0, "CITATION": 0, "COMPARISON": 0, "ORPHAN": 0}
+    totals = {"MATCH": 0, "CITATION": 0, "COMPARISON": 0, "ALLOW": 0, "ORPHAN": 0}
+    allow_categories_used: dict[str, int] = {}
     orphans_by_file: dict[str, list[ExtractedClaim]] = {}
 
     for path in targets:
@@ -287,15 +349,20 @@ def main(argv: list[str]) -> int:
             print(f"  ! missing: {path}")
             continue
         claims = lint_file(path, index, tolerance=args.tolerance)
-        file_counts = {"MATCH": 0, "CITATION": 0, "COMPARISON": 0, "ORPHAN": 0}
+        file_counts = {"MATCH": 0, "CITATION": 0, "COMPARISON": 0,
+                       "ALLOW": 0, "ORPHAN": 0}
         for c in claims:
             file_counts[c.classification] += 1
             totals[c.classification] += 1
+            if c.classification == "ALLOW" and c.match_source:
+                cat = c.match_source.split(":", 1)[1] if ":" in c.match_source else "unspecified"
+                allow_categories_used[cat] = allow_categories_used.get(cat, 0) + 1
         rel = path.relative_to(REPO_ROOT)
         print(f"{rel}: {len(claims)} %-claims  "
               f"MATCH={file_counts['MATCH']}  "
               f"CITATION={file_counts['CITATION']}  "
               f"COMPARISON={file_counts['COMPARISON']}  "
+              f"ALLOW={file_counts['ALLOW']}  "
               f"ORPHAN={file_counts['ORPHAN']}")
 
         orphans = [c for c in claims if c.classification == "ORPHAN"]
@@ -312,21 +379,37 @@ def main(argv: list[str]) -> int:
 
     print()
     print(f"=== TOTALS ===")
-    print(f"  MATCH:      {totals['MATCH']:>4}  ({100*totals['MATCH']/max(sum(totals.values()),1):.1f}%)")
+    total = sum(totals.values()) or 1
+    print(f"  MATCH:      {totals['MATCH']:>4}  ({100*totals['MATCH']/total:.1f}%)")
     print(f"  CITATION:   {totals['CITATION']:>4}  (numbers from cited papers; expected to NOT match)")
     print(f"  COMPARISON: {totals['COMPARISON']:>4}  (descriptive: >X%, ~X%, around X%)")
+    print(f"  ALLOW:      {totals['ALLOW']:>4}  (author-declared exemption via parity-allow marker)")
     print(f"  ORPHAN:     {totals['ORPHAN']:>4}  (no match + no context marker — review)")
+
+    if allow_categories_used:
+        print()
+        print(f"  ALLOW categories used:")
+        for cat, n in sorted(allow_categories_used.items(), key=lambda kv: -kv[1]):
+            print(f"    {cat:<25} {n}")
 
     if orphans_by_file and not args.verbose:
         print()
-        print(f"=== ORPHAN claims (likely drift OR uncaught citation; review each) ===")
+        print(f"=== ORPHAN claims (drift OR un-marked legitimate exemption — review each) ===")
+        print("To exempt: add `<!-- parity-allow: <category> -->` on the orphan line.")
         for fname, orphans in orphans_by_file.items():
             print(f"\n{fname}:")
             for c in orphans:
                 print(f"  L{c.line_no} {c.raw_token}: {c.line[:110]}")
 
-    # Always exit 0 — this is informational, not a CI gate. To make it a
-    # gate, change the next line to: return 1 if totals["ORPHAN"] else 0
+    # CI gate by default: any orphan blocks the build. --no-gate exits 0
+    # for the informational use case (running the lint mid-edit to see
+    # what's there without forcing immediate fixes).
+    if totals["ORPHAN"] and not args.no_gate:
+        print()
+        print(f"FAIL: {totals['ORPHAN']} orphan claim(s) above. "
+              "Either fix the drift, or add a `parity-allow` marker if "
+              "the number is legitimately non-data-layer.")
+        return 1
     return 0
 
 

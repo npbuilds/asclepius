@@ -68,3 +68,24 @@ jobs:
         # API_BASE is not set in CI — Next.js rewrites still resolve at build
         # time; the build doesn't call the API, so empty is fine.
         run: pnpm build
+
+  methodology-parity:
+    name: Methodology ↔ data-layer parity
+    runs-on: ubuntu-latest
+    # Catches numeric drift between `methodology/*.md` writeups and the
+    # reference data they cite (`api/app/data/*.json` + selected engine
+    # constants). Stdlib-only — no Python deps needed; the lint reads
+    # JSON directly. Gates: any orphan percentage that doesn't match
+    # the data layer AND isn't covered by a citation/comparison/allow
+    # marker fails the build. See methodology/00-product-thesis.md and
+    # scripts/check_methodology_parity.py for the rules.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run parity lint
+        run: python scripts/check_methodology_parity.py

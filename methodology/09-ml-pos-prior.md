@@ -61,7 +61,7 @@ competitor):
 | ML prior — v1.5.1.1 (LR surrogate, rule-distilled) | 36.7% | logistic regression on Bernoulli-sampled rule-chain labels |
 | **ML prior — v1.5.2 (LightGBM, PubMedBERT-embedded, real outcomes)** | **39.4%** | NCT04685135 criteria + structured features through `lightgbm_pubmedbert_v0.2.0_42` |
 
-Both surrogate (36.7%) and supervised (39.4%) ML paths land in the same
+Both surrogate (36.7%) and supervised (39.4%) ML paths land in the same <!-- parity-allow: model-output -->
 neighborhood — significantly higher than the rule-chain's 16.1%. That
 they agree closely while being trained on different label sources is
 mildly reassuring: the additive-log-odds composition produces a similar
@@ -97,7 +97,7 @@ Two readings of the gap:
 Both readings should be visible to the diligence reader. The framework
 deliberately does not pick one — the disagreement *itself* is the
 useful signal. A senior investor reading both numbers gets a band
-estimate ("between 16% and 37% depending on assumptions about
+estimate ("between 16% and 37% depending on assumptions about <!-- parity-allow: range-description -->
 adjustment composition") rather than a false-precision single number.
 
 ## What this is honestly NOT

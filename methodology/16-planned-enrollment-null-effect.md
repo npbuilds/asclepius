@@ -111,9 +111,9 @@ from "any other run-to-run training variance."
 | Surface | v1.5.8 (enrollment ON) | Counterfactual (zeroed) | Δ point | 95% CI | % Δ > 0 |
 |---|---|---|---|---|---|
 | Phase 1 | 0.6245 | 0.6245 | +0.000 | [+0.000, +0.000] | 0.0% |
-| Phase 2 | 0.5803 | 0.5771 | +0.003 | [−0.004, +0.012] | 78.7% |
+| Phase 2 | 0.5803 | 0.5771 | +0.003 | [−0.004, +0.012] | 78.7% | <!-- parity-allow: bootstrap-statistic -->
 | Phase 3 | 0.5829 | 0.5827 | +0.000 | [−0.003, +0.003] | 54.8% |
-| **Overall** | **0.6681** | **0.6672** | **+0.001** | [−0.002, +0.004] | 77.5% |
+| **Overall** | **0.6681** | **0.6672** | **+0.001** | [−0.002, +0.004] | 77.5% | <!-- parity-allow: bootstrap-statistic -->
 
 **The shipped model does not actually use the enrollment feature.**
 Toggling its column at inference is a no-op (Phase-1 exactly zero;
