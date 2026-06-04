@@ -343,6 +343,43 @@ export default function DiligencePage({
             for the pre-registered prediction with resolution criteria.
           </p>
         ) : null}
+
+        {/* v1.6 custom-asset guardrail: Auto-Diligence can populate phase
+            "approved" for FDA-approved assets (e.g., generalist types
+            "lecanemab" or "voranigo"). The PoS chain trivially returns
+            1.0 for approved phase — mathematically correct but uninformative.
+            Surface a friendly redirect to the methodology + the two
+            pre-staged showcase assets rather than letting the user see
+            100% PoS and bounce. */}
+        {record.asset.phase === "approved" ? (
+          <div className="mt-3 rounded border border-amber-bright/30 bg-amber-bright/5 p-3 text-[12px] leading-relaxed">
+            <p className="font-mono text-[10px] uppercase tracking-wider text-amber-bright">
+              ⚠ post-approval asset
+            </p>
+            <p className="mt-1.5 font-prose text-text-primary">
+              This asset is FDA-approved, so the rule-based PoS chain
+              returns the trivial 1.0 (already past the gates). Asclepius&apos;s
+              valuation surfaces are calibrated for pre-approval assets —
+              the LOA microsplit, reflexivity slider, and rNPV PoS-weighting
+              all assume an open question about whether the asset reaches
+              market. For an approved asset, switch the rNPV to a
+              straight DCF over remaining exclusivity and treat the
+              scorecard as commercial-execution-only.
+            </p>
+            <p className="mt-2 font-prose text-text-dim">
+              Try a pre-approval asset to see the framework in its actual
+              domain &mdash;{" "}
+              <a href="/diligence/adagrasib" className="text-cyan-bright underline hover:text-cyan-bright">
+                adagrasib
+              </a>{" "}
+              (retrospective backtest) or{" "}
+              <a href="/diligence/divarasib" className="text-cyan-bright underline hover:text-cyan-bright">
+                divarasib
+              </a>{" "}
+              (live forward prediction).
+            </p>
+          </div>
+        ) : null}
       </header>
 
       {/* v1.7.0: HeroBanner ("30-second read"). v1.8.0: swap to a

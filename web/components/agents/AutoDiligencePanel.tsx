@@ -87,6 +87,22 @@ export function AutoDiligencePanel({
     }
   }
 
+  // v1.6 (custom-asset path): Auto-Diligence returns NCT IDs as URLs in the
+  // citations array (e.g., "https://clinicaltrials.gov/study/NCT06119581"),
+  // not as a structured field. Extract the first one so MLPosPriorPanel can
+  // embed the trial's eligibility criteria for a custom asset. Without this,
+  // the ML PoS Prior would fall back to its no-NCT path on every custom
+  // asset — leaving the Quant persona's most load-bearing surface blank.
+  function extractNctFromCitations(): string | null {
+    const re = /NCT\d{8}/;
+    for (const c of result?.citations || []) {
+      const url = c.url ?? "";
+      const m = url.match(re);
+      if (m) return m[0];
+    }
+    return null;
+  }
+
   function applyToRecord() {
     if (!result) return;
     const e = result.extracted;
@@ -119,7 +135,12 @@ export function AutoDiligencePanel({
       capital_position:
         (e.capital_position as CapitalPosition) || record.asset.capital_position,
     };
-    setRecord({ asset: merged });
+    // Preserve any user-supplied NCT ID that's already on the record (e.g.
+    // analyst typed it explicitly); only auto-fill from citations when the
+    // current value is empty.
+    const nctFromCitations = extractNctFromCitations();
+    const ml_pos_nct_id = record.ml_pos_nct_id || nctFromCitations || null;
+    setRecord({ asset: merged, ml_pos_nct_id });
   }
 
   // Group citations by field for easy lookup

@@ -3,6 +3,7 @@ import { Inter, Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
 import Link from "next/link";
 
 import { PersonaToggle } from "@/components/PersonaToggle";
+import { SendFeedback } from "@/components/SendFeedback";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PERSONA_ANTI_FOUC_SCRIPT } from "@/lib/persona";
 import { ANTI_FOUC_SCRIPT } from "@/lib/theme";
@@ -122,6 +123,7 @@ export default function RootLayout({
               >
                 GitHub
               </a>
+              <SendFeedback />
               <PersonaToggle />
               <ThemeToggle />
             </nav>

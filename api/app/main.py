@@ -50,6 +50,12 @@ def create_app() -> FastAPI:
 
     app.include_router(agents_router)
 
+    # v1.6: friend-test feedback channel. Out-of-band of the registry
+    # because feedback isn't a module or agent — it's framework infra.
+    from .feedback import router as feedback_router
+
+    app.include_router(feedback_router)
+
     # ---- Built-in routes ----
 
     @app.get("/health")
