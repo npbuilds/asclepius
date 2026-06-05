@@ -1,0 +1,18 @@
+{
+  "asset_name": "emraclidine",
+  "therapeutic_area": "cns",
+  "modality": "small_molecule",
+  "acquirer": "AbbVie",
+  "target_company": "Cerevel Therapeutics",
+  "deal_value_usd_m": 8700.0,
+  "deal_date": "2023-12-06",
+  "deal_close_date": "2024-08-01",
+  "peak_sales_estimate_usd_m": 3000.0,
+  "asset_phase_at_deal": "phase_2",
+  "approved_post_deal": false,
+  "phase_3_outcome_post_deal": "failed",
+  "phase_3_outcome_date_post_deal": "2024-11-11",
+  "notes": "AbbVie paid $8.7B for Cerevel's lead asset emraclidine — a selective M4 muscarinic agonist for schizophrenia. Phase 2 data was the basis at deal time. CRITICAL CONTEXT: emraclidine failed both EMPOWER Phase 2 readouts in November 2024 (post-deal close). The deal value reflects the consensus PRE-FAILURE assessment. Including in the cohort because the deal was real and the framework should reflect what acquirers actually pay for Phase 2 CNS small molecules — including ones that subsequently fail. The peak sales estimate of $3B is the pre-failure consensus; post-failure realistic peak is near zero.",
+  "selection_rationale": "Recent (2023-2024), single-asset, CNS-small-molecule M&A. Including the post-deal failure provides important calibration: M&A premia on Phase 2 CNS assets reflect risk that sometimes resolves negatively. This is the framework working as intended.",
+  "source": "AbbVie press release Dec 6 2023; Cerevel SEC filings; AbbVie Q4 2024 earnings transcript (emraclidine failure disclosure)."
+}

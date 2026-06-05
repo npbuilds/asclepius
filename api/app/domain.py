@@ -267,6 +267,13 @@ class ComparablesResult(BaseModel):
     cohort: list[Comparable]
     median_ev_to_peak_sales: float | None = None
     implied_value_usd_m: float | None = None
+    # v1.6: human-readable description of which curated cohort matched —
+    # e.g. "Oncology · small molecule (kinase-TKI)" or "CNS · small molecule"
+    # or "Fallback: kinase-TKI (no asset-matched cohort for X)". The UI
+    # uses this to render an honest disclosure when the cohort isn't
+    # asset-matched, and to omit the disclosure when it IS.
+    cohort_label: str | None = None
+    cohort_matched: bool = True
 
 
 # ---------------------------------------------------------------------------

@@ -22,30 +22,42 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
   }, [JSON.stringify(record.asset), record.rnpv_inputs.peak_sales_usd_m]);
 
   const c = record.comparables;
-  // v1 limitation: the comparables engine returns a fixed kinase-TKI
-  // single-asset M&A cohort (selpercatinib, larotrectinib, encorafenib)
-  // regardless of the input asset's TA or modality. This is *honest* for
-  // KRAS/kinase oncology assets (adagrasib, divarasib, olomorasib — the
-  // model's distribution) but visibly off for non-kinase indications.
-  // Surface the limitation rather than silently misframe the cohort.
-  // Routing comparables by (asset.therapeutic_area × asset.modality) is
-  // the v2 enhancement; see methodology/00-product-thesis.md §v2 roadmap.
-  const isKinaseOncologyContext =
-    record.asset.therapeutic_area === "oncology" &&
-    record.asset.modality === "small_molecule";
+  // v1.6: the engine now indexes comparables by (TA, modality) and routes
+  // accordingly. Two curated cohorts ship today:
+  //   - Oncology · small molecule (kinase-TKI: encorafenib, larotrectinib,
+  //     selpercatinib)
+  //   - CNS · small molecule (karuna, cerevel, reata — 2023 single-asset
+  //     CNS M&A)
+  // When the asset's (TA, modality) doesn't have a curated cohort with
+  // ≥3 deals, the engine falls back to the kinase-TKI cohort and flags
+  // cohort_matched=false; we render the fallback disclosure in that case
+  // and omit it when the cohort genuinely matches the asset.
+  const cohortMatched = c?.cohort_matched ?? true;
   return (
     <section className="rounded border border-border-dim bg-bg-panel p-3">
       <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">Deal comparables</h2>
 
-      {!isKinaseOncologyContext ? (
+      {/* Always surface the cohort label so the analyst knows which deals
+          are driving the median. Backend ships "Oncology · small molecule
+          (3 deals)" / "CNS · small molecule (3 deals)" / "Fallback: …" */}
+      {c?.cohort_label ? (
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-text-dim">
+          cohort: <span className="text-text-primary">{c.cohort_label}</span>
+        </p>
+      ) : null}
+
+      {!cohortMatched ? (
         <p className="mb-3 rounded border border-amber-bright/30 bg-amber-bright/5 p-2 font-mono text-[10px] leading-snug text-amber-bright">
-          ⚠ <strong className="font-semibold uppercase tracking-wider">v1 cohort note:</strong> Asclepius v1 ships
-          a fixed reference cohort (kinase-TKI single-asset M&A:
-          selpercatinib, larotrectinib, encorafenib). This is calibrated
-          to the model&apos;s training distribution but not asset-matched
-          for this {record.asset.therapeutic_area}/{record.asset.modality}{" "}
-          input. Routing by therapeutic area × modality is the v2
-          enhancement &mdash; see the product thesis.
+          ⚠ <strong className="font-semibold uppercase tracking-wider">cohort fallback:</strong> No curated cohort
+          yet for{" "}
+          <span className="font-semibold">
+            {record.asset.therapeutic_area} · {record.asset.modality}
+          </span>
+          . Falling back to the kinase-TKI cohort so the framework still
+          produces a number, but treat the median multiple as
+          weakly-relevant to your asset. Adding new cohorts is a
+          drop-a-JSON-and-restart operation &mdash; happy to wire your
+          asset class in if it&apos;s a recurring use case.
         </p>
       ) : null}
 

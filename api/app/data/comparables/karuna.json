@@ -1,0 +1,17 @@
+{
+  "asset_name": "KarXT (xanomeline-trospium)",
+  "therapeutic_area": "cns",
+  "modality": "small_molecule",
+  "acquirer": "Bristol-Myers Squibb",
+  "target_company": "Karuna Therapeutics",
+  "deal_value_usd_m": 14000.0,
+  "deal_date": "2023-12-22",
+  "deal_close_date": "2024-03-18",
+  "peak_sales_estimate_usd_m": 4000.0,
+  "asset_phase_at_deal": "NDA filed",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2024-09-26",
+  "notes": "BMS paid $14B for Karuna's lead asset KarXT — a dual M1/M4 muscarinic agonist + trospium combination for schizophrenia. NDA had been accepted by FDA in Sep 2023; subsequently approved as Cobenfy in Sep 2024. Sell-side peak estimates at deal time ranged $3-6B reflecting CNS biology novelty (first non-D2 antipsychotic mechanism approved in decades). Single-asset CNS M&A at a meaningful premium to consensus.",
+  "selection_rationale": "Recent (2023-2024), single-asset, CNS-small-molecule M&A with a clear lead asset and public deal terms. Most directly comparable to other Phase 3 / NDA-stage CNS small molecules.",
+  "source": "BMS press release Dec 22 2023; Karuna SEC filings; FDA approval letter Sep 26 2024."
+}

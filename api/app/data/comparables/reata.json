@@ -1,0 +1,17 @@
+{
+  "asset_name": "Skyclarys (omaveloxolone)",
+  "therapeutic_area": "cns",
+  "modality": "small_molecule",
+  "acquirer": "Biogen",
+  "target_company": "Reata Pharmaceuticals",
+  "deal_value_usd_m": 7300.0,
+  "deal_date": "2023-07-28",
+  "deal_close_date": "2023-09-26",
+  "peak_sales_estimate_usd_m": 1500.0,
+  "asset_phase_at_deal": "approved",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2023-02-28",
+  "notes": "Biogen paid $7.3B for Reata's Skyclarys (omaveloxolone) — a Nrf2 activator for Friedreich's ataxia (rare neurodegenerative disease). Asset was already FDA-approved (Feb 2023) at deal time. EV/peak-sales reflects an asset post-de-risking. Strong rare-disease ultra-orphan economics with effective monopoly.",
+  "selection_rationale": "Recent (2023), single-asset, CNS-small-molecule M&A. Important counterpoint to the Karuna and Cerevel deals: Reata was post-approval (less risk → lower multiple) vs Karuna (NDA stage) and Cerevel (Phase 2). Including all three gives the framework a calibrated range for pre- vs post-de-risking CNS valuations.",
+  "source": "Biogen press release Jul 28 2023; Reata 8-K filing; FDA approval letter Feb 28 2023."
+}

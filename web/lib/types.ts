@@ -169,6 +169,11 @@ export interface ComparablesResult {
   cohort: Comparable[];
   median_ev_to_peak_sales: number | null;
   implied_value_usd_m: number | null;
+  // v1.6: cohort routing. cohort_label is e.g. "Oncology · small molecule (3 deals)"
+  // or "Fallback: kinase-TKI single-asset M&A"; cohort_matched is true when
+  // the asset's (TA, modality) had a curated cohort with ≥3 deals.
+  cohort_label?: string | null;
+  cohort_matched?: boolean;
 }
 
 export interface ModuleManifest {
