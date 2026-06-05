@@ -404,6 +404,33 @@ export default function DiligencePage({
         <HeroBanner record={record} />
       )}
 
+      {/* v1.6 friend-test prompt: when an unstaged asset has an
+          essentially-blank record (no sponsor / no mechanism / default
+          competitors / default biomarker), surface a one-line nudge that
+          points at Auto-Diligence. Without this, the friend lands on a
+          half-empty form with no signal that the agent will populate it.
+          The heuristic for "blank": no sponsor AND no mechanism. Once
+          Auto-Diligence runs (or the analyst types into the form), one of
+          those will be populated and the prompt disappears — no manual
+          dismiss state needed. Adagrasib + divarasib bypass this entirely
+          because their pre-staged records always have sponsor + mechanism. */}
+      {!isStaged && !record.asset.sponsor && !record.asset.mechanism ? (
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 rounded border border-cyan-bright/30 bg-cyan-bright/5 p-3 text-[12px]">
+          <p className="font-prose text-text-primary">
+            <strong className="font-display text-[11px] uppercase tracking-wider text-cyan-bright">
+              Start here →
+            </strong>{" "}
+            Scroll to the bottom action strip and click{" "}
+            <span className="font-mono text-text-bright">Auto-Diligence</span>{" "}
+            to populate every field on this page from public sources
+            (CT.gov, FDA, EDGAR, top journals). Takes ~30 seconds.
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-text-dim">
+            or [ edit ] the asset strip below to enter values manually
+          </p>
+        </div>
+      ) : null}
+
       {/* v1.7.0 Phase 4: Asset form collapsed to a top strip with a
           one-line summary. Default-open on non-adagrasib assets (the user
           needs to edit fields); default-closed on adagrasib (pre-staged,
