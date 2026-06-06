@@ -4,6 +4,9 @@ Same cache-first / live-fallback shape as the Memo Writer. Accepts an
 optional `memo_body` extra field on the request payload — if present, the
 agent stress-tests the memo's specific claims; if absent, it critiques the
 record's implied thesis.
+
+v1.7.7: structured ``flags`` are the primary output. Legacy ``findings``
+are still parsed (and emitted) for back-compat with older cached payloads.
 """
 
 from __future__ import annotations
@@ -21,23 +24,51 @@ from fastapi import HTTPException
 from ...domain import DiligenceRecord
 from ..base import BaseAgent
 from .prompts import SYSTEM_PROMPT, build_user_prompt
-from .schemas import AdversarialFinding, AdversaryOutput
+from .schemas import AdversarialFinding, AdversaryFlag, AdversaryOutput
 
 log = logging.getLogger(__name__)
 
 JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 VALID_VERDICTS = {"upgrade", "hold", "downgrade"}
 VALID_RECS = {"strong_buy", "buy", "hold", "cautious", "avoid"}
+
+# Legacy findings shape
 VALID_LENSES = {"signaling", "auction", "persuasion"}
 VALID_SEVERITIES = {"minor", "moderate", "critical"}
+
+# v1.7.7 structured-flag shape
+VALID_FLAG_TYPES = {
+    "signaling_equilibrium",
+    "winners_curse",
+    "bayesian_persuasion",
+    "cohort_base_rate_check",
+    "data_quality",
+    "regulatory_path",
+}
+VALID_FLAG_SEVERITIES = {"high", "medium", "low"}
 
 
 # v1.6.1: slugify moved to app.utils.text (Codex F9).
 from ...utils.text import slugify_asset_name as _slugify_asset_name  # noqa: E402,F401
 
 
+def _coerce_cite(value: Any) -> list[str]:
+    """Accept either a list of strings or a single string in the ``cite`` slot."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    if isinstance(value, list):
+        return [str(v) for v in value if isinstance(v, str) and v.strip()]
+    return []
+
+
 def _parse_adversary_response(raw: str, model_used: str) -> dict[str, Any]:
-    """Extract JSON block, validate, return AdversaryOutput-shaped dict."""
+    """Extract JSON block, validate, return AdversaryOutput-shaped dict.
+
+    Parses both the new ``flags`` list and the legacy ``findings`` list so
+    cached payloads from prior versions continue to round-trip.
+    """
     match = JSON_BLOCK_RE.search(raw)
     body = raw
     parsed: dict[str, Any] = {}
@@ -56,6 +87,37 @@ def _parse_adversary_response(raw: str, model_used: str) -> dict[str, Any]:
     if recommendation_shift_to is not None and recommendation_shift_to not in VALID_RECS:
         recommendation_shift_to = None
 
+    # New structured flags
+    raw_flags = parsed.get("flags", []) or []
+    flags: list[AdversaryFlag] = []
+    for f in raw_flags:
+        if not isinstance(f, dict):
+            continue
+        if f.get("flag_type") not in VALID_FLAG_TYPES:
+            continue
+        if f.get("severity") not in VALID_FLAG_SEVERITIES:
+            continue
+        title = f.get("title")
+        rationale = f.get("rationale")
+        test = f.get("test")
+        if not (isinstance(title, str) and title.strip()):
+            continue
+        if not (isinstance(rationale, str) and rationale.strip()):
+            continue
+        if not (isinstance(test, str) and test.strip()):
+            continue
+        flags.append(
+            AdversaryFlag(
+                flag_type=f["flag_type"],
+                severity=f["severity"],
+                title=title.strip(),
+                rationale=rationale.strip(),
+                test=test.strip(),
+                cite=_coerce_cite(f.get("cite")),
+            )
+        )
+
+    # Legacy findings (still tolerated)
     raw_findings = parsed.get("findings", []) or []
     findings: list[AdversarialFinding] = []
     for f in raw_findings:
@@ -77,6 +139,7 @@ def _parse_adversary_response(raw: str, model_used: str) -> dict[str, Any]:
         body_markdown=body,
         verdict_shift=verdict_shift,
         recommendation_shift_to=recommendation_shift_to,
+        flags=flags,
         findings=findings,
         model_used=model_used,
         from_cache=False,
@@ -117,6 +180,8 @@ class Agent(BaseAgent):
         try:
             data = json.loads(path.read_text())
             data["from_cache"] = True
+            # Older cached payloads predate the ``flags`` field — default it.
+            data.setdefault("flags", [])
             return data
         except Exception as exc:
             log.warning("cache file %s unreadable: %s", path, exc)

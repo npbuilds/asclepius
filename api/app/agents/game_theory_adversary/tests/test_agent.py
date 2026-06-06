@@ -78,6 +78,8 @@ Hold the recommendation.
     assert out["recommendation_shift_to"] is None
     assert len(out["findings"]) == 2
     assert out["findings"][0]["lens"] == "signaling"
+    # New structured flags absent in legacy input → empty list, not missing
+    assert out["flags"] == []
     assert "```json" not in out["body_markdown"]
 
 
@@ -124,6 +126,74 @@ def test_parse_fallback_when_no_json_block():
     out = _parse_adversary_response(raw, model_used="test")
     assert out["verdict_shift"] == "hold"
     assert out["findings"] == []
+    assert out["flags"] == []
+
+
+def test_parse_extracts_structured_flags():
+    raw = """Overall posture: cautious on the thesis.
+
+## Verdict
+Downgrade.
+
+```json
+{
+  "verdict_shift": "downgrade",
+  "recommendation_shift_to": "cautious",
+  "flags": [
+    {
+      "flag_type": "signaling_equilibrium",
+      "severity": "high",
+      "title": "Single-arm Ph3 with well-capitalized sponsor",
+      "rationale": "Sponsor has 18 months runway yet ran a single-arm registrational trial. Under Spence (1973), a well-capitalized sponsor with a high-PoS asset would have committed to the costly randomized design; the chosen design reads as constrained-tier signaling and breaks the separating equilibrium.",
+      "test": "Compare the trial's N to the BIO cohort median for similar phase; if N is below the 25th percentile despite capital adequacy, the read holds.",
+      "cite": ["methodology/06-signaling-equilibrium.md"]
+    },
+    {
+      "flag_type": "bayesian_persuasion",
+      "severity": "medium",
+      "title": "Post-hoc subgroup highlighted in press release",
+      "rationale": "The Q3 release foregrounds a KRAS G12C subgroup not pre-specified in the SAP while omitting the ITT result. Under Kamenica-Gentzkow, this is the textbook persuasion-optimal signal partition (Yi et al. 2024).",
+      "test": "Pull the trial's SAP from ClinicalTrials.gov and confirm the subgroup is not pre-specified; recover the ITT P-value from the registration data.",
+      "cite": ["methodology/07-bayesian-persuasion-disclosure.md"]
+    }
+  ]
+}
+```"""
+    out = _parse_adversary_response(raw, model_used="test")
+    assert out["verdict_shift"] == "downgrade"
+    assert out["recommendation_shift_to"] == "cautious"
+    assert len(out["flags"]) == 2
+    f0 = out["flags"][0]
+    assert f0["flag_type"] == "signaling_equilibrium"
+    assert f0["severity"] == "high"
+    assert f0["title"].startswith("Single-arm")
+    assert "Spence" in f0["rationale"]
+    assert "cohort" in f0["test"].lower()
+    assert f0["cite"] == ["methodology/06-signaling-equilibrium.md"]
+    assert out["flags"][1]["flag_type"] == "bayesian_persuasion"
+
+
+def test_parse_rejects_flags_with_invalid_type_or_missing_fields():
+    raw = """## Verdict
+Hold.
+
+```json
+{
+  "verdict_shift": "hold",
+  "flags": [
+    {"flag_type": "unicorn_curse", "severity": "high", "title": "x", "rationale": "y", "test": "z"},
+    {"flag_type": "signaling_equilibrium", "severity": "catastrophic", "title": "x", "rationale": "y", "test": "z"},
+    {"flag_type": "winners_curse", "severity": "high", "title": "", "rationale": "y", "test": "z"},
+    {"flag_type": "winners_curse", "severity": "high", "title": "kept", "rationale": "valid rationale", "test": "valid test", "cite": "methodology/05-worked-example-adagrasib.md"}
+  ]
+}
+```"""
+    out = _parse_adversary_response(raw, model_used="test")
+    assert len(out["flags"]) == 1
+    kept = out["flags"][0]
+    assert kept["title"] == "kept"
+    # cite passed as a bare string should be normalized to a single-item list
+    assert kept["cite"] == ["methodology/05-worked-example-adagrasib.md"]
 
 
 def test_cache_hit_serves_disk(tmp_path: Path):
@@ -141,6 +211,8 @@ def test_cache_hit_serves_disk(tmp_path: Path):
     out = agent.run(_make_record("adagrasib"))
     assert out["from_cache"] is True
     assert out["body_markdown"] == "cached body"
+    # Older cache payloads predate ``flags`` — the agent should backfill it.
+    assert out["flags"] == []
 
 
 def test_live_call_503_when_no_key(tmp_path: Path, monkeypatch):
@@ -165,6 +237,9 @@ Hold.
 {
   "verdict_shift": "hold",
   "recommendation_shift_to": null,
+  "flags": [
+    {"flag_type": "data_quality", "severity": "low", "title": "Missing target_validated flag", "rationale": "The brief does not set target_validated, which makes the cohort_base_rate_check inert. Downstream PoS adjustments may rest on an implicit assumption.", "test": "Confirm the target's mechanistic validation status against the published literature.", "cite": ["methodology/01-pos-framework.md"]}
+  ],
   "findings": [{"lens":"signaling","claim":"sample","severity":"minor"}]
 }
 ```"""
@@ -185,4 +260,7 @@ Hold.
         out = agent.run(_make_record("vorasidenib"))
     assert out["from_cache"] is False
     assert out["verdict_shift"] == "hold"
+    assert len(out["flags"]) == 1
+    assert out["flags"][0]["flag_type"] == "data_quality"
+    # Legacy findings still flow through
     assert len(out["findings"]) == 1
