@@ -85,6 +85,37 @@ export function getPanelFor(manifest: ModuleManifest): LoadablePanel | null {
   return panelByModuleId[manifest.id] ?? null;
 }
 
+// ---------------------------------------------------------------------------
+// v1.8.0 — Module load progress chip
+//
+// Each module panel dispatches a small CustomEvent on window when its fetch
+// state changes (start / done / error). The diligence page header listens
+// for them and renders a "computing… 2/6" chip while modules are in flight.
+//
+// Using window events instead of React context keeps the wire-up minimal —
+// panels are dynamically imported via next/dynamic and a context would have
+// to thread through the registry. The event bus is process-local, browser-
+// only, and disappears with the page; no global-state hygiene concerns.
+// ---------------------------------------------------------------------------
+
+export const MODULE_LOAD_EVENT = "asclepius:module-load";
+
+export type ModuleLoadState = "start" | "done" | "error";
+
+export interface ModuleLoadDetail {
+  moduleId: string;
+  state: ModuleLoadState;
+}
+
+export function emitModuleLoad(moduleId: string, state: ModuleLoadState): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<ModuleLoadDetail>(MODULE_LOAD_EVENT, {
+      detail: { moduleId, state },
+    }),
+  );
+}
+
 const DISPLAY_ORDER: string[] = [
   "pos",
   "ml_pos_prior",

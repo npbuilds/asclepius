@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { runRnpv } from "@/lib/api-client";
-import type { ModulePanelProps } from "@/lib/module-registry";
+import { emitModuleLoad, type ModulePanelProps } from "@/lib/module-registry";
 import type { RnpvInputs, RnpvResult } from "@/lib/types";
 
 export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
@@ -17,9 +17,18 @@ export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    emitModuleLoad("rnpv", "start");
     runRnpv(asset, pos, rnpv_inputs)
-      .then((rnpv) => !cancelled && setRecord({ rnpv }))
-      .catch((e) => !cancelled && setError(String(e)))
+      .then((rnpv) => {
+        if (cancelled) return;
+        setRecord({ rnpv });
+        emitModuleLoad("rnpv", "done");
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(String(e));
+        emitModuleLoad("rnpv", "error");
+      })
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
@@ -28,11 +37,7 @@ export default function RnpvPanel({ record, setRecord }: ModulePanelProps) {
   }, [JSON.stringify(asset), JSON.stringify(pos), JSON.stringify(rnpv_inputs)]);
 
   if (!pos) {
-    return (
-      <PanelShell title="Risk-Adjusted NPV">
-        <div className="text-sm text-text-dim">Waiting for PoS…</div>
-      </PanelShell>
-    );
+    return <RnpvSkeleton stage="waiting-pos" />;
   }
 
   function patchInputs(patch: Partial<RnpvInputs>) {
@@ -79,7 +84,17 @@ function ResultStats({
   loading: boolean;
 }) {
   if (loading && !result)
-    return <div className="h-32 animate-pulse rounded bg-bg-panel-hover" />;
+    return (
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i}>
+            <div className="h-2 w-32 animate-pulse rounded bg-bg-panel-hover" />
+            <div className="mt-1 h-4 w-24 animate-pulse rounded bg-bg-panel-hover" />
+          </div>
+        ))}
+        <div className="h-2 w-28 animate-pulse rounded bg-bg-panel-hover" />
+      </div>
+    );
   if (!result) return null;
   const fmt = (n: number | null | undefined) =>
     n == null ? "—" : `$${n.toFixed(0)}M`;
@@ -302,6 +317,50 @@ function PanelShell({
     <section className="rounded border border-border-dim bg-bg-panel p-3">
       <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">{title}</h2>
       {children}
+    </section>
+  );
+}
+
+// Structured rNPV skeleton — sliders column + result card + tornado +
+// histogram. Renders before PoS completes so the page below doesn't shift
+// when rNPV mounts. `stage` controls whether we surface the "waiting for
+// PoS" beat (lets the reader know rNPV is blocked on the upstream chain,
+// not stuck).
+function RnpvSkeleton({ stage }: { stage: "waiting-pos" | "computing" }) {
+  const subline =
+    stage === "waiting-pos" ? "· waiting for PoS" : "· computing";
+  return (
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+        Risk-Adjusted NPV
+        <span className="ml-2 font-mono text-[9px] font-normal uppercase tracking-[0.15em] text-text-dim">
+          {subline}
+        </span>
+      </h2>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
+        <div className="space-y-3">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i}>
+              <div className="mb-1 h-2 w-40 animate-pulse rounded bg-bg-panel-hover" />
+              <div className="h-1.5 w-full animate-pulse rounded bg-bg-panel-hover" />
+            </div>
+          ))}
+        </div>
+        <div className="lg:w-72">
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <div className="h-2 w-32 animate-pulse rounded bg-bg-panel-hover" />
+                <div className="mt-1 h-4 w-24 animate-pulse rounded bg-bg-panel-hover" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-2.5 lg:grid-cols-2">
+        <div className="h-[200px] animate-pulse rounded border border-border-dim bg-bg-deep" />
+        <div className="h-[80px] animate-pulse rounded border border-border-dim bg-bg-deep" />
+      </div>
     </section>
   );
 }

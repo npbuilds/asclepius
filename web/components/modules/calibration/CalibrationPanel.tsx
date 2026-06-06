@@ -15,7 +15,7 @@ import {
   listPredictions,
   runCalibration,
 } from "@/lib/api-client";
-import type { ModulePanelProps } from "@/lib/module-registry";
+import { emitModuleLoad, type ModulePanelProps } from "@/lib/module-registry";
 import type {
   AssetCalibrationContext,
   CalibrationReport,
@@ -53,13 +53,19 @@ export default function CalibrationPanel({ record }: ModulePanelProps) {
   useEffect(() => {
     let cancelled = false;
     setError(null);
+    emitModuleLoad("calibration", "start");
     Promise.all([runCalibration(record.asset), getCalibrationReport()])
       .then(([c, r]) => {
         if (cancelled) return;
         setCtx(c);
         setReport(r);
+        emitModuleLoad("calibration", "done");
       })
-      .catch((e) => !cancelled && setError(String(e)));
+      .catch((e) => {
+        if (cancelled) return;
+        setError(String(e));
+        emitModuleLoad("calibration", "error");
+      });
     return () => {
       cancelled = true;
     };
@@ -92,12 +98,49 @@ export default function CalibrationPanel({ record }: ModulePanelProps) {
   }
 
   if (!ctx || !report) {
+    // Structured skeleton mirrors the loaded layout: header + n-resolved
+    // strip, two segment cards (asset vs overall), capital-position table,
+    // disclaimer row. Matches the loaded panel's ~320px height.
     return (
       <section className="rounded border border-border-dim bg-bg-panel p-3">
-        <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
-          Calibration Dashboard
-        </h2>
-        <div className="h-24 animate-pulse rounded bg-bg-panel-hover" />
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+            Calibration Dashboard
+            <span className="ml-2 font-mono text-[9px] font-normal uppercase tracking-[0.15em] text-text-dim">
+              · computing
+            </span>
+          </h2>
+          <div className="h-2 w-32 animate-pulse rounded bg-bg-panel-hover" />
+        </div>
+        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {[0, 1].map((card) => (
+            <div
+              key={card}
+              className="rounded border border-border-dim bg-bg-deep p-2.5"
+            >
+              <div className="h-2 w-32 animate-pulse rounded bg-bg-panel-hover" />
+              <div className="mt-1.5 h-2.5 w-40 animate-pulse rounded bg-bg-panel-hover" />
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i}>
+                    <div className="h-1.5 w-12 animate-pulse rounded bg-bg-panel-hover" />
+                    <div className="mt-1 h-3 w-12 animate-pulse rounded bg-bg-panel-hover" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mb-3 space-y-1">
+          <div className="h-2 w-48 animate-pulse rounded bg-bg-panel-hover" />
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-2.5 w-full animate-pulse rounded bg-bg-panel-hover"
+            />
+          ))}
+        </div>
+        <div className="h-6 w-full animate-pulse rounded border border-amber-bright/20 bg-amber-bright/5" />
       </section>
     );
   }

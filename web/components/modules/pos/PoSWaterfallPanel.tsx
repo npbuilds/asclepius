@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { runPoS } from "@/lib/api-client";
-import type { ModulePanelProps } from "@/lib/module-registry";
+import { emitModuleLoad, type ModulePanelProps } from "@/lib/module-registry";
 import type { PoSResult } from "@/lib/types";
 
 export default function PoSWaterfallPanel({ record, setRecord }: ModulePanelProps) {
@@ -15,9 +15,18 @@ export default function PoSWaterfallPanel({ record, setRecord }: ModulePanelProp
     let cancelled = false;
     setLoading(true);
     setError(null);
+    emitModuleLoad("pos", "start");
     runPoS(asset)
-      .then((pos) => !cancelled && setRecord({ pos }))
-      .catch((e) => !cancelled && setError(String(e)))
+      .then((pos) => {
+        if (cancelled) return;
+        setRecord({ pos });
+        emitModuleLoad("pos", "done");
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setError(String(e));
+        emitModuleLoad("pos", "error");
+      })
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
@@ -27,9 +36,9 @@ export default function PoSWaterfallPanel({ record, setRecord }: ModulePanelProp
 
   const result = record.pos;
 
-  if (loading && !result) return <PanelShell title="Probability of Success" loading />;
+  if (loading && !result) return <PoSSkeleton />;
   if (error) return <PanelShell title="Probability of Success" error={error} />;
-  if (!result) return null;
+  if (!result) return <PoSSkeleton />;
 
   const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
@@ -186,6 +195,49 @@ function PanelShell({
         </div>
       ) : null}
       {children}
+    </section>
+  );
+}
+
+// Structured skeleton matching the panel's actual layout: 3 top stats + a
+// 6-row waterfall + an audit-trail row. Renders to the same height as the
+// loaded panel (~280px) so the page below doesn't shift when the fetch
+// resolves. The shimmer signals "computing" without the disorienting blank
+// of an animate-pulse rectangle.
+function PoSSkeleton() {
+  return (
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+        Probability of Success
+        <span className="ml-2 font-mono text-[9px] font-normal uppercase tracking-[0.15em] text-text-dim">
+          · computing
+        </span>
+      </h2>
+      <div className="mb-2.5 grid grid-cols-3 gap-2.5">
+        {[0, 1, 2].map((i) => (
+          <div key={i}>
+            <div className="h-2 w-16 animate-pulse rounded bg-bg-panel-hover" />
+            <div className="mt-1.5 h-4 w-12 animate-pulse rounded bg-bg-panel-hover" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-1">
+        {[60, 80, 70, 55, 45, 65].map((w, i) => (
+          <div key={i} className="grid grid-cols-[1fr_auto] items-center gap-3">
+            <div className="h-2 w-32 animate-pulse rounded bg-bg-panel-hover" />
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-32 rounded bg-bg-panel-hover">
+                <div
+                  className="h-full animate-pulse rounded bg-cyan-faded/30"
+                  style={{ width: `${w}%` }}
+                />
+              </div>
+              <div className="h-2 w-10 animate-pulse rounded bg-bg-panel-hover" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 h-7 animate-pulse rounded border border-border-dim bg-bg-deep" />
     </section>
   );
 }

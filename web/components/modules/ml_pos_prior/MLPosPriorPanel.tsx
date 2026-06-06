@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 
 import { runMLPosPrior } from "@/lib/api-client";
-import type { ModulePanelProps } from "@/lib/module-registry";
+import { emitModuleLoad, type ModulePanelProps } from "@/lib/module-registry";
 import type { DisagreementLevel } from "@/lib/types";
 
 const DISAGREEMENT_COLOR: Record<DisagreementLevel, string> = {
@@ -46,17 +46,23 @@ export default function MLPosPriorPanel({ record, setRecord }: ModulePanelProps)
         cancelled = true;
       };
     }
+    emitModuleLoad("ml_pos_prior", "start");
     runMLPosPrior(record.asset, record.pos, {
       criteria_text: record.ml_pos_criteria_text ?? null,
       nct_id: record.ml_pos_nct_id ?? null,
     })
-      .then((r) => !cancelled && setRecord({ ml_pos: r }))
+      .then((r) => {
+        if (cancelled) return;
+        setRecord({ ml_pos: r });
+        emitModuleLoad("ml_pos_prior", "done");
+      })
       .catch((e) => {
         if (cancelled) return;
         setError(String(e));
         // Clear any stale ml_pos result on error so the banner doesn't
         // keep showing the previous prediction after a failing edit.
         setRecord({ ml_pos: null });
+        emitModuleLoad("ml_pos_prior", "error");
       });
     return () => {
       cancelled = true;
@@ -70,16 +76,7 @@ export default function MLPosPriorPanel({ record, setRecord }: ModulePanelProps)
   ]);
 
   if (!record.pos) {
-    return (
-      <section className="rounded border border-border-dim bg-bg-panel p-3">
-        <h2 className="mb-2 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
-          ML PoS Prior · rule-smoothed surrogate
-        </h2>
-        <p className="font-mono text-[11px] uppercase tracking-wider text-text-dim">
-          Waiting for the rule-based PoS chain…
-        </p>
-      </section>
-    );
+    return <MLPosSkeleton stage="waiting-pos" />;
   }
 
   if (error) {
@@ -119,14 +116,7 @@ export default function MLPosPriorPanel({ record, setRecord }: ModulePanelProps)
   }
 
   if (!result) {
-    return (
-      <section className="rounded border border-border-dim bg-bg-panel p-3">
-        <h2 className="mb-2 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
-          ML PoS Prior · rule-smoothed surrogate
-        </h2>
-        <div className="h-20 animate-pulse rounded bg-bg-panel-hover" />
-      </section>
-    );
+    return <MLPosSkeleton stage="computing" />;
   }
 
   const base = record.pos.base_rate;
@@ -186,6 +176,55 @@ export default function MLPosPriorPanel({ record, setRecord }: ModulePanelProps)
         Mondrian split-conformal coverage check (91.5% marginal on test)
         lives in the methodology page — see methodology/09-ml-pos-prior.md.
       </p>
+    </section>
+  );
+}
+
+// Structured skeleton matching the loaded readout: header + 3 horizontal
+// bars + disagreement chip + 3 lines of disclosure prose. Same dimensions
+// as the loaded panel so the rNPV / comparables panels below don't shift
+// when ML PoS resolves. `stage` lets us label the gating relationship —
+// "waiting for PoS" tells the reader the ML path is downstream of the
+// rule chain, not stuck.
+function MLPosSkeleton({ stage }: { stage: "waiting-pos" | "computing" }) {
+  const subline =
+    stage === "waiting-pos" ? "· waiting for PoS" : "· computing";
+  return (
+    <section className="rounded border border-border-dim bg-bg-panel p-3">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h2 className="font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+          ML PoS Prior · rule-smoothed surrogate
+          <span className="ml-2 font-mono text-[9px] font-normal uppercase tracking-[0.15em] text-text-dim">
+            {subline}
+          </span>
+        </h2>
+        <div className="h-2 w-24 animate-pulse rounded bg-bg-panel-hover" />
+      </div>
+      <div className="space-y-1.5 text-xs">
+        {[60, 70, 50].map((w, i) => (
+          <div key={i} className="grid grid-cols-[1fr_auto] items-center gap-3">
+            <div className="h-2 w-40 animate-pulse rounded bg-bg-panel-hover" />
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-40 rounded bg-bg-panel-hover">
+                <div
+                  className={`h-full animate-pulse rounded ${i === 2 ? "bg-magenta-bright/30" : "bg-cyan-faded/30"}`}
+                  style={{ width: `${w}%` }}
+                />
+              </div>
+              <div className="h-2 w-10 animate-pulse rounded bg-bg-panel-hover" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <div className="h-4 w-20 animate-pulse rounded border border-border-dim bg-bg-panel-hover" />
+        <div className="h-2 w-32 animate-pulse rounded bg-bg-panel-hover" />
+      </div>
+      <div className="mt-2 space-y-1">
+        <div className="h-2 w-full animate-pulse rounded bg-bg-panel-hover" />
+        <div className="h-2 w-11/12 animate-pulse rounded bg-bg-panel-hover" />
+        <div className="h-2 w-3/4 animate-pulse rounded bg-bg-panel-hover" />
+      </div>
     </section>
   );
 }

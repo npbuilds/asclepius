@@ -11,7 +11,7 @@ import {
 } from "recharts";
 
 import { runScorecard } from "@/lib/api-client";
-import type { ModulePanelProps } from "@/lib/module-registry";
+import { emitModuleLoad, type ModulePanelProps } from "@/lib/module-registry";
 import type { Recommendation, ScorecardInput } from "@/lib/types";
 
 const PILLAR_NAMES = [
@@ -52,9 +52,17 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
 
   useEffect(() => {
     let cancelled = false;
+    emitModuleLoad("scorecard", "start");
     runScorecard(record.asset, input)
-      .then((scorecard) => !cancelled && setRecord({ scorecard }))
-      .catch(() => undefined);
+      .then((scorecard) => {
+        if (cancelled) return;
+        setRecord({ scorecard });
+        emitModuleLoad("scorecard", "done");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        emitModuleLoad("scorecard", "error");
+      });
     return () => {
       cancelled = true;
     };
@@ -140,7 +148,19 @@ export default function ScorecardRadarPanel({ record, setRecord }: ModulePanelPr
                 </div>
               ) : null}
             </div>
-          ) : null}
+          ) : (
+            // Skeleton aggregate while the backend scorecard fetch resolves.
+            // The sliders + radar chart above render immediately from the
+            // default input, but the recommendation chip + aggregate score
+            // can only come from the backend. Keep this slot's dimensions
+            // identical so the radar column doesn't shift when the result
+            // lands.
+            <div className="mt-3" aria-hidden="true">
+              <div className="h-2 w-16 animate-pulse rounded bg-bg-panel-hover" />
+              <div className="mt-1 h-6 w-24 animate-pulse rounded bg-bg-panel-hover" />
+              <div className="mt-1.5 h-4 w-20 animate-pulse rounded bg-bg-panel-hover" />
+            </div>
+          )}
         </div>
       </div>
     </section>

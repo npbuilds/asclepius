@@ -18,6 +18,8 @@ import {
   ClientDiligenceRecord,
   getPanelFor,
   groupModulesBySection,
+  MODULE_LOAD_EVENT,
+  type ModuleLoadDetail,
   orderModules,
   type SectionWithManifests,
 } from "@/lib/module-registry";
@@ -471,6 +473,43 @@ export default function DiligencePage({
     };
   }, []);
 
+  // v1.8.0: module load progress tracking. Each panel emits start/done/error
+  // events on window via `emitModuleLoad`; we tally them here to drive a
+  // small "computing… 2/6" chip in the page header. `started` is the
+  // denominator (only count modules that have actually begun fetching;
+  // hidden-by-persona panels never fire) and `done` is the numerator.
+  // Resets implicitly when the user navigates to a new asset (component
+  // remounts).
+  const [moduleLoadState, setModuleLoadState] = useState<
+    Map<string, "loading" | "done" | "error">
+  >(new Map());
+  useEffect(() => {
+    function onLoad(e: Event) {
+      const detail = (e as CustomEvent<ModuleLoadDetail>).detail;
+      if (!detail) return;
+      setModuleLoadState((prev) => {
+        const next = new Map(prev);
+        next.set(
+          detail.moduleId,
+          detail.state === "start"
+            ? "loading"
+            : detail.state === "done"
+              ? "done"
+              : "error",
+        );
+        return next;
+      });
+    }
+    window.addEventListener(MODULE_LOAD_EVENT, onLoad);
+    return () => window.removeEventListener(MODULE_LOAD_EVENT, onLoad);
+  }, []);
+
+  const totalStarted = moduleLoadState.size;
+  const totalDone = Array.from(moduleLoadState.values()).filter(
+    (v) => v === "done" || v === "error",
+  ).length;
+  const isComputing = totalStarted > 0 && totalDone < totalStarted;
+
   function updateAsset(asset: AssetInput) {
     setRecord({ asset });
   }
@@ -507,8 +546,20 @@ export default function DiligencePage({
   return (
     <div className="mx-auto max-w-7xl px-6 py-4">
       <header className="mb-4">
-        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
-          ── Diligence workbench ──
+        <div className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
+          <span>── Diligence workbench ──</span>
+          {/* v1.8.0: per-module compute progress chip. Surfaces "computing…
+              N/M" while any panel is still in flight, then quietly switches
+              to "● ready" for ~one-second after the last module resolves
+              (the steady-state isn't rendered to keep header noise low).
+              The chip lives in the header line so it's eye-anchored to the
+              workbench label without competing with the asset name below. */}
+          {isComputing ? (
+            <span className="inline-flex items-center gap-1 rounded border border-cyan-bright/30 bg-cyan-bright/5 px-1.5 py-0.5 normal-case text-[10px] tracking-normal text-cyan-bright">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-bright" />
+              computing… {totalDone}/{totalStarted}
+            </span>
+          ) : null}
         </div>
         <h1 className="mt-1 font-display text-xl font-bold uppercase leading-[1.15] tracking-[0.04em] text-text-bright sm:text-2xl">
           {record.asset.asset_name}

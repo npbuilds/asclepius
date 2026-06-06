@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { runComparables } from "@/lib/api-client";
-import type { ModulePanelProps } from "@/lib/module-registry";
+import { emitModuleLoad, type ModulePanelProps } from "@/lib/module-registry";
 
 export default function ComparablesPanel({ record, setRecord }: ModulePanelProps) {
   const [loading, setLoading] = useState(false);
@@ -11,9 +11,17 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    emitModuleLoad("comparables", "start");
     runComparables(record.asset, record.rnpv_inputs)
-      .then((comparables) => !cancelled && setRecord({ comparables }))
-      .catch(() => undefined)
+      .then((comparables) => {
+        if (cancelled) return;
+        setRecord({ comparables });
+        emitModuleLoad("comparables", "done");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        emitModuleLoad("comparables", "error");
+      })
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
@@ -35,7 +43,14 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
   const cohortMatched = c?.cohort_matched ?? true;
   return (
     <section className="rounded border border-border-dim bg-bg-panel p-3">
-      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">Deal comparables</h2>
+      <h2 className="mb-2.5 font-display text-[13px] font-semibold uppercase tracking-wider text-text-bright">
+        Deal comparables
+        {loading && !c ? (
+          <span className="ml-2 font-mono text-[9px] font-normal uppercase tracking-[0.15em] text-text-dim">
+            · computing
+          </span>
+        ) : null}
+      </h2>
 
       {/* Always surface the cohort label so the analyst knows which deals
           are driving the median. Backend ships "Oncology · small molecule
@@ -62,7 +77,28 @@ export default function ComparablesPanel({ record, setRecord }: ModulePanelProps
       ) : null}
 
       {loading && !c ? (
-        <div className="h-32 animate-pulse rounded bg-bg-panel-hover" />
+        // Structured skeleton: 3-stat strip + 4-row table preview. Renders
+        // to roughly the loaded-panel height so the page flow below doesn't
+        // shift when comparables resolves.
+        <div aria-hidden="true">
+          <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <div className="h-2 w-24 animate-pulse rounded bg-bg-panel-hover" />
+                <div className="mt-1 h-4 w-20 animate-pulse rounded bg-bg-panel-hover" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-1.5">
+            <div className="h-3 w-full animate-pulse rounded bg-bg-deep" />
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-3 w-full animate-pulse rounded bg-bg-panel-hover"
+              />
+            ))}
+          </div>
+        </div>
       ) : !c ? (
         <div className="text-sm text-text-dim">No comparable data.</div>
       ) : (
