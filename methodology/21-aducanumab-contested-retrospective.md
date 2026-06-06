@@ -47,11 +47,23 @@ The asset is interesting because:
    accelerate-approve over a unanimous AdCom reject." That outcome
    path is unmodeled, and *should be* unmodeled. A framework that
    tried to price political risk would be untrustworthy.
-3. **The framework correctly bounds the *rNPV* downside.** Peak sales
-   never materialized. The framework's downside scenario at low PoS
-   * cell-therapy-like launch costs would have put rNPV near zero.
-   Biogen's actual aducanumab revenues peaked at ~$5M before
-   withdrawal — the framework's downside bound was right.
+3. **The framework's downside signal is the `downside_failed_p3`
+   line, not the success-conditional base case.** This is a subtle
+   read but it matters. With the inputs documented below, post-cap
+   rNPV base case is **$1,983M** (what the asset is worth *if* Phase 3
+   succeeds — the framework can't model the political accelerated-
+   approval-and-withdrawal arc, so a successful Phase 3 is the only
+   path to commercialization it sees). The base case is large because
+   the bullish peak ($4.5B) and well-capitalized launch economics
+   compound through the PoS-gated cash flows. The framework's *actual*
+   downside line is `downside_failed_p3 = $106M` — what's left if
+   ENGAGE/EMERGE failure terminates the program. The realized outcome
+   (peak revenue ~$5M before 2024 withdrawal) sat *below* even this
+   downside line, because the framework prices a clean failure
+   (program terminates) but reality was a contested approval that
+   limped along consuming SG&A before being killed. The framework
+   honestly under-priced the *political-process tail risk* on the
+   downside — see "Where the framework is silent" below.
 
 Information cutoff: **March 2019**, immediately post-ENGAGE/EMERGE
 futility analyses. Pre-Biogen-restart-announcement (October 2019),
@@ -77,14 +89,19 @@ pre-Center-Director-approval (June 2021), pre-withdrawal (January 2024).
 
 ## rNPV inputs
 
+These mirror the workbench staging at
+`web/app/diligence/[asset]/page.tsx` (constants `ADUCANUMAB_RNPV`) so the
+methodology numbers below reconstruct exactly when you visit
+`/diligence/aducanumab`.
+
 | Field | Value | Rationale |
 |---|---|---|
-| Peak sales (USD M) | 3,000 | Bullish-side 2019 sell-side: $3-5B peak for mild AD if approved; the framework should track the bullish case to show what was being priced |
-| WACC | 11% | Large-cap-pharma single-asset rate (slightly above Roche/BMS 10% to reflect Biogen's CNS pipeline concentration risk) |
-| COGS % | 25% | Naked mAb at scale |
-| Launch costs (USD M) | 250 | Standard biologic launch + AD-specific infrastructure (PET scan + amyloid testing) |
-| Phase 3 dev cost | 200 | Two Phase 3s residual; futility had been declared but the data were still being parsed |
-| Years phase 3 | 2 | Reflects the post-futility, pre-BLA timeline as actually played out |
+| Peak sales (USD M) | 4,500 | Bullish-side 2019 sell-side high: ~$4-5B peak for mild AD if approved. Tracking the bullish case stress-tests whether the framework's downside line still bounds the disappointment when revenue actually peaks at ~$5M. |
+| WACC | 10% | Big-pharma single-asset rate. Biogen was well-capitalized in 2019. |
+| COGS % | 15% | Naked mAb at scale (compare lecanemab / donanemab COGS bands). |
+| Launch costs (USD M) | 200 | Standard biologic launch + AD-specific PET / amyloid testing infrastructure. |
+| Phase 3 dev cost | 200 | Two Phase 3s residual; futility had been declared but the data were still being parsed. |
+| Years phase 3 | 2 | Reflects the post-futility, pre-BLA timeline as actually played out. |
 
 ## Framework outputs (what March 2019 inputs produce)
 
@@ -107,20 +124,36 @@ pre-Center-Director-approval (June 2021), pre-withdrawal (January 2024).
   aducanumab's PoS now lands. The cap is recorded as an explicit row
   in the audit-trail waterfall so the final number remains
   reconstructable.
-- **rNPV base case: ~$80M** (post-cap; was ~$300M <!-- parity-allow: superseded --> at the pre-cap 54%
-  PoS <!-- parity-allow: superseded -->). The rNPV scales roughly linearly with PoS in this range, so
-  the same WACC/COGS/launch-cost inputs now produce a much tighter
-  downside bound. The qualitative call is unchanged: rNPV is bounded
-  *low*, reflecting the heavy discount rate, the long development
-  arc, and the framework's downside scenario weighting. The cap
-  sharpens the directional read rather than flipping it.
+- **rNPV base case: $1,983M** (post-cap; success-conditional, not risk-adjusted further) <!-- parity-allow: model-output -->.
+  Computed live by `api/app/modules/rnpv/engine.py` against the input
+  table above. Pre-cap rNPV (bare multiplier chain at ~54% PoS) would
+  have been ~$4,300M <!-- parity-allow: model-output --> — the v1.7.7 cap pulls rNPV down by ~$2.3B.
+  Monte Carlo P25/P50/P75 = $1,109M / $1,829M / $2,850M <!-- parity-allow: model-output -->.
+  These numbers are what they are: at a $4.5B bullish peak with a 14% LOA,
+  the success branch is still worth ~$2B in expected present value.
+- **The honest downside signal is `downside_failed_p3`, not the base
+  case.** Reading rNPV as the "downside bound" mistakes the
+  framework's outputs. The base case is **success-conditional** —
+  what the asset is worth *if* Phase 3 succeeds and the asset reaches
+  market. The framework's actual downside line is the
+  `downside_failed_p3` field, which prices the Phase 3 failure path
+  separately. For aducanumab with the inputs above:
+  `downside_failed_p3 = $106M` <!-- parity-allow: model-output -->. That's the framework's
+  honest read on "what's this asset worth if the Phase 3 trials fail" —
+  small, positive, reflecting residual IP value. The actual outcome
+  (peak revenue ~$5M before withdrawal) was *even worse* than this
+  downside line predicted, because the framework prices a clean failure
+  (program terminates) rather than a contested approval-and-withdrawal
+  (program limps along consuming SG&A before being killed). That's a
+  framework limitation, not a framework failure — see "Where the
+  framework is silent" below.
 - **Comparables cohort**: CNS · biologic (currently falls back —
   insufficient deal density at the precise CNS · biologic cohort in
   the comparable database; this is a known limitation called out in
   the Limitations Panel)
-- **Implied value**: bounded by the rNPV ($300M) — the comparables
-  fallback denies an EV/peak-sales upside multiplier, which is
-  appropriate for an asset where the science is contested
+- **Implied value**: bounded by the rNPV — the comparables fallback
+  denies an EV/peak-sales upside multiplier, which is appropriate
+  for an asset where the science is contested
 
 ## What actually happened (the political path the framework cannot see)
 
