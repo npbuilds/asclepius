@@ -5,18 +5,34 @@
 // Reads as a CLI tool's status output. Each row is mono, fixed-width-ish via
 // a 3-column grid: dot · label · value.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getCurrentTheme, type Theme } from "@/lib/theme";
 
-type ApiStatus = "checking" | "online" | "offline";
+export type HealthStatus = "checking" | "online" | "offline";
+type ApiStatus = HealthStatus;
 
 const BUILD_DATE = "2026-05-20";
 
-export function SystemStatus() {
+interface SystemStatusProps {
+  /** Optional callback fired whenever the live API health status changes.
+   * Lets a parent (e.g. the landing page) render a degraded-mode banner
+   * without duplicating the /health ping. */
+  onStatusChange?: (status: HealthStatus) => void;
+}
+
+export function SystemStatus({ onStatusChange }: SystemStatusProps = {}) {
   const [api, setApi] = useState<ApiStatus>("checking");
   const [theme, setThemeState] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
+
+  // Stash the latest callback in a ref so the mount effect can stay
+  // dependency-free — we don't want to re-ping /health if the parent
+  // passes a fresh inline closure on every render.
+  const onStatusChangeRef = useRef(onStatusChange);
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
 
   useEffect(() => {
     setMounted(true);
@@ -24,9 +40,13 @@ export function SystemStatus() {
 
     // Ping /api/health via the Next.js proxy. Aborts on unmount.
     const ctrl = new AbortController();
+    const report = (s: ApiStatus) => {
+      setApi(s);
+      onStatusChangeRef.current?.(s);
+    };
     fetch("/health", { signal: ctrl.signal, cache: "no-store" })
-      .then((r) => setApi(r.ok ? "online" : "offline"))
-      .catch(() => setApi("offline"));
+      .then((r) => report(r.ok ? "online" : "offline"))
+      .catch(() => report("offline"));
 
     // Watch for theme changes via a MutationObserver on the <html> data-theme attr.
     const obs = new MutationObserver(() => setThemeState(getCurrentTheme()));

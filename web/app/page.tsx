@@ -1,6 +1,9 @@
-import Link from "next/link";
+"use client";
 
-import { SystemStatus } from "@/components/SystemStatus";
+import Link from "next/link";
+import { useState } from "react";
+
+import { SystemStatus, type HealthStatus } from "@/components/SystemStatus";
 import { TryYourOwnAsset } from "@/components/TryYourOwnAsset";
 
 /**
@@ -96,6 +99,13 @@ const MODE_LABEL_COLOR: Record<ShowcaseAsset["mode"], string> = {
 };
 
 export default function LandingPage() {
+  // Lifted from <SystemStatus> via its onStatusChange callback so we can
+  // render a degraded-mode banner above the showcase grid. We only surface
+  // the banner once the ping has *resolved* offline — during the initial
+  // "checking" window we stay silent to avoid a flash on every page load.
+  const [apiStatus, setApiStatus] = useState<HealthStatus>("checking");
+  const apiOffline = apiStatus === "offline";
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="font-display text-4xl font-black uppercase leading-none tracking-[0.06em] text-text-bright sm:text-5xl">
@@ -105,6 +115,31 @@ export default function LandingPage() {
       <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.15em] text-text-dim">
         Biotech venture valuation · reflexivity-adjusted PoS · phase-gated rNPV
       </p>
+
+      {apiOffline ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-6 rounded border border-amber-bright/60 bg-amber-bright/[0.08] p-3"
+        >
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 font-mono text-[11px] leading-none text-amber-bright">
+              ●
+            </span>
+            <div className="flex-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-bright">
+                ── degraded mode · live API offline ──
+              </p>
+              <p className="mt-1.5 font-prose text-[12px] leading-snug text-text-primary">
+                The framework&apos;s live API is offline. Pre-staged assets load
+                from cache; the compare and methodology pages still work. Live
+                computation (Auto-Diligence, custom assets) will return 503
+                until the API recovers.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-8">
         <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-text-dim">
@@ -181,7 +216,7 @@ export default function LandingPage() {
       </div>
 
       <div className="mt-8 rounded border border-border-dim bg-bg-panel p-3">
-        <SystemStatus />
+        <SystemStatus onStatusChange={setApiStatus} />
       </div>
     </div>
   );
