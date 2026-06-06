@@ -167,6 +167,12 @@ export default function LandingPage() {
           [ Compare assets side-by-side → ]
         </Link>
         <Link
+          href="/predictions"
+          className="rounded border border-border-dim bg-bg-panel px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-text-primary hover:border-magenta-bright hover:text-magenta-bright"
+        >
+          [ Public predictions · track record → ]
+        </Link>
+        <Link
           href="/methodology"
           className="rounded border border-border-dim bg-bg-panel px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-text-primary hover:border-magenta-bright hover:text-magenta-bright"
         >

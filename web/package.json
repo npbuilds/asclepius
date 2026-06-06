@@ -4,13 +4,15 @@
   "private": true,
   "scripts": {
     "sync:methodology": "node scripts/sync-methodology.mjs",
-    "predev": "node scripts/sync-methodology.mjs",
-    "prebuild": "node scripts/sync-methodology.mjs",
+    "sync:predictions": "node scripts/sync-predictions.mjs",
+    "sync:all": "node scripts/sync-methodology.mjs && node scripts/sync-predictions.mjs",
+    "predev": "node scripts/sync-methodology.mjs && node scripts/sync-predictions.mjs",
+    "prebuild": "node scripts/sync-methodology.mjs && node scripts/sync-predictions.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "node scripts/sync-methodology.mjs && tsc --noEmit"
+    "typecheck": "node scripts/sync-methodology.mjs && node scripts/sync-predictions.mjs && tsc --noEmit"
   },
   "dependencies": {
     "next": "14.2.18",
