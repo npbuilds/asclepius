@@ -15,12 +15,12 @@ export default function MethodologyIndexPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-6">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
       <header className="mb-6">
         <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
           ── /methodology ──
         </div>
-        <h1 className="mt-1.5 font-display text-2xl font-bold uppercase leading-[1.1] tracking-[0.04em] text-text-bright">
+        <h1 className="mt-1.5 font-display text-xl font-bold uppercase leading-tight tracking-[0.04em] text-text-bright sm:text-2xl">
           Methodology
         </h1>
         <p className="mt-2 max-w-2xl font-prose text-sm text-text-primary">

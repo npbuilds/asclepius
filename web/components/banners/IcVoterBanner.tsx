@@ -136,11 +136,11 @@ export default function IcVoterBanner({ record }: IcVoterBannerProps) {
             {sentence}
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2 text-right">
-          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
+        <div className="flex flex-col items-start gap-2 text-left sm:items-end sm:text-right">
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim break-words">
             {subtitle}
           </span>
-          <div className="flex flex-wrap items-baseline justify-end gap-x-4 gap-y-1 font-mono">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono sm:justify-end">
             <Stat label="rNPV base" value={rnpv.base} secondary={rnpv.range} />
             <Stat label="LOA" value={loa.final} secondary={null} />
             <Stat
@@ -170,11 +170,11 @@ export default function IcVoterBanner({ record }: IcVoterBannerProps) {
 
       {/* Bottom — catalyst */}
       <div className="mt-3 border-t border-border-dim/60 pt-2">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
             Next catalyst
           </span>
-          <span className="font-prose text-[11px] text-text-primary">
+          <span className="font-prose text-[11px] text-text-primary sm:text-right">
             {catalyst}
           </span>
         </div>
@@ -191,7 +191,7 @@ interface StatProps {
 
 function Stat({ label, value, secondary }: StatProps) {
   return (
-    <span className="flex flex-col items-end leading-tight">
+    <span className="flex flex-col items-start leading-tight sm:items-end">
       <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-text-dim">
         {label}
       </span>

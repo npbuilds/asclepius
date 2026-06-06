@@ -55,10 +55,10 @@ export default function ScientificBanner({ record }: ScientificBannerProps) {
     >
       {/* Top row — asset identity + headline LOA / ML pairing */}
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim break-words">
           {subtitle}
         </span>
-        <div className="flex items-baseline gap-4 font-mono">
+        <div className="flex items-baseline gap-4 font-mono flex-wrap">
           <Stat
             label="Rule LOA"
             value={loa.final}
@@ -136,11 +136,11 @@ export default function ScientificBanner({ record }: ScientificBannerProps) {
 
       {/* Bottom — clinical catalyst */}
       <div className="mt-3 border-t border-border-dim/60 pt-2">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
             Next clinical catalyst
           </span>
-          <span className="font-prose text-[11px] text-text-primary">
+          <span className="font-prose text-[11px] text-text-primary sm:text-right">
             {catalyst}
           </span>
         </div>
@@ -189,11 +189,11 @@ function Field({ label, value, secondary, tone, mono = true }: FieldProps) {
         ? "text-amber-bright"
         : "text-text-bright";
   return (
-    <div className="grid grid-cols-[140px_minmax(0,1fr)] gap-x-2 text-[11px]">
+    <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-x-2 text-[11px] sm:grid-cols-[140px_minmax(0,1fr)]">
       <span className="font-mono uppercase tracking-[0.15em] text-text-dim">
         {label}
       </span>
-      <span>
+      <span className="min-w-0 break-words">
         <span className={mono ? `font-mono font-bold ${valueColor}` : `font-prose ${valueColor}`}>
           {value}
         </span>

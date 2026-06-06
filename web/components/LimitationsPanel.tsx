@@ -28,7 +28,7 @@ const ITEMS = [
 export function LimitationsPanel() {
   return (
     <details className="rounded border border-amber-bright/30 bg-amber-bright/5 p-2.5">
-      <summary className="cursor-pointer font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-bright">
+      <summary className="cursor-pointer py-1 font-display text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-bright">
         Known limitations
       </summary>
       <ul className="mt-2.5 space-y-2 font-prose text-[11px] leading-snug text-text-primary">

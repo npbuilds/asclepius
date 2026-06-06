@@ -115,9 +115,9 @@ export default function PredictionsPage() {
   }).length;
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <header className="mb-6">
-        <h1 className="font-display text-2xl font-black uppercase tracking-wider text-text-bright sm:text-3xl">
+        <h1 className="font-display text-xl font-black uppercase leading-tight tracking-wider text-text-bright sm:text-3xl">
           Public predictions
         </h1>
         <p className="mt-2 max-w-3xl font-prose text-[13px] leading-relaxed text-text-primary">
@@ -240,12 +240,12 @@ function PredictionCard({ prediction }: { prediction: PredictionEntry }) {
   return (
     <div className={`rounded border ${borderClass} p-3`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="flex items-baseline gap-2">
-          <h3 className="font-display text-[14px] font-semibold uppercase tracking-wider text-text-bright">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 min-w-0">
+          <h3 className="font-display text-[14px] font-semibold uppercase tracking-wider text-text-bright break-words">
             {asset?.name ?? prediction.prediction_id ?? prediction.filename}
           </h3>
           {asset?.sponsor ? (
-            <span className="font-mono text-[10px] uppercase tracking-wider text-text-dim">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-text-dim break-words">
               {asset.sponsor}
             </span>
           ) : null}

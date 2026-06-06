@@ -101,16 +101,16 @@ export default function UnresearchedAssetHero({
         onToggle={(e) => setManualFormOpen(e.currentTarget.open)}
         className="group rounded border border-border-dim bg-bg-panel"
       >
-        <summary className="flex cursor-pointer items-baseline justify-between gap-3 px-3 py-2 [&::-webkit-details-marker]:hidden">
-          <span className="flex items-baseline gap-2">
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
+        <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-3 py-3 [&::-webkit-details-marker]:hidden">
+          <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-dim">
               Or enter manually ▸
             </span>
             <span className="font-prose text-[11px] italic text-text-dim">
               skip the agent, populate fields by hand
             </span>
           </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-text-dim">
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
             {manualFormOpen ? "[ collapse ]" : "[ enter manually ]"}
           </span>
         </summary>

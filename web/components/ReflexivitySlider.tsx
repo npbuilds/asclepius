@@ -54,11 +54,11 @@ export function ReflexivitySlider({
           onChange={(e) => onChange(TIERS[parseInt(e.target.value, 10)].value)}
           className="w-full accent-magenta-bright"
         />
-        <div className="mt-1 flex justify-between font-display text-[8px] uppercase tracking-[0.1em] text-text-dim">
+        <div className="mt-1 flex justify-between gap-1 font-display text-[9px] uppercase tracking-[0.05em] text-text-dim sm:text-[10px] sm:tracking-[0.1em]">
           {TIERS.map((t) => (
             <span
               key={t.value}
-              className={t.value === value ? "font-bold text-magenta-bright" : ""}
+              className={`text-center leading-tight ${t.value === value ? "font-bold text-magenta-bright" : ""}`}
             >
               {t.label}
             </span>

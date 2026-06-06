@@ -69,7 +69,7 @@ export function AssetForm({
     <div className="space-y-3">
       <Row label="Asset name">
         <input
-          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-1.5 text-[13px] text-text-bright"
+          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-2 text-[13px] text-text-bright min-h-[40px]"
           value={value.asset_name}
           onChange={(e) => set("asset_name", e.target.value)}
         />
@@ -77,7 +77,7 @@ export function AssetForm({
 
       <Row label="Sponsor">
         <input
-          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-1.5 text-[13px] text-text-bright"
+          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-2 text-[13px] text-text-bright min-h-[40px]"
           value={value.sponsor ?? ""}
           onChange={(e) => set("sponsor", e.target.value || null)}
         />
@@ -109,7 +109,7 @@ export function AssetForm({
 
       <Row label="Mechanism">
         <input
-          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-1.5 text-[13px] text-text-bright"
+          className="w-full rounded border border-border-dim bg-bg-panel px-2 py-2 text-[13px] text-text-bright min-h-[40px]"
           placeholder="e.g. KRAS G12C inhibitor"
           value={value.mechanism ?? ""}
           onChange={(e) => set("mechanism", e.target.value || null)}
@@ -152,7 +152,7 @@ export function AssetForm({
                 key={d}
                 type="button"
                 onClick={() => toggleDesignation(d)}
-                className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
+                className={`rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider min-h-[32px] ${
                   on
                     ? "border-amber-bright bg-amber-bright/10 text-amber-bright"
                     : "border-border-dim bg-bg-panel text-text-dim hover:border-amber-bright/50 hover:text-amber-bright"
@@ -215,7 +215,7 @@ function Checkbox({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
+      className={`rounded border px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider min-h-[32px] ${
         checked
           ? "border-green-bright bg-green-bright/10 text-green-bright"
           : "border-border-dim bg-bg-panel text-text-dim hover:border-green-bright/50 hover:text-green-bright"

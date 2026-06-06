@@ -156,7 +156,7 @@ export default function QuantBanner({ record }: QuantBannerProps) {
         <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
           Mondrian split-conformal test coverage (target ≥90%)
         </div>
-        <div className="grid grid-cols-4 gap-x-3 font-mono text-[12px] tabular-nums">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 font-mono text-[12px] tabular-nums sm:grid-cols-4">
           <CoverageCell label="phase_1" value={unpacked.coverage.phase_1} />
           <CoverageCell label="phase_2" value={unpacked.coverage.phase_2} />
           <CoverageCell label="phase_3" value={unpacked.coverage.phase_3} />
@@ -179,7 +179,7 @@ export default function QuantBanner({ record }: QuantBannerProps) {
               writeup →
             </a>
           </div>
-          <div className="grid grid-cols-4 gap-x-3 font-mono text-[12px] tabular-nums">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 font-mono text-[12px] tabular-nums sm:grid-cols-4">
             <ExternalCell label="v1.5.5 ext" value="0.600" tone="red" />
             <ExternalCell label="v1.5.6 held" value="0.660" tone="amber" />
             <ExternalCell label="Ph2 within" value="0.554" tone="red" />
@@ -198,11 +198,11 @@ export default function QuantBanner({ record }: QuantBannerProps) {
 
       {/* Bottom — catalyst (terse for the quant reader) */}
       <div className="mt-3 border-t border-border-dim/60 pt-2">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
             Next catalyst
           </span>
-          <span className="font-prose text-[11px] text-text-primary">
+          <span className="font-prose text-[11px] text-text-primary sm:text-right">
             {catalyst}
           </span>
         </div>

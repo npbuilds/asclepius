@@ -70,7 +70,7 @@ export default function HeroBanner({ record }: HeroBannerProps) {
             </span>
           ) : null}
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim break-words">
           {subtitle}
         </span>
       </div>
@@ -124,7 +124,7 @@ function StatRow({
   mono = true,
 }: StatRowProps) {
   return (
-    <div className="grid grid-cols-[160px_minmax(0,1fr)] items-baseline gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 items-baseline gap-1 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-3">
       <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-text-dim">
         {label}
       </span>

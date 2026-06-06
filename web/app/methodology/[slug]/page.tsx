@@ -40,7 +40,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
       : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-6">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
       <nav className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-text-dim">
         <div className="mb-1">── Methodology ──</div>
         <Link href="/methodology" className="hover:text-cyan-bright">
@@ -54,7 +54,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
             <div className="font-mono text-[10px] uppercase tracking-wider text-amber-bright">
               {entry.filename}
             </div>
-            <h1 className="mt-1.5 font-display text-xl font-bold uppercase leading-[1.15] tracking-[0.04em] text-text-bright sm:text-2xl">
+            <h1 className="mt-1.5 font-display text-lg font-bold uppercase leading-tight tracking-[0.04em] text-text-bright break-words sm:text-2xl">
               {entry.title}
             </h1>
             {entry.summary ? (
@@ -64,7 +64,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
             ) : null}
           </header>
 
-          <div className="prose prose-sm max-w-none font-prose prose-headings:font-display prose-headings:font-bold prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-text-bright prose-p:text-text-primary prose-strong:text-text-bright prose-li:text-text-primary prose-a:text-cyan-bright prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-bg-panel-hover prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.9em] prose-code:text-cyan-bright prose-code:before:content-none prose-code:after:content-none prose-pre:rounded prose-pre:bg-bg-panel-hover prose-pre:text-text-primary prose-blockquote:border-l-cyan-bright prose-blockquote:text-text-primary prose-table:text-xs prose-th:text-text-bright prose-td:text-text-primary prose-hr:border-border-dim">
+          <div className="prose prose-sm max-w-none font-prose prose-headings:font-display prose-headings:font-bold prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-text-bright prose-headings:break-words prose-p:text-text-primary prose-p:break-words prose-strong:text-text-bright prose-li:text-text-primary prose-a:text-cyan-bright prose-a:no-underline prose-a:break-words hover:prose-a:underline prose-code:rounded prose-code:bg-bg-panel-hover prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:text-[0.9em] prose-code:text-cyan-bright prose-code:before:content-none prose-code:after:content-none prose-pre:rounded prose-pre:bg-bg-panel-hover prose-pre:text-text-primary prose-pre:overflow-x-auto prose-blockquote:border-l-cyan-bright prose-blockquote:text-text-primary prose-table:text-xs prose-th:text-text-bright prose-td:text-text-primary prose-hr:border-border-dim [&_table]:block [&_table]:overflow-x-auto [&_table]:max-w-full">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -88,7 +88,7 @@ export default function MethodologyEntryPage({ params }: PageProps) {
             </ReactMarkdown>
           </div>
 
-          <nav className="mt-8 flex justify-between gap-4 border-t border-border-dim pt-4 text-[13px]">
+          <nav className="mt-8 flex flex-col gap-4 border-t border-border-dim pt-4 text-[13px] sm:flex-row sm:justify-between">
             <div>
               {prev ? (
                 <Link
