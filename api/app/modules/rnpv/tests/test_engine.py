@@ -134,12 +134,24 @@ def test_monte_carlo_median_within_bound_of_base_case() -> None:
 
 
 def test_phase_3_higher_rnpv_than_phase_2_same_inputs() -> None:
-    """Same economics, but Phase 3 has higher cumulative LOA → higher rNPV."""
+    """Same economics, but Phase 3 has higher cumulative LOA → higher rNPV.
+
+    Note: target_validated=True is set explicitly so the v1.7.7 unvalidated-target
+    hard-cap (see methodology/21-aducanumab-contested-retrospective.md and
+    api/app/modules/pos/engine.py) does NOT fire. Otherwise, the cap would
+    drag the Phase-3 PoS below the Phase-2 PoS for the same asset because the
+    Phase-3 multiplier chain blows through the cohort × 3 ceiling while the
+    Phase-2 chain does not — flipping this invariant. The invariant being
+    tested here ('more advanced phase → higher rNPV') is conditional on at
+    least one of the validation levers being on; with both off, the framework
+    correctly refuses to grant the phase-advancement uplift.
+    """
     asset_p2 = AssetInput(
         asset_name="A",
         phase=Phase.PHASE_2,
         therapeutic_area=TherapeuticArea.ONCOLOGY,
         modality=Modality.SMALL_MOLECULE,
+        target_validated=True,
     )
     asset_p3 = asset_p2.model_copy(update={"phase": Phase.PHASE_3})
     rnpv_inputs = RnpvInputs(peak_sales_usd_m=500.0, wacc=0.12)

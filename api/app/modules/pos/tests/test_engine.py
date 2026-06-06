@@ -96,3 +96,74 @@ def test_modality_multiplier_applied() -> None:
 def test_confidence_range_brackets_final_loa() -> None:
     pos = compute(_record())
     assert pos.confidence_low <= pos.final_loa <= pos.confidence_high
+
+
+def test_unvalidated_no_biomarker_cap_binds_for_aducanumab() -> None:
+    """v1.7.7 hard-cap: aducanumab-shaped inputs (CNS · mAb · phase 3 ·
+    Fast Track · well-capitalized · target_validated=false · biomarker_enrichment=false)
+    should be capped at 3× the long-run cohort base rate, not the ~54% the
+    multiplier chain would otherwise produce. See
+    methodology/21-aducanumab-contested-retrospective.md."""
+    aducanumab = _record(
+        asset_name="aducanumab",
+        phase=Phase.PHASE_3,
+        therapeutic_area=TherapeuticArea.CNS,
+        modality=Modality.MAB,
+        capital_position=CapitalPosition.WELL_CAPITALIZED,
+        regulatory_designations=[RegulatoryDesignation.FAST_TRACK],
+        target_validated=False,
+        biomarker_enrichment=False,
+    )
+    pos = compute(aducanumab)
+    # Pre-cap (multiplier chain only) would be base * mAb * FT * well-cap
+    #   = 0.425 * 1.15 * 1.03 * 1.08 ≈ 0.544 (~54%)
+    # Cohort loa-from-P1 for CNS = 0.048 * 0.20 * 0.50 * 0.85 ≈ 0.041
+    # Cap = 0.041 * 1.15 (mAb) * 3 ≈ 0.141
+    assert pos.final_loa < 0.20, (
+        f"cap should bind: final_loa={pos.final_loa:.3f} > 0.20"
+    )
+    assert pos.final_loa > 0.10, (
+        f"cap should not over-compress: final_loa={pos.final_loa:.3f}"
+    )
+    # The audit trail should expose the cap as an adjustment so the waterfall
+    # reconstructs the final number.
+    cap_adj = next(
+        (a for a in pos.adjustments if "unvalidated target" in a.name.lower()), None
+    )
+    assert cap_adj is not None, "cap adjustment must appear in audit trail"
+    assert "methodology/21" in cap_adj.source
+
+
+def test_cap_does_not_apply_when_target_validated() -> None:
+    """Same aducanumab shape but with target_validated=true → cap must NOT fire."""
+    record = _record(
+        phase=Phase.PHASE_3,
+        therapeutic_area=TherapeuticArea.CNS,
+        modality=Modality.MAB,
+        capital_position=CapitalPosition.WELL_CAPITALIZED,
+        regulatory_designations=[RegulatoryDesignation.FAST_TRACK],
+        target_validated=True,
+        biomarker_enrichment=False,
+    )
+    pos = compute(record)
+    assert pos.final_loa > 0.40, (
+        "with target_validated=true the cap must not fire and PoS should sit "
+        f"in the ~50-60% range; got {pos.final_loa:.3f}"
+    )
+    assert not any("unvalidated target" in a.name.lower() for a in pos.adjustments)
+
+
+def test_cap_does_not_apply_when_biomarker_enrichment_true() -> None:
+    """Same aducanumab shape but with biomarker_enrichment=true → cap must NOT fire."""
+    record = _record(
+        phase=Phase.PHASE_3,
+        therapeutic_area=TherapeuticArea.CNS,
+        modality=Modality.MAB,
+        capital_position=CapitalPosition.WELL_CAPITALIZED,
+        regulatory_designations=[RegulatoryDesignation.FAST_TRACK],
+        target_validated=False,
+        biomarker_enrichment=True,
+    )
+    pos = compute(record)
+    assert pos.final_loa > 0.40
+    assert not any("unvalidated target" in a.name.lower() for a in pos.adjustments)

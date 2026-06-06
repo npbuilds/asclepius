@@ -164,7 +164,47 @@ def _compute_for_asset(asset: AssetInput) -> PoSResult:
 
     final_loa = max(0.0, min(1.0, running))
 
-    # 6. Confidence range — propagate modality and reflexivity range widths
+    # 6. v1.7.7 hard-cap: when both target_validated AND biomarker_enrichment are
+    # false, no other lever should be allowed to push PoS above 3× the long-run
+    # cohort base rate. Without either of these levers, the framework is pricing
+    # off the population-level cohort statistic — modality, designation, and
+    # reflexivity multipliers compound a *population prior* into asset-specific
+    # confidence the data does not support. The cap is anchored on the cumulative
+    # P1→approval cohort LOA (modality-adjusted) rather than the phase-conditional
+    # base_rate, because the phase-conditional rate already absorbs the survival
+    # bias of having reached the current phase — that bias is exactly what the
+    # cap is intended to push back against. See
+    # methodology/21-aducanumab-contested-retrospective.md (committed v1.7.7).
+    if not asset.target_validated and not asset.biomarker_enrichment:
+        cohort_loa_from_p1 = (
+            phase_transitions["p1_to_p2"]
+            * phase_transitions["p2_to_p3"]
+            * phase_transitions["p3_to_nda"]
+            * phase_transitions["nda_to_approval"]
+        )
+        cap = cohort_loa_from_p1 * mod_mult * 3.0
+        if final_loa > cap and cap > 0.0:
+            # Emit the cap as the multiplier that closes the gap so the audit
+            # trail still reconstructs the final number exactly.
+            cap_multiplier = cap / final_loa
+            adjustments.append(
+                PoSAdjustment(
+                    name="unvalidated target + no biomarker enrichment cap",
+                    multiplier=cap_multiplier,
+                    rationale=(
+                        "Both target_validated and biomarker_enrichment are false. "
+                        "PoS is capped at 3× the long-run cohort base rate "
+                        f"({cohort_loa_from_p1 * mod_mult:.3f}) so that modality, "
+                        "designation, and reflexivity multipliers cannot compound a "
+                        "population prior into asset-specific confidence the data "
+                        "does not support."
+                    ),
+                    source="methodology/21-aducanumab-contested-retrospective.md (v1.7.7 hard-cap)",
+                )
+            )
+            final_loa = cap
+
+    # 7. Confidence range — propagate modality and reflexivity range widths
     mod_range = mod["modality_range"]
     refl_range = refl["reflexivity_range"]
     low_factor = (mod_range[0] / mod_mult) * (refl_range[0] / refl_mult)

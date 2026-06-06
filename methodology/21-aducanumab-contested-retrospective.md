@@ -8,9 +8,10 @@ one feature: the framework's output and the actual outcome are
 *reconcilable in principle*. The math composes; the call is defensible.
 
 Aducanumab is different. It is the asset where the framework was
-**honest and wrong** — pre-approval PoS ~54%, FDA approved Aducanumab
-in June 2021 over a 10-0 Advisory Committee vote *against*, and
-voluntary withdrawn by Biogen in January 2024. This writeup walks
+**honest and wrong** — pre-approval bare-chain PoS ~54% <!-- parity-allow: superseded -->
+(now ~14% under the v1.7.7 hard-cap, see below), FDA approved
+Aducanumab in June 2021 over a 10-0 Advisory Committee vote
+*against*, and voluntary withdrawn by Biogen in January 2024. This writeup walks
 through what the framework would have said in March 2019 (after the
 ENGAGE/EMERGE futility analyses) and uses the framework's miss to
 delineate **where the framework is silent and why that silence is
@@ -35,9 +36,12 @@ The asset is interesting because:
    in AD has a deep cohort base rate of ~5-8% at Phase 3 (CNS · biologic
    cohort). With `target_validated: false` (the amyloid hypothesis was
    contested in 2019) and `biomarker_enrichment: false` for the
-   original Phase 3 designs, the framework would produce **PoS ~50-55%
-   conditional on a positive read** — and the read was *not* clearly
-   positive at the cutoff.
+   original Phase 3 designs, the bare multiplier chain would produce
+   **PoS ~50-55% <!-- parity-allow: superseded --> conditional on a positive read** — and the read was
+   *not* clearly positive at the cutoff. The v1.7.7 hard-cap pulls
+   the framework's output down to ~14%, which is the honest
+   population-anchored read for an asset where neither validation
+   lever is on.
 2. **The framework is silent on political process.** No multiplier in
    the multiplier chain corresponds to "FDA Center Director will
    accelerate-approve over a unanimous AdCom reject." That outcome
@@ -84,21 +88,32 @@ pre-Center-Director-approval (June 2021), pre-withdrawal (January 2024).
 
 ## Framework outputs (what March 2019 inputs produce)
 
-- **PoS final LOA: ~54%** — the framework is *too high*. The CNS ·
-  biologic cohort base rate is ~5-8%; with target_validated: false
-  the modality multiplier should drag PoS down hard. But the
-  framework's Fast Track designation boost + the well-capitalized
-  reflexivity adjustment + the modality default for Phase 3
-  anti-amyloid biologic together push it back up. **This is the
-  framework's first honest signal**: when target_validated is false
-  AND biomarker_enrichment is false, no other lever should be able to
-  push PoS above ~25-30%. The framework's current multiplier chain
-  doesn't fully enforce this. *Possible v1.5.10+ update*: hard cap
-  PoS at cohort-base-rate × 3 when both target_validated and
-  biomarker_enrichment are false.
-- **rNPV base case: ~$300M** (the framework's rNPV is correctly *low*
-  even at 54% PoS <!-- parity-allow: model-output --> — reflecting the heavy discount rate, the long
-  development arc, and the framework's downside scenario weighting)
+- **PoS final LOA: ~14%** (post-v1.7.7 hard-cap) — down from the
+  pre-cap ~54% <!-- parity-allow: superseded --> that the bare multiplier chain produces. The CNS ·
+  biologic cohort base rate is ~5-8%; with `target_validated: false`
+  the modality multiplier should drag PoS down hard, but the bare
+  chain (Fast Track + well-capitalized reflexivity + mAb modality
+  default) pushed back up to ~54% <!-- parity-allow: superseded -->. **This was the framework's first
+  honest signal**: when `target_validated` is false AND
+  `biomarker_enrichment` is false, no other lever should be able to
+  push PoS above cohort-base-rate × 3. **Shipped in v1.7.7**: a
+  post-multiplier-chain hard-cap implemented in
+  `api/app/modules/pos/engine.py`. The cap anchors on the long-run
+  P1→approval cohort LOA (modality-adjusted) rather than the
+  phase-conditional base rate, because the phase-conditional rate
+  already absorbs the survival bias of having reached the current
+  phase — exactly what the cap is intended to push back against. For
+  CNS · mAb that's 0.041 × 1.15 × 3 ≈ 0.14, which is where
+  aducanumab's PoS now lands. The cap is recorded as an explicit row
+  in the audit-trail waterfall so the final number remains
+  reconstructable.
+- **rNPV base case: ~$80M** (post-cap; was ~$300M <!-- parity-allow: superseded --> at the pre-cap 54%
+  PoS <!-- parity-allow: superseded -->). The rNPV scales roughly linearly with PoS in this range, so
+  the same WACC/COGS/launch-cost inputs now produce a much tighter
+  downside bound. The qualitative call is unchanged: rNPV is bounded
+  *low*, reflecting the heavy discount rate, the long development
+  arc, and the framework's downside scenario weighting. The cap
+  sharpens the directional read rather than flipping it.
 - **Comparables cohort**: CNS · biologic (currently falls back —
   insufficient deal density at the precise CNS · biologic cohort in
   the comparable database; this is a known limitation called out in
@@ -139,18 +154,28 @@ pre-Center-Director-approval (June 2021), pre-withdrawal (January 2024).
    endpoint failure. Doing so would invite reflexive reasoning.
 3. **Reimbursement battles as PoS proxies.** The CMS coverage
    determination was the actual commercial death blow. The framework
-   bounds peak-sales downside ($300M rNPV at 54% PoS) <!-- parity-allow: model-output --> but does not
-   model the CMS-approval-vs-FDA-approval gap. **This *is* a known
-   framework limitation**, documented in the LimitationsPanel.
+   bounds peak-sales downside (~$80M rNPV at the post-v1.7.7 ~14%
+   PoS <!-- parity-allow: model-output -->) but does not model the CMS-approval-vs-FDA-approval gap.
+   **This *is* a known framework limitation**, documented in the
+   LimitationsPanel.
 
-## What the framework should do better (real v1.5.10+ work)
+## What the framework should do better
 
-1. **Tighter target_validated × cohort-base-rate coupling.** When
-   `target_validated: false` AND `biomarker_enrichment: false`, the
-   framework should cap PoS at cohort base rate × 3 (e.g., for CNS ·
-   biologic that's ~25%, not the current ~54%). Possible
-   implementation: a post-multiplier-chain ceiling applied at the
-   `pos_engine.compute()` step.
+1. **Tighter target_validated × cohort-base-rate coupling. SHIPPED in
+   v1.7.7.** When `target_validated: false` AND
+   `biomarker_enrichment: false`, the framework now caps PoS at the
+   long-run P1→approval cohort LOA (modality-adjusted) × 3. For
+   CNS · mAb the cap is ~14%, replacing the previous bare-chain ~54%
+   <!-- parity-allow: superseded -->. Implementation: a post-multiplier-chain ceiling applied at
+   the end of `_compute_for_asset` in
+   `api/app/modules/pos/engine.py`, emitted as an explicit
+   `unvalidated target + no biomarker enrichment cap` row in the
+   audit-trail waterfall so the final number remains
+   reconstructable. The cap is anchored on the cohort cumulative LOA
+   (not the phase-conditional `base_rate`) because the
+   phase-conditional rate already absorbs the survival bias of
+   having reached the current phase — exactly what the cap is
+   intended to push back against.
 2. **CNS · biologic comparables cohort.** Currently the framework
    falls back when this cohort is queried — there's not enough deal
    density. *Adding aducanumab itself* as a comparable (peak ~$5M,
