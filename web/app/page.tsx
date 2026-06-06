@@ -176,7 +176,7 @@ export default function LandingPage() {
           href="/methodology"
           className="rounded border border-border-dim bg-bg-panel px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-text-primary hover:border-magenta-bright hover:text-magenta-bright"
         >
-          [ Methodology · 18 writeups → ]
+          [ Methodology · 21 writeups → ]
         </Link>
       </div>
 
