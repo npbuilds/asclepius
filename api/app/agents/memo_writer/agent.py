@@ -40,6 +40,63 @@ log = logging.getLogger(__name__)
 JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*\})\s*```", re.DOTALL)
 
 
+def _parse_json_with_recovery(json_str: str) -> dict[str, Any]:
+    """Parse a JSON object that the model may have emitted with stray '},'
+    fragments prematurely closing the outer container.
+
+    v1.7.10: live-call testing on adagrasib (HTTP 200, 51s) surfaced a
+    real-world failure mode: Sonnet/Opus emitting one fenced ```json``` block
+    where the response is structurally invalid — a stray '}' after a deeply
+    nested field (e.g. reflexivity_note) closes the outer object early, then
+    the model continues with more top-level keys at the same indent level as
+    if it were still inside.
+
+    Strict json.loads() returns "Extra data" on this; pre-recovery the parser
+    fell through to the markdown fallback path and returned a memo with every
+    structured field null. The new MemoPanel frontend renders that as a
+    completely empty memo card.
+
+    Recovery strategy: iteratively raw_decode the next valid object from the
+    remaining string, treating each successful parse as a continuation of
+    the same top-level container and merging keys. Skip stray '}' (premature
+    close) + ',' (continuation) tokens between objects. Wrap the remainder
+    in '{' when we see another '"key":' starter so raw_decode treats it as
+    an object. Bail out cleanly when the remainder is no longer parseable.
+
+    Returns whatever fragment could be salvaged; the caller still does its
+    own null-tolerant field extraction so partial recovery is fine."""
+    decoder = json.JSONDecoder()
+    s = json_str.strip()
+    if not s.startswith("{"):
+        i = s.find("{")
+        if i < 0:
+            return {}
+        s = s[i:]
+
+    merged: dict[str, Any] = {}
+    while s:
+        try:
+            obj, end = decoder.raw_decode(s)
+        except json.JSONDecodeError:
+            break
+        if isinstance(obj, dict):
+            merged.update(obj)
+        # Advance past the parsed object
+        s = s[end:].lstrip()
+        # Skip stray '}' / ',' / whitespace between fragments
+        while s and s[0] in "},":
+            s = s[1:].lstrip()
+        # If what follows looks like more "key":value pairs, wrap them so
+        # raw_decode treats the next chunk as another object.
+        if s and s[0] == '"':
+            s = "{" + s
+        elif not s:
+            break
+        else:
+            break
+    return merged
+
+
 # v1.6.1: slugify moved to app.utils.text (Codex F9). Kept as a thin
 # alias here so existing internal call sites + the test imports keep
 # working without surface churn.
@@ -145,7 +202,35 @@ def _parse_memo_response(raw: str, model_used: str) -> dict[str, Any]:
         try:
             parsed = json.loads(match.group(1))
         except json.JSONDecodeError:
-            log.warning("memo writer returned malformed JSON block; falling back")
+            # v1.7.10: try recovery before falling back to the markdown
+            # dump. Some live responses emit a stray '},' that closes the
+            # outer object early; _parse_json_with_recovery() salvages the
+            # rest by raw_decode-and-merge. If recovery still yields
+            # nothing, fall through to the older markdown-fallback path.
+            log.warning(
+                "memo writer returned malformed JSON block; trying recovery parser"
+            )
+            parsed = _parse_json_with_recovery(match.group(1))
+            if parsed:
+                log.info(
+                    "memo writer recovery parser salvaged %d top-level keys",
+                    len(parsed),
+                )
+            else:
+                log.warning("memo writer recovery parser also failed; markdown fallback")
+
+    # v1.7.10: shape normalization. The schema requires `reflexivity_note`
+    # nested inside `pos_analysis` (one paragraph alongside `waterfall_narrative`).
+    # Live-call testing shows Sonnet/Opus emit `reflexivity_note` as a TOP-LEVEL
+    # sibling instead. Normalize: if reflexivity_note appears at the top level
+    # and pos_analysis is a dict without it, fold it in. Preserves the original
+    # schema intent without forcing a schema migration. Skip if parsed is empty
+    # (markdown-fallback path takes over downstream).
+    if parsed and isinstance(parsed.get("pos_analysis"), dict):
+        if "reflexivity_note" not in parsed["pos_analysis"]:
+            top_level_rn = parsed.pop("reflexivity_note", None)
+            if isinstance(top_level_rn, str) and top_level_rn.strip():
+                parsed["pos_analysis"]["reflexivity_note"] = top_level_rn
 
     # Recommendation gating
     recommendation = parsed.get("recommendation")
