@@ -176,11 +176,86 @@ export function AutoDiligencePanel({
       </p>
 
       {error ? (
-        <div className="rounded border border-red-bright/30 bg-red-bright/10 p-2.5 font-mono text-[11px] text-red-bright">
-          {error.status === 503
-            ? "● No live agent key configured on this deploy. Adagrasib is cached; other assets need ANTHROPIC_API_KEY."
-            : `● Agent error (${error.status}): ${error.message}`}
-        </div>
+        error.status === 503 ? (
+          <div className="rounded border border-amber-bright/30 bg-amber-bright/5 p-3 font-mono text-[11px] text-amber-bright">
+            <div className="mb-1.5 uppercase tracking-wider">
+              ● Live research agent isn't available on this deployment
+            </div>
+            <p className="mb-3 font-prose text-[12px] normal-case tracking-normal text-text-primary">
+              The agent that scans CT.gov, SEC EDGAR, FDA, EMA and the
+              top journals needs a live API key, which isn't wired up on
+              this public demo. Five assets are pre-staged with full
+              cached agent outputs — pick one to see what a completed
+              diligence looks like end-to-end.
+            </p>
+            <ul className="space-y-1.5 font-prose text-[12px] normal-case tracking-normal text-text-primary">
+              <li>
+                <a
+                  href="/diligence/adagrasib"
+                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
+                >
+                  adagrasib
+                </a>
+                <span className="text-text-dim">
+                  {" "}— KRAS G12C NSCLC; retrospective vs the BMS $4.8B
+                  Mirati deal.
+                </span>
+              </li>
+              <li>
+                <a
+                  href="/diligence/divarasib"
+                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
+                >
+                  divarasib
+                </a>
+                <span className="text-text-dim">
+                  {" "}— Roche's second-gen G12C; live forward
+                  prediction, resolves 2027.
+                </span>
+              </li>
+              <li>
+                <a
+                  href="/diligence/lifileucel"
+                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
+                >
+                  lifileucel
+                </a>
+                <span className="text-text-dim">
+                  {" "}— Iovance autologous TIL therapy in melanoma;
+                  tests cell-therapy economics.
+                </span>
+              </li>
+              <li>
+                <a
+                  href="/diligence/tulisokibart"
+                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
+                >
+                  tulisokibart
+                </a>
+                <span className="text-text-dim">
+                  {" "}— Merck anti-TL1A in IBD; novel-target forward
+                  prediction.
+                </span>
+              </li>
+              <li>
+                <a
+                  href="/diligence/aducanumab"
+                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
+                >
+                  aducanumab
+                </a>
+                <span className="text-text-dim">
+                  {" "}— Biogen anti-amyloid in Alzheimer's; a contested
+                  approval the framework can't predict.
+                </span>
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <div className="rounded border border-red-bright/30 bg-red-bright/10 p-2.5 font-mono text-[11px] text-red-bright">
+            {`● Agent error (${error.status}): ${error.message}`}
+          </div>
+        )
       ) : null}
 
       {result ? (
