@@ -1,4 +1,10 @@
-"""Memo Writer agent — DiligenceRecord → 2-page investment memo (markdown).
+"""Memo Writer agent — DiligenceRecord → structured 2-3 page investment memo.
+
+v1.7.7: the agent now returns a structured multi-section memo. The Anthropic
+model returns one fenced ```json``` object matching the MemoOutput schema
+(minus envelope fields). We parse it, render a markdown body from the
+structured sections for back-compat with the older renderer, and surface
+both the structured sections and the markdown body to the API.
 
 Flow on every run():
   1. Compute cache key from the asset name. If a cached JSON exists under
@@ -7,10 +13,6 @@ Flow on every run():
   2. Otherwise make a live Anthropic call using the model named in the
      manifest. Returns from_cache=False.
   3. If no API key is set and no cache hit, raise HTTPException(503).
-
-The body markdown contains a trailing fenced JSON block with the structured
-signals (recommendation, red_flags). We parse it out, drop it from the body
-the user sees, and surface the parsed fields on the response.
 """
 
 from __future__ import annotations
@@ -33,9 +35,9 @@ from .schemas import MemoOutput
 log = logging.getLogger(__name__)
 
 # Permissive — matches ```json ... ``` even with surrounding whitespace and
-# newlines inside the block. Greedy on body, non-greedy on inner content would
-# fail on multi-newline JSON.
-JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
+# newlines inside the block. Multiline DOTALL because the structured JSON is
+# spread over many lines.
+JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*\})\s*```", re.DOTALL)
 
 
 # v1.6.1: slugify moved to app.utils.text (Codex F9). Kept as a thin
@@ -44,42 +46,167 @@ JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 from ...utils.text import slugify_asset_name as _slugify_asset_name  # noqa: E402,F401
 
 
-def _parse_memo_response(raw: str, model_used: str) -> dict[str, Any]:
-    """Extract the trailing JSON block, return body + structured fields.
+_VALID_RECS = {"strong_buy", "buy", "hold", "cautious", "avoid"}
 
-    Defensive: if the JSON block is missing or unparseable, return a "hold"
-    recommendation with the full raw text as body. Better to ship a degraded
-    response than 500."""
+
+def _render_body_markdown(parsed: dict[str, Any]) -> str:
+    """Compose a markdown body from the structured sections.
+
+    Kept so any older renderer that reads `body_markdown` still gets a
+    usable string. The new MemoPanel reads the structured sections
+    directly and ignores this field.
+    """
+    parts: list[str] = []
+
+    tldr = parsed.get("tldr") or {}
+    if tldr:
+        loa = tldr.get("loa_pct")
+        rnpv = tldr.get("rnpv_base_usd_m")
+        lo = tldr.get("rnpv_range_low_usd_m")
+        hi = tldr.get("rnpv_range_high_usd_m")
+        rec = tldr.get("recommendation", "hold")
+        thesis = tldr.get("thesis_one_liner", "")
+        parts.append("## TL;DR\n")
+        bits = [f"**Recommendation:** {rec.replace('_', ' ')}"]
+        if loa is not None:
+            bits.append(f"**LOA:** {loa:.1f}%")
+        if rnpv is not None:
+            range_str = ""
+            if lo is not None and hi is not None:
+                range_str = f" (P25–P75: ${lo:.0f}M – ${hi:.0f}M)"
+            bits.append(f"**rNPV base:** ${rnpv:.0f}M{range_str}")
+        parts.append("  \n".join(bits))
+        if thesis:
+            parts.append(f"\n{thesis}")
+
+    es = parsed.get("executive_summary", "").strip()
+    if es:
+        parts.append("\n## Executive summary\n")
+        parts.append(es)
+
+    overview = (parsed.get("asset_overview") or {}).get("paragraph", "").strip()
+    if overview:
+        parts.append("\n## Asset overview\n")
+        parts.append(overview)
+
+    pos = parsed.get("pos_analysis") or {}
+    if pos:
+        parts.append("\n## PoS analysis\n")
+        if pos.get("waterfall_narrative"):
+            parts.append(pos["waterfall_narrative"].strip())
+        if pos.get("reflexivity_note"):
+            parts.append("\n" + pos["reflexivity_note"].strip())
+
+    val = (parsed.get("valuation") or {}).get("valuation_narrative", "").strip()
+    if val:
+        parts.append("\n## Valuation\n")
+        parts.append(val)
+
+    comp = (parsed.get("comparables") or {}).get("cohort_paragraph", "").strip()
+    if comp:
+        parts.append("\n## Comparables\n")
+        parts.append(comp)
+
+    ops = (parsed.get("operational") or {}).get("pillars_paragraph", "").strip()
+    if ops:
+        parts.append("\n## Operational diligence\n")
+        parts.append(ops)
+
+    risks = parsed.get("risks") or []
+    if risks:
+        parts.append("\n## Risks\n")
+        for r in risks:
+            label = r.get("label", "Risk")
+            desc = r.get("description", "")
+            sev = r.get("severity", "medium")
+            parts.append(f"- **{label}** _(severity: {sev})_ — {desc}")
+
+    close = parsed.get("recommendation_close") or {}
+    if close:
+        parts.append("\n## Recommendation\n")
+        if close.get("closing_paragraph"):
+            parts.append(close["closing_paragraph"].strip())
+        if close.get("kill_criterion"):
+            parts.append(f"\n**Kill criterion:** {close['kill_criterion'].strip()}")
+
+    return "\n".join(parts).strip()
+
+
+def _parse_memo_response(raw: str, model_used: str) -> dict[str, Any]:
+    """Extract the structured JSON block and assemble the MemoOutput.
+
+    Defensive: if the JSON block is missing/unparseable, return a "hold"
+    recommendation with the raw text dropped into body_markdown."""
     match = JSON_BLOCK_RE.search(raw)
-    body = raw
     parsed: dict[str, Any] = {}
+    fallback_body = raw.strip()
+
     if match:
         try:
             parsed = json.loads(match.group(1))
-            body = raw[: match.start()].rstrip()
         except json.JSONDecodeError:
             log.warning("memo writer returned malformed JSON block; falling back")
 
-    recommendation = parsed.get("recommendation", "hold")
-    if recommendation not in {"strong_buy", "buy", "hold", "cautious", "avoid"}:
+    # Recommendation gating
+    recommendation = parsed.get("recommendation")
+    if not recommendation:
+        recommendation = (parsed.get("tldr") or {}).get("recommendation")
+    if not recommendation:
+        recommendation = (parsed.get("recommendation_close") or {}).get("recommendation")
+    if recommendation not in _VALID_RECS:
         recommendation = "hold"
-    executive_summary = parsed.get("executive_summary", "").strip()
-    if not executive_summary:
-        # Pull the first paragraph under "## Executive summary" as a fallback
-        es_match = re.search(
-            r"##\s*Executive summary\s*\n+(.+?)(?=\n##|\Z)", body, re.DOTALL
-        )
-        executive_summary = es_match.group(1).strip() if es_match else ""
 
-    return MemoOutput(
-        body_markdown=body,
-        executive_summary=executive_summary,
-        recommendation=recommendation,
-        red_flags=list(parsed.get("red_flags", [])),
-        model_used=model_used,
-        from_cache=False,
-        generated_at=datetime.now(timezone.utc),
-    ).model_dump(mode="json")
+    # Executive summary fallback
+    executive_summary = (parsed.get("executive_summary") or "").strip()
+    if not executive_summary:
+        executive_summary = ((parsed.get("tldr") or {}).get("thesis_one_liner") or "").strip()
+
+    # Red flags fallback — derive from risks[] if not given explicitly
+    red_flags = list(parsed.get("red_flags") or [])
+    if not red_flags and parsed.get("risks"):
+        red_flags = [
+            r["label"] for r in parsed["risks"]
+            if isinstance(r, dict) and r.get("label")
+        ]
+
+    # Body markdown — render from structured sections if we have any
+    if parsed:
+        body_markdown = _render_body_markdown(parsed)
+        if not body_markdown:
+            body_markdown = fallback_body
+    else:
+        body_markdown = fallback_body
+
+    # Drop nested sections that won't pass enum validation rather than
+    # raising — the front-end can degrade gracefully on a missing section.
+    tldr_payload = parsed.get("tldr")
+    if isinstance(tldr_payload, dict) and tldr_payload.get("recommendation") not in _VALID_RECS:
+        tldr_payload = None
+    close_payload = parsed.get("recommendation_close")
+    if isinstance(close_payload, dict) and close_payload.get("recommendation") not in _VALID_RECS:
+        close_payload = None
+
+    # Build the MemoOutput. Pydantic will validate each nested section
+    # and drop any that fail.
+    payload: dict[str, Any] = {
+        "tldr": tldr_payload,
+        "asset_overview": parsed.get("asset_overview"),
+        "pos_analysis": parsed.get("pos_analysis"),
+        "valuation": parsed.get("valuation"),
+        "comparables": parsed.get("comparables"),
+        "operational": parsed.get("operational"),
+        "risks": parsed.get("risks") or [],
+        "recommendation_close": close_payload,
+        "body_markdown": body_markdown,
+        "executive_summary": executive_summary,
+        "recommendation": recommendation,
+        "red_flags": red_flags,
+        "model_used": model_used,
+        "from_cache": False,
+        "generated_at": datetime.now(timezone.utc),
+    }
+
+    return MemoOutput(**payload).model_dump(mode="json")
 
 
 class Agent(BaseAgent):
@@ -140,7 +267,7 @@ class Agent(BaseAgent):
 
         message = client.messages.create(
             model=model,
-            max_tokens=4096,
+            max_tokens=6144,
             system=self._system_prompt_with_methodology(SYSTEM_PROMPT),
             messages=[{"role": "user", "content": user_prompt}],
         )

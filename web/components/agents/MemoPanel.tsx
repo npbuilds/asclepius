@@ -1,12 +1,13 @@
 "use client";
 
-// Memo Writer panel — sits below the four module panels on the diligence
-// workbench. The button triggers the agent; the result renders inline.
+// Memo Writer panel (v1.7.7) — renders the structured 2-3 page memo as a
+// stack of titled sections. Each section gets its own visual block, with
+// theme tokens carrying the semantic weight: cyan-bright for section
+// headers, magenta-bright for the rNPV bracket callout, amber-bright for
+// risks, green/red bright for the recommendation chip.
 //
-// Cache-first: for adagrasib (and any other asset listed in the agent's
-// manifest cached_assets), the result returns instantly from disk. For
-// asset names typed by the user, this fires a live Anthropic call and shows
-// a clear 503 if no ANTHROPIC_API_KEY is set on the API.
+// If the structured sections are missing (older response or fallback path),
+// we drop back to rendering memo.body_markdown as a single article.
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -14,7 +15,12 @@ import remarkGfm from "remark-gfm";
 
 import { type AgentError, runMemoWriter } from "@/lib/api-client";
 import type { ClientDiligenceRecord } from "@/lib/module-registry";
-import type { MemoOutput, Recommendation } from "@/lib/types";
+import type {
+  MemoOutput,
+  MemoRiskItem,
+  MemoRiskSeverity,
+  Recommendation,
+} from "@/lib/types";
 
 const REC_COLOR: Record<Recommendation, string> = {
   strong_buy: "bg-green-bright text-white",
@@ -23,6 +29,183 @@ const REC_COLOR: Record<Recommendation, string> = {
   cautious: "bg-cyan-bright/10 text-cyan-bright",
   avoid: "bg-red-bright/20 text-red-bright",
 };
+
+const SEVERITY_COLOR: Record<MemoRiskSeverity, string> = {
+  low: "border-text-dim/30 bg-bg-panel text-text-primary",
+  medium: "border-amber-bright/40 bg-amber-bright/5 text-amber-bright",
+  high: "border-red-bright/50 bg-red-bright/10 text-red-bright",
+};
+
+function formatUsdM(value: number | null | undefined): string {
+  if (value == null) return "—";
+  return `$${Math.round(value).toLocaleString()}M`;
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-2 font-display text-[11px] font-semibold uppercase tracking-wider text-cyan-bright">
+      {children}
+    </h3>
+  );
+}
+
+function ProseBlock({ children }: { children: string }) {
+  return (
+    <div className="font-prose text-[13px] leading-relaxed text-text-primary [&_p]:mb-2 [&_p:last-child]:mb-0">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
+    </div>
+  );
+}
+
+function TLDRBlock({ memo }: { memo: MemoOutput }) {
+  const tldr = memo.tldr;
+  if (!tldr) return null;
+
+  return (
+    <div className="rounded border border-magenta-bright/40 bg-magenta-bright/5 p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <SectionHeader>TL;DR</SectionHeader>
+        <span
+          className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${REC_COLOR[tldr.recommendation]}`}
+        >
+          ● {tldr.recommendation.replace("_", " ")}
+        </span>
+      </div>
+      <div className="grid grid-cols-3 gap-3 font-mono text-[11px]">
+        <div>
+          <div className="text-text-dim uppercase tracking-wider">LOA</div>
+          <div className="font-display text-base text-text-bright">
+            {tldr.loa_pct.toFixed(1)}%
+          </div>
+        </div>
+        <div>
+          <div className="text-text-dim uppercase tracking-wider">rNPV base</div>
+          <div className="font-display text-base text-magenta-bright">
+            {formatUsdM(tldr.rnpv_base_usd_m)}
+          </div>
+        </div>
+        <div>
+          <div className="text-text-dim uppercase tracking-wider">P25–P75</div>
+          <div className="font-display text-base text-magenta-bright">
+            {formatUsdM(tldr.rnpv_range_low_usd_m)} –{" "}
+            {formatUsdM(tldr.rnpv_range_high_usd_m)}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 font-prose text-[13px] leading-relaxed text-text-bright">
+        {tldr.thesis_one_liner}
+      </p>
+    </div>
+  );
+}
+
+function RisksBlock({ risks }: { risks: MemoRiskItem[] }) {
+  if (!risks.length) return null;
+  return (
+    <div className="rounded border border-amber-bright/30 bg-amber-bright/5 p-3">
+      <SectionHeader>
+        <span className="text-amber-bright">Risks</span>
+      </SectionHeader>
+      <ul className="space-y-2">
+        {risks.map((r) => (
+          <li
+            key={r.label}
+            className={`rounded border px-2.5 py-1.5 font-prose text-[12px] ${SEVERITY_COLOR[r.severity]}`}
+          >
+            <div className="mb-0.5 flex items-center justify-between">
+              <span className="font-display text-[11px] uppercase tracking-wider">
+                {r.label}
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-wider opacity-70">
+                {r.severity}
+              </span>
+            </div>
+            <div className="text-text-primary">{r.description}</div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function StructuredMemo({ memo }: { memo: MemoOutput }) {
+  const close = memo.recommendation_close;
+  const closeBorder =
+    close?.recommendation === "avoid" || close?.recommendation === "cautious"
+      ? "border-red-bright/40 bg-red-bright/5"
+      : "border-green-bright/40 bg-green-bright/5";
+
+  return (
+    <div className="space-y-3">
+      <TLDRBlock memo={memo} />
+
+      {memo.asset_overview ? (
+        <div className="rounded border border-bg-panel-hover bg-bg-panel p-3">
+          <SectionHeader>Asset overview</SectionHeader>
+          <ProseBlock>{memo.asset_overview.paragraph}</ProseBlock>
+        </div>
+      ) : null}
+
+      {memo.pos_analysis ? (
+        <div className="rounded border border-bg-panel-hover bg-bg-panel p-3">
+          <SectionHeader>PoS analysis</SectionHeader>
+          <ProseBlock>{memo.pos_analysis.waterfall_narrative}</ProseBlock>
+          <div className="mt-2 border-t border-bg-panel-hover pt-2">
+            <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-text-dim">
+              Reflexivity (Spence)
+            </div>
+            <ProseBlock>{memo.pos_analysis.reflexivity_note}</ProseBlock>
+          </div>
+        </div>
+      ) : null}
+
+      {memo.valuation ? (
+        <div className="rounded border border-bg-panel-hover bg-bg-panel p-3">
+          <SectionHeader>Valuation</SectionHeader>
+          <ProseBlock>{memo.valuation.valuation_narrative}</ProseBlock>
+        </div>
+      ) : null}
+
+      {memo.comparables ? (
+        <div className="rounded border border-bg-panel-hover bg-bg-panel p-3">
+          <SectionHeader>Comparables</SectionHeader>
+          <ProseBlock>{memo.comparables.cohort_paragraph}</ProseBlock>
+        </div>
+      ) : null}
+
+      {memo.operational ? (
+        <div className="rounded border border-bg-panel-hover bg-bg-panel p-3">
+          <SectionHeader>Operational diligence</SectionHeader>
+          <ProseBlock>{memo.operational.pillars_paragraph}</ProseBlock>
+        </div>
+      ) : null}
+
+      <RisksBlock risks={memo.risks} />
+
+      {close ? (
+        <div className={`rounded border p-3 ${closeBorder}`}>
+          <div className="mb-2 flex items-center justify-between">
+            <SectionHeader>Recommendation</SectionHeader>
+            <span
+              className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${REC_COLOR[close.recommendation]}`}
+            >
+              ● {close.recommendation.replace("_", " ")}
+            </span>
+          </div>
+          <ProseBlock>{close.closing_paragraph}</ProseBlock>
+          <div className="mt-2 rounded border border-red-bright/40 bg-red-bright/10 p-2">
+            <div className="mb-0.5 font-mono text-[10px] uppercase tracking-wider text-red-bright">
+              Kill criterion
+            </div>
+            <div className="font-prose text-[12px] text-text-primary">
+              {close.kill_criterion}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function MemoPanel({ record }: { record: ClientDiligenceRecord }) {
   const [memo, setMemo] = useState<MemoOutput | null>(null);
@@ -44,6 +227,15 @@ export function MemoPanel({ record }: { record: ClientDiligenceRecord }) {
       setLoading(false);
     }
   }
+
+  const hasStructured = Boolean(
+    memo &&
+      (memo.tldr ||
+        memo.asset_overview ||
+        memo.pos_analysis ||
+        memo.valuation ||
+        memo.recommendation_close),
+  );
 
   return (
     <section className="rounded border border-magenta-bright/30 bg-magenta-bright/5 p-3">
@@ -83,19 +275,21 @@ export function MemoPanel({ record }: { record: ClientDiligenceRecord }) {
             >
               ● {memo.recommendation.replace("_", " ")}
             </span>
-            <span>
-              {memo.from_cache ? "● cached" : `● ${memo.model_used}`}
-            </span>
+            <span>{memo.from_cache ? "● cached" : `● ${memo.model_used}`}</span>
             <span className="ml-auto">
               {new Date(memo.generated_at).toISOString().slice(0, 10)}
             </span>
           </div>
 
-          <article className="prose prose-sm max-w-none font-prose dark:prose-invert prose-headings:font-display prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-text-bright prose-h2:text-base prose-h2:mt-4 prose-p:text-text-primary prose-strong:text-text-bright prose-li:text-text-primary">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {memo.body_markdown}
-            </ReactMarkdown>
-          </article>
+          {hasStructured ? (
+            <StructuredMemo memo={memo} />
+          ) : (
+            <article className="prose prose-sm max-w-none font-prose dark:prose-invert prose-headings:font-display prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-text-bright prose-h2:text-base prose-h2:mt-4 prose-p:text-text-primary prose-strong:text-text-bright prose-li:text-text-primary">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {memo.body_markdown}
+              </ReactMarkdown>
+            </article>
+          )}
         </div>
       ) : null}
     </section>

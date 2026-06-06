@@ -1,4 +1,9 @@
-"""Memo Writer tests — exercise cache hit, live path with mocked SDK, error path."""
+"""Memo Writer tests — exercise cache hit, live path with mocked SDK, error path.
+
+v1.7.7: tests updated for the new structured-JSON response format. The model
+now returns a single fenced JSON object with named sections; the agent
+assembles a markdown body from those sections.
+"""
 
 from __future__ import annotations
 
@@ -57,29 +62,65 @@ def test_slugify_strips_punctuation_and_lowercases():
 
 
 # ---------------------------------------------------------------------------
-# JSON-block parser
+# Structured-JSON parser
 # ---------------------------------------------------------------------------
 
 
-def test_parse_memo_response_extracts_json_and_strips_body():
-    raw = """## Executive summary
-A tight summary paragraph.
-
-## Recommendation
-Buy.
-
-```json
+_FULL_STRUCTURED_RESPONSE = """```json
 {
-  "recommendation": "buy",
-  "executive_summary": "A tight summary paragraph.",
-  "red_flags": ["funding"]
+  "tldr": {
+    "recommendation": "buy",
+    "loa_pct": 16.1,
+    "rnpv_base_usd_m": 516,
+    "rnpv_range_low_usd_m": 290,
+    "rnpv_range_high_usd_m": 698,
+    "thesis_one_liner": "Phase 2 KRAS G12C asset with a documentable PoS chain and a strategic-sale liquidity unit."
+  },
+  "asset_overview": {
+    "paragraph": "Adagrasib is an oral KRAS G12C inhibitor in 2L+ NSCLC."
+  },
+  "pos_analysis": {
+    "waterfall_narrative": "From the 10.6% base rate, biomarker-enrichment-boost x1.20 lifts the LOA, then target-validated x1.15 closes the validation question, BTD x1.10 reflects FDA pre-commitment.",
+    "reflexivity_note": "Mirati sits in the adequate reflexivity tier — neither signaling deepest commitment nor pooling with distressed types."
+  },
+  "valuation": {
+    "valuation_narrative": "Base rNPV $516M, MC P25-P75 $290-$698M. Top tornado driver: peak sales. The asset trades closer to the cohort median than the precedent clearing price."
+  },
+  "comparables": {
+    "cohort_paragraph": "Oncology · small molecule cohort, median EV/peak-sales 6.67x, closest analog selpercatinib/Lilly."
+  },
+  "operational": {
+    "pillars_paragraph": "Clinical 8/10, regulatory 8/10, competitive 6/10 — no red flags."
+  },
+  "risks": [
+    {"label": "Peak-sales concentration", "description": "Second-mover share against sotorasib could collapse the $1.2B anchor.", "severity": "high"},
+    {"label": "Single-asset concentration", "description": "Mirati corporate exposure if KRYSTAL-12 fails.", "severity": "medium"}
+  ],
+  "recommendation_close": {
+    "recommendation": "buy",
+    "closing_paragraph": "At $474M asset-attributable, the framework brackets the entry as a buy.",
+    "kill_criterion": "A KRYSTAL-12 primary-endpoint miss flips the call to avoid."
+  },
+  "executive_summary": "Adagrasib is a Phase 2 KRAS G12C asset with a 16.1% LOA, base rNPV $516M, and a price-conditioned buy at or below the P50.",
+  "red_flags": []
 }
 ```"""
-    out = _parse_memo_response(raw, model_used="test-model")
+
+
+def test_parse_memo_response_extracts_structured_sections():
+    out = _parse_memo_response(_FULL_STRUCTURED_RESPONSE, model_used="test-model")
     assert out["recommendation"] == "buy"
-    assert out["red_flags"] == ["funding"]
+    assert out["tldr"]["loa_pct"] == 16.1
+    assert out["tldr"]["rnpv_base_usd_m"] == 516
+    assert out["pos_analysis"]["waterfall_narrative"].startswith("From the 10.6%")
+    assert len(out["risks"]) == 2
+    assert out["risks"][0]["label"] == "Peak-sales concentration"
+    assert out["recommendation_close"]["kill_criterion"].endswith("avoid.")
+    # body_markdown should be assembled from the structured sections
+    assert "## TL;DR" in out["body_markdown"]
+    assert "## Recommendation" in out["body_markdown"]
+    assert "Kill criterion" in out["body_markdown"]
     assert "```json" not in out["body_markdown"]
-    assert "Buy." in out["body_markdown"]
 
 
 def test_parse_memo_response_falls_back_when_json_missing():
@@ -87,25 +128,47 @@ def test_parse_memo_response_falls_back_when_json_missing():
     out = _parse_memo_response(raw, model_used="test-model")
     assert out["recommendation"] == "hold"
     assert out["red_flags"] == []
+    # No structured sections at all when JSON is missing
+    assert out["tldr"] is None
+    assert out["pos_analysis"] is None
+    # Raw body preserved as the markdown body
     assert "## Executive summary" in out["body_markdown"]
 
 
 def test_parse_memo_response_handles_malformed_json_block():
     raw = "## Executive summary\nA.\n\n```json\n{not valid}\n```"
     out = _parse_memo_response(raw, model_used="test-model")
-    # Falls back to hold; raw body preserved
     assert out["recommendation"] == "hold"
 
 
 def test_parse_memo_response_rejects_unknown_recommendation_enum():
-    raw = """## Executive summary
-foo.
-
-```json
-{"recommendation": "love_it", "executive_summary": "foo.", "red_flags": []}
+    raw = """```json
+{
+  "tldr": {"recommendation": "love_it", "loa_pct": 10.0, "rnpv_base_usd_m": 100, "thesis_one_liner": "x"},
+  "executive_summary": "foo.",
+  "red_flags": []
+}
 ```"""
     out = _parse_memo_response(raw, model_used="test-model")
-    assert out["recommendation"] == "hold"  # unknown → hold
+    # tldr.recommendation is invalid → top-level coerced to "hold"
+    assert out["recommendation"] == "hold"
+
+
+def test_parse_memo_response_derives_red_flags_from_risks_when_missing():
+    raw = """```json
+{
+  "tldr": {"recommendation": "cautious", "loa_pct": 8.0, "rnpv_base_usd_m": 100, "thesis_one_liner": "x"},
+  "risks": [
+    {"label": "Competitive entry", "description": "...", "severity": "high"},
+    {"label": "Capital runway", "description": "...", "severity": "medium"}
+  ],
+  "executive_summary": "Foo."
+}
+```"""
+    out = _parse_memo_response(raw, model_used="test-model")
+    assert out["recommendation"] == "cautious"
+    assert "Competitive entry" in out["red_flags"]
+    assert "Capital runway" in out["red_flags"]
 
 
 # ---------------------------------------------------------------------------
@@ -152,21 +215,8 @@ def test_live_call_with_mocked_anthropic(tmp_path: Path, monkeypatch):
     agent = _make_agent(tmp_path, cached_assets=[])  # force live path
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
-    fake_response = """## Executive summary
-Mock memo.
 
-## Recommendation
-Buy.
-
-```json
-{
-  "recommendation": "buy",
-  "executive_summary": "Mock memo.",
-  "red_flags": []
-}
-```"""
-
-    fake_block = SimpleNamespace(type="text", text=fake_response)
+    fake_block = SimpleNamespace(type="text", text=_FULL_STRUCTURED_RESPONSE)
     fake_message = SimpleNamespace(content=[fake_block])
 
     class FakeMessages:
@@ -184,7 +234,8 @@ Buy.
 
     assert result["from_cache"] is False
     assert result["recommendation"] == "buy"
-    assert "Mock memo" in result["body_markdown"]
+    assert result["tldr"]["rnpv_base_usd_m"] == 516
+    assert "## TL;DR" in result["body_markdown"]
     assert "```json" not in result["body_markdown"]
 
 

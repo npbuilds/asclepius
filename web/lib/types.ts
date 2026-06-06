@@ -202,11 +202,70 @@ export interface AgentManifest {
   cached_assets: string[];
 }
 
+// --- Memo Writer structured sections (v1.7.7) -----------------------------
+
+export interface MemoTLDR {
+  recommendation: Recommendation;
+  loa_pct: number;
+  rnpv_base_usd_m: number;
+  rnpv_range_low_usd_m: number | null;
+  rnpv_range_high_usd_m: number | null;
+  thesis_one_liner: string;
+}
+
+export interface MemoAssetOverview {
+  paragraph: string;
+}
+
+export interface MemoPoSAnalysis {
+  waterfall_narrative: string;
+  reflexivity_note: string;
+}
+
+export interface MemoValuation {
+  valuation_narrative: string;
+}
+
+export interface MemoComparables {
+  cohort_paragraph: string;
+}
+
+export interface MemoOperational {
+  pillars_paragraph: string;
+}
+
+export type MemoRiskSeverity = "low" | "medium" | "high";
+
+export interface MemoRiskItem {
+  label: string;
+  description: string;
+  severity: MemoRiskSeverity;
+}
+
+export interface MemoRecommendationClose {
+  recommendation: Recommendation;
+  closing_paragraph: string;
+  kill_criterion: string;
+}
+
 export interface MemoOutput {
+  // Structured sections (may be null if the model omitted them)
+  tldr: MemoTLDR | null;
+  asset_overview: MemoAssetOverview | null;
+  pos_analysis: MemoPoSAnalysis | null;
+  valuation: MemoValuation | null;
+  comparables: MemoComparables | null;
+  operational: MemoOperational | null;
+  risks: MemoRiskItem[];
+  recommendation_close: MemoRecommendationClose | null;
+
+  // Back-compat / fallback
   body_markdown: string;
   executive_summary: string;
   recommendation: Recommendation;
   red_flags: string[];
+
+  // Envelope
   model_used: string;
   from_cache: boolean;
   generated_at: string;
