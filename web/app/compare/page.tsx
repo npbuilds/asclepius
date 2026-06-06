@@ -377,6 +377,65 @@ function fmtMoneyM(v: number | null | undefined): string {
   return `$${v.toFixed(0)}M`;
 }
 
+// Per-metric skeleton widths (in pixel widths matching expected populated
+// content). Keeping these as a Tailwind arbitrary value so the skeleton
+// reads as "this is the shape you'll get" rather than a generic blob.
+const SKELETON_WIDTHS: Record<string, string> = {
+  phase: "w-12",
+  "TA · modality": "w-32",
+  capital: "w-20",
+  "PoS final LOA": "w-14",
+  "PoS confidence band": "w-28",
+  "BIO base rate": "w-14",
+  "rNPV base case": "w-16",
+  "MC P25 / P50 / P75": "w-36",
+  "downside (failed P3)": "w-16",
+  cohort: "w-24",
+  "median EV/peak": "w-12",
+  "implied value": "w-16",
+  "scorecard aggregate": "w-16",
+  recommendation: "w-20",
+};
+
+function StatusBadge({ cell }: { cell: AssetCell }) {
+  if (!cell.asset || !cell.rnpv_inputs) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded border border-amber-bright/40 bg-amber-bright/10 px-1.5 py-px font-mono text-[9px] uppercase tracking-wider text-amber-bright"
+        title="No staged data for this slug — run Auto-Diligence on /diligence/<slug> first"
+      >
+        <span className="h-1 w-1 rounded-full bg-amber-bright" />
+        unstaged
+      </span>
+    );
+  }
+  if (cell.error) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded border border-red-bright/40 bg-red-bright/10 px-1.5 py-px font-mono text-[9px] uppercase tracking-wider text-red-bright"
+        title={cell.error}
+      >
+        <span className="h-1 w-1 rounded-full bg-red-bright" />
+        error
+      </span>
+    );
+  }
+  if (cell.loading) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded border border-cyan-bright/30 bg-cyan-bright/5 px-1.5 py-px font-mono text-[9px] uppercase tracking-wider text-cyan-bright">
+        <span className="h-1 w-1 animate-pulse rounded-full bg-cyan-bright" />
+        loading…
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-green-bright/40 bg-green-bright/10 px-1.5 py-px font-mono text-[9px] uppercase tracking-wider text-green-bright">
+      <span className="h-1 w-1 rounded-full bg-green-bright" />
+      ready
+    </span>
+  );
+}
+
 function ComparisonTable({ cells }: { cells: AssetCell[] }) {
   if (cells.length === 0) {
     return (
@@ -387,7 +446,8 @@ function ComparisonTable({ cells }: { cells: AssetCell[] }) {
   }
 
   // Helper that takes a metric extractor and returns a row component. The
-  // value is rendered per cell with skeleton/error fallbacks.
+  // value is rendered per cell with skeleton/error fallbacks. Errors are
+  // contained per-cell so a single asset's failure doesn't blank the row.
   function MetricRow<T>({
     label,
     getValue,
@@ -399,6 +459,7 @@ function ComparisonTable({ cells }: { cells: AssetCell[] }) {
     format: (v: T) => string;
     highlight?: boolean;
   }) {
+    const skelW = SKELETON_WIDTHS[label] ?? "w-16";
     return (
       <tr className={highlight ? "bg-bg-deep/30" : ""}>
         <th
@@ -408,23 +469,55 @@ function ComparisonTable({ cells }: { cells: AssetCell[] }) {
           {label}
         </th>
         {cells.map((c) => {
-          let display: React.ReactNode = "—";
-          if (c.error) {
+          let display: React.ReactNode = (
+            <span className="text-text-dim">—</span>
+          );
+          let cellExtra = "";
+          if (!c.asset || !c.rnpv_inputs) {
+            // Unstaged slug — render an em-dash, status badge in header
+            // already tells the user why this column is blank.
             display = (
-              <span className="text-red-bright" title={c.error}>
+              <span
+                className="text-text-dim"
+                title="no staged data for this slug"
+              >
+                —
+              </span>
+            );
+          } else if (c.error) {
+            // Per-cell error containment. The cell shows "error" with the
+            // full message on hover; row stays intact for other assets.
+            display = (
+              <span
+                className="cursor-help text-red-bright underline decoration-dotted decoration-red-bright/50 underline-offset-2"
+                title={c.error}
+              >
                 error
               </span>
             );
+            cellExtra = "bg-red-bright/[0.03]";
           } else if (c.loading) {
-            display = <span className="text-text-dim">…</span>;
+            // Skeleton block at expected width — animate-pulse gives the
+            // "this is incoming" cue. Width is per-metric so the table
+            // doesn't reflow when data arrives.
+            display = (
+              <span
+                className={`inline-block h-3 ${skelW} animate-pulse rounded-sm bg-border-dim/60 align-middle`}
+                aria-label={`${label} loading`}
+              />
+            );
           } else {
             const v = getValue(c);
             if (v != null) {
+              // Stagger reveal: each cell fades in as its data arrives.
               display = (
                 <span
-                  className={
+                  className={`${
                     highlight ? "font-bold text-text-bright" : "text-text-primary"
-                  }
+                  } animate-[fade-in_180ms_ease-out]`}
+                  style={{
+                    animation: "compareCellFadeIn 220ms ease-out",
+                  }}
                 >
                   {format(v)}
                 </span>
@@ -434,7 +527,7 @@ function ComparisonTable({ cells }: { cells: AssetCell[] }) {
           return (
             <td
               key={c.slug}
-              className="border-b border-border-dim/40 px-3 py-2 text-right font-mono text-[12px] tabular-nums"
+              className={`border-b border-border-dim/40 px-3 py-2 text-right font-mono text-[12px] tabular-nums ${cellExtra}`}
             >
               {display}
             </td>
@@ -446,6 +539,21 @@ function ComparisonTable({ cells }: { cells: AssetCell[] }) {
 
   return (
     <div className="overflow-x-auto rounded border border-border-dim bg-bg-panel">
+      {/* Inline keyframes — cell stagger reveal. Scoped to this page so
+          it doesn't pollute the global stylesheet (which another agent
+          may be editing in parallel). */}
+      <style jsx>{`
+        @keyframes compareCellFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-2px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <table className="w-full">
         <thead>
           <tr className="border-b border-border-dim bg-bg-panel">
@@ -463,17 +571,20 @@ function ComparisonTable({ cells }: { cells: AssetCell[] }) {
                   scope="col"
                   className="px-3 py-2 text-right font-display text-[12px] font-semibold uppercase tracking-wider text-text-bright"
                 >
-                  <Link
-                    href={`/diligence/${c.slug}`}
-                    className="hover:text-cyan-bright"
-                  >
-                    {staged ? staged.name : c.slug}
-                  </Link>
-                  {staged ? (
-                    <div className="mt-0.5 font-mono text-[9px] font-normal uppercase tracking-wider text-text-dim">
-                      {staged.sponsor}
-                    </div>
-                  ) : null}
+                  <div className="flex flex-col items-end gap-1">
+                    <Link
+                      href={`/diligence/${c.slug}`}
+                      className="hover:text-cyan-bright"
+                    >
+                      {staged ? staged.name : c.slug}
+                    </Link>
+                    {staged ? (
+                      <div className="font-mono text-[9px] font-normal uppercase tracking-wider text-text-dim">
+                        {staged.sponsor}
+                      </div>
+                    ) : null}
+                    <StatusBadge cell={c} />
+                  </div>
                 </th>
               );
             })}
