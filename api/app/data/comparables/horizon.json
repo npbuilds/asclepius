@@ -1,0 +1,16 @@
+{
+  "asset_name": "Tepezza (teprotumumab) — Horizon portfolio",
+  "therapeutic_area": "autoimmune",
+  "modality": "monoclonal_antibody",
+  "acquirer": "Amgen",
+  "target_company": "Horizon Therapeutics",
+  "deal_value_usd_m": 28300.0,
+  "deal_date": "2022-12-12",
+  "deal_close_date": "2023-10-06",
+  "peak_sales_estimate_usd_m": 7500.0,
+  "asset_phase_at_deal": "approved",
+  "approved_post_deal": true,
+  "notes": "Amgen paid $28.3B for Horizon Therapeutics. Note: PORTFOLIO acquisition, not pure single-asset — Horizon's value was led by Tepezza (anti-IGF1R mAb for thyroid eye disease, FDA-approved 2020) but also included Krystexxa (uricase fusion for chronic gout) and Uplizna (anti-CD19 mAb for NMOSD). Peak sales estimate of $7.5B reflects the full portfolio's consensus across all three lead assets. EV/peak ratio is correspondingly a portfolio-blended figure. Include in the autoimmune-mAb cohort with this caveat because acquirers DO pay for portfolio-level autoimmune optionality, and the framing 'pure single-asset' undersells reality.",
+  "selection_rationale": "Largest autoimmune M&A of the past decade. The portfolio-acquisition caveat is real, but excluding the headline autoimmune-biologic deal would leave the cohort with only Phase-2-era valuations and miss the post-approval / commercial-stage benchmark.",
+  "source": "Amgen press release Dec 12 2022; Horizon SEC filings; Amgen Q4 2023 earnings (post-close performance disclosure)."
+}

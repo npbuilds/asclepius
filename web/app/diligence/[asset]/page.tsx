@@ -107,6 +107,136 @@ const DEFAULT_RNPV: RnpvInputs = {
   years_per_phase: { phase_1: 1.5, phase_2: 2.5, phase_3: 3, regulatory: 1 },
 };
 
+// v1.6 breadth-of-coverage: aducanumab as a third RETROSPECTIVE backtest,
+// this time in CNS · small_molecule (the cohort we shipped this morning).
+// Information cutoff: March 2019 — IMMEDIATELY after Biogen halted
+// ENGAGE/EMERGE Phase 3 trials for futility (Mar 21 2019). The framework
+// should produce a LOW LOA at this point; the asset's subsequent FDA
+// accelerated approval (Jun 2021) over the advisory committee's
+// objection is exactly the kind of contested-political-approval outcome
+// the framework can't and shouldn't try to predict. Pre-staging as
+// phase_3 (NOT approved) preserves the diligence framing — what would
+// an analyst have concluded immediately after the Ph3 failure?
+const ADUCANUMAB: AssetInput = {
+  asset_name: "aducanumab",
+  sponsor: "Biogen / Eisai",
+  phase: "phase_3",
+  therapeutic_area: "cns",
+  modality: "monoclonal_antibody",
+  capital_position: "well_capitalized",
+  mechanism: "anti-amyloid-beta monoclonal antibody",
+  target: "amyloid beta (Aβ) aggregates",
+  indication: "Alzheimer's disease (mild cognitive impairment)",
+  regulatory_designations: ["fast_track"],
+  num_competitors: 2,
+  // The amyloid hypothesis was NOT validated by approved drugs as of
+  // March 2019 — every prior anti-amyloid (bapineuzumab, solanezumab,
+  // gantenerumab Phase 3a) had failed. The validation came retroactively
+  // via the 2021 controversial approval, not prospectively.
+  target_validated: false,
+  // ENGAGE/EMERGE enrolled amyloid-PET-positive patients but the
+  // biomarker-enrichment field rewards a *predictive* biomarker that
+  // identifies responders. Amyloid PET selection didn't outcome-enrich
+  // (both Ph3 trials failed despite PET selection). Mark false to avoid
+  // crediting an enrichment strategy that didn't work.
+  biomarker_enrichment: false,
+};
+
+const ADUCANUMAB_RNPV: RnpvInputs = {
+  peak_sales_usd_m: 4500,
+  years_to_peak: 5,
+  years_of_exclusivity: 12,
+  cogs_pct: 0.15,
+  wacc: 0.10,
+  dev_cost_phase_1_usd_m: 0,
+  dev_cost_phase_2_usd_m: 0,
+  // Phase 3 failed at futility — but Biogen continued program. Costs to
+  // restart with a different statistical plan / new biomarker analysis.
+  dev_cost_phase_3_usd_m: 200,
+  launch_cost_usd_m: 200,
+  years_per_phase: { phase_1: 0, phase_2: 0, phase_3: 2, regulatory: 1 },
+};
+
+// v1.6 breadth: lifileucel as a third FDA-APPROVED retrospective example,
+// this time in cell therapy. Information cutoff: Jan 2024, the asset's
+// BLA was accepted by FDA late 2023. Approved Feb 16 2024 as Amtagvi for
+// 2L+ advanced melanoma. Pre-stage at phase_3 (with single-arm Phase 2
+// data) to preserve the pre-approval framing. The framework's
+// cell_therapy_autologous modality multiplier should appropriately
+// adjust PoS for the manufacturing/durability/access challenges that
+// distinguish TIL therapy from a small-molecule approval path.
+const LIFILEUCEL: AssetInput = {
+  asset_name: "lifileucel",
+  sponsor: "Iovance Biotherapeutics",
+  phase: "phase_3",
+  therapeutic_area: "oncology",
+  modality: "cell_therapy_autologous",
+  capital_position: "constrained",
+  mechanism: "autologous tumor-infiltrating lymphocyte (TIL) therapy",
+  target: "patient-specific tumor neoantigens",
+  indication: "Advanced/metastatic melanoma post-anti-PD1 + BRAF/MEK (if BRAF+)",
+  regulatory_designations: ["breakthrough_therapy", "orphan_drug", "fast_track"],
+  num_competitors: 0,
+  target_validated: true,
+  biomarker_enrichment: false,
+};
+
+const LIFILEUCEL_RNPV: RnpvInputs = {
+  peak_sales_usd_m: 1100,
+  years_to_peak: 6,
+  years_of_exclusivity: 12,
+  // Cell therapy manufacturing is genuinely expensive — 35-40% COGS is
+  // typical for autologous cell therapy in the first 5 years. Higher
+  // than small molecule (15-20%) or biologics (20-25%).
+  cogs_pct: 0.38,
+  wacc: 0.12,
+  dev_cost_phase_1_usd_m: 0,
+  dev_cost_phase_2_usd_m: 0,
+  dev_cost_phase_3_usd_m: 150,
+  // Launch costs for cell therapy are higher: manufacturing facilities,
+  // ATC (authorized treatment center) network buildout, REMS programs.
+  launch_cost_usd_m: 300,
+  years_per_phase: { phase_1: 0, phase_2: 0, phase_3: 1, regulatory: 1 },
+};
+
+// v1.6 breadth: tulisokibart as a third FORWARD prediction, this time
+// in autoimmune · biologic (the cohort we added today). Phase 3 ATLAS-UC
+// and ATLAS-CD trials ongoing; primary completion estimated 2026-2027.
+// Merck-sponsored after the April 2023 Prometheus acquisition; the
+// framework's well-capitalized reflexivity tier applies. Anti-TL1A is a
+// novel target — target_validated is FALSE because no anti-TL1A asset
+// has been approved (Roivant's parallel program is also Phase 3).
+const TULISOKIBART: AssetInput = {
+  asset_name: "tulisokibart",
+  sponsor: "Merck & Co. (acquired from Prometheus)",
+  phase: "phase_3",
+  therapeutic_area: "autoimmune",
+  modality: "monoclonal_antibody",
+  capital_position: "well_capitalized",
+  mechanism: "anti-TL1A (TNFSF15) monoclonal antibody",
+  target: "TL1A (TNFSF15)",
+  indication: "Ulcerative colitis (Phase 3 ATLAS-UC) and Crohn's disease (Phase 3 ATLAS-CD)",
+  regulatory_designations: [],
+  num_competitors: 2,
+  target_validated: false,
+  biomarker_enrichment: false,
+};
+
+const TULISOKIBART_RNPV: RnpvInputs = {
+  peak_sales_usd_m: 5000,
+  years_to_peak: 6,
+  years_of_exclusivity: 12,
+  cogs_pct: 0.22,
+  wacc: 0.10,
+  dev_cost_phase_1_usd_m: 0,
+  dev_cost_phase_2_usd_m: 0,
+  // Large IBD Phase 3 program — multiple indications, dose-ranging,
+  // active comparator possible. Heftier than the cohort default.
+  dev_cost_phase_3_usd_m: 400,
+  launch_cost_usd_m: 200,
+  years_per_phase: { phase_1: 0, phase_2: 0, phase_3: 3, regulatory: 1 },
+};
+
 // v1.7.0 Phase 4: collapsed-summary line for the asset-form <details> strip.
 // Reads like a terse roll-up of the form's contents so a reader can grok
 // the staged inputs without expanding. Order chosen to mirror what an
@@ -186,26 +316,52 @@ export default function DiligencePage({
   const assetSlug = params.asset.toLowerCase();
   const isAdagrasib = assetSlug === "adagrasib";
   const isDivarasib = assetSlug === "divarasib";
+  const isAducanumab = assetSlug === "aducanumab";
+  const isLifileucel = assetSlug === "lifileucel";
+  const isTulisokibart = assetSlug === "tulisokibart";
 
   // Pre-staged asset wiring: each known showcase asset gets its hardcoded
   // AssetInput + RnpvInputs + (optionally) an NCT ID for the PubMedBERT
   // criteria fetch path. Any unknown asset falls through to the blank-
   // form path, which renders an editable form for the analyst persona.
+  // Adding a new showcase asset is a 3-step pattern:
+  //   1. Define const NAME / NAME_RNPV at the top of the file
+  //   2. Add the isName branch here
+  //   3. Add the isName === true branch into the framing-paragraph block
+  //      further down (for the retrospective / forward / contested label)
   const stagedAsset: AssetInput = isAdagrasib
     ? ADAGRASIB
     : isDivarasib
       ? DIVARASIB
-      : blankAsset(decodeURIComponent(params.asset));
+      : isAducanumab
+        ? ADUCANUMAB
+        : isLifileucel
+          ? LIFILEUCEL
+          : isTulisokibart
+            ? TULISOKIBART
+            : blankAsset(decodeURIComponent(params.asset));
   const stagedRnpv: RnpvInputs = isAdagrasib
     ? ADAGRASIB_RNPV
     : isDivarasib
       ? DIVARASIB_RNPV
-      : DEFAULT_RNPV;
+      : isAducanumab
+        ? ADUCANUMAB_RNPV
+        : isLifileucel
+          ? LIFILEUCEL_RNPV
+          : isTulisokibart
+            ? TULISOKIBART_RNPV
+            : DEFAULT_RNPV;
   const stagedNctId: string | null = isAdagrasib
-    ? "NCT04685135"  // KRYSTAL-1, the Ph-2 registrational adagrasib trial
+    ? "NCT04685135"  // KRYSTAL-1 — Ph2 registrational adagrasib
     : isDivarasib
-      ? "NCT06497556" // divarasib vs sotorasib/adagrasib Ph 3
-      : null;
+      ? "NCT06497556" // divarasib vs sotorasib/adagrasib Ph3
+      : isAducanumab
+        ? "NCT02484547" // ENGAGE — one of the failed Ph3 aducanumab trials
+        : isLifileucel
+          ? "NCT02360579" // C-144-01 — pivotal Ph2 lifileucel in melanoma
+          : isTulisokibart
+            ? "NCT06430879" // ATLAS-UC — Ph3 tulisokibart UC
+            : null;
 
   const [record, setRecordState] = useState<ClientDiligenceRecord>(() => ({
     asset: stagedAsset,
@@ -240,11 +396,12 @@ export default function DiligencePage({
   // for pre-staged assets like adagrasib (already populated, summary
   // line communicates the state). Browser then handles toggle via the
   // `onToggle` handler so the choice sticks across record updates.
-  // Pre-staged assets (adagrasib, divarasib) get the form default-closed —
-  // the values are already correct; an analyst would only open the form to
-  // sensitivity-test, not to populate. Unknown assets default-open because
-  // the form is the only way to populate them.
-  const isStaged = isAdagrasib || isDivarasib;
+  // Pre-staged assets get the form default-closed — the values are
+  // already correct; an analyst would only open the form to sensitivity-
+  // test, not to populate. Unknown assets default-open because the form
+  // is the only way to populate them.
+  const isStaged =
+    isAdagrasib || isDivarasib || isAducanumab || isLifileucel || isTulisokibart;
   const [assetFormOpen, setAssetFormOpen] = useState(!isStaged);
 
   // v1.8.0 Phase 3: persona-driven layout. The page reads the current
@@ -341,6 +498,37 @@ export default function DiligencePage({
               methodology/18
             </a>{" "}
             for the pre-registered prediction with resolution criteria.
+          </p>
+        ) : isAducanumab ? (
+          <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
+            <strong className="text-text-bright">Contested-approval retrospective.</strong>{" "}
+            Information cutoff: <strong>March 2019</strong>, immediately after
+            Biogen halted ENGAGE/EMERGE Phase 3 trials for futility. Framework
+            should report a low LOA. The actual outcome — FDA accelerated
+            approval in June 2021 over the AdCom&apos;s 10-0 reject vote — is a
+            political-process outcome the framework can&apos;t and shouldn&apos;t
+            predict. Useful for testing how the framework handles a controversial
+            Phase 3 readout.
+          </p>
+        ) : isLifileucel ? (
+          <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
+            <strong className="text-text-bright">Cell therapy retrospective.</strong>{" "}
+            Information cutoff: <strong>January 2024</strong>, BLA accepted by
+            FDA but pre-approval. Iovance had filed on Phase 2 single-arm data
+            (C-144-01). Subsequent approval Feb 16 2024 as Amtagvi for 2L+
+            advanced melanoma. Useful for testing the framework on autologous
+            cell therapy economics — higher COGS, capital-intensive manufacturing,
+            ATC network requirements, and a constrained sponsor.
+          </p>
+        ) : isTulisokibart ? (
+          <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
+            <strong className="text-text-bright">Autoimmune biologic forward prediction.</strong>{" "}
+            Phase 3 ATLAS-UC (NCT06430879) and ATLAS-CD trials ongoing for
+            ulcerative colitis and Crohn&apos;s. Merck-sponsored after the April
+            2023 Prometheus acquisition ($10.8B). Anti-TL1A is a novel target
+            class — no anti-TL1A asset has been FDA-approved yet (Roivant&apos;s
+            parallel program is also in Phase 3). Exercises the framework on
+            the new autoimmune-biologic cohort.
           </p>
         ) : null}
 

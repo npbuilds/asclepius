@@ -1,0 +1,17 @@
+{
+  "asset_name": "Abecma (idecabtagene vicleucel) — 2seventy stake",
+  "therapeutic_area": "oncology",
+  "modality": "cell_therapy_autologous",
+  "acquirer": "BMS (full rights purchase)",
+  "target_company": "2seventy bio",
+  "deal_value_usd_m": 286.0,
+  "deal_date": "2024-01-08",
+  "deal_close_date": "2024-04-01",
+  "peak_sales_estimate_usd_m": 800.0,
+  "asset_phase_at_deal": "approved",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2021-03-26",
+  "notes": "BMS paid $286M to 2seventy bio to acquire all remaining oncology rights to Abecma — autologous anti-BCMA CAR-T for relapsed/refractory multiple myeloma. Originally a bluebird bio / Celgene co-development; 2seventy was spun out from bluebird in 2021 and retained 50% economic interest. BMS already commercialized; the 2024 deal cleaned up the partnership economics. Phase-of-deal is 'approved' (Abecma FDA approval Mar 2021). $286M is a smaller deal because it bought only a partial stake; the implied total Abecma asset value is closer to ~$2B based on the percentage transferred. Use $286M as the deal value to be honest about the transaction; this acts as a low-end calibration point on cohort range.",
+  "selection_rationale": "Third cell-therapy data point with very different size from Kite and Juno. Provides the cohort with range (rather than three clustered $9-12B deals) and represents a BCMA target (vs CD19 for Kite/Juno). Partial-stake nature is a real wrinkle but documented.",
+  "source": "BMS Q1 2024 disclosure; 2seventy bio Form 10-K Mar 2024; bluebird bio / 2seventy spin-off documents Nov 2021."
+}

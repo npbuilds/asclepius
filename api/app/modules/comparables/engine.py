@@ -60,6 +60,38 @@ MIN_MATCHED_COHORT_SIZE = 3
 _KINASE_TKI_FALLBACK_IDS = ("encorafenib", "selpercatinib", "larotrectinib")
 _KINASE_TKI_FALLBACK_LABEL = "Fallback: kinase-TKI single-asset M&A"
 
+# v1.6+: modality families — group modalities into valuation-equivalent
+# buckets so the cohort routing isn't broken by fine-grained classification.
+# Real-world valuation: acquirers price a tumor-antigen-targeting biologic
+# similarly whether it's a naked mAb or an ADC variant (Trodelvy/Elahere/
+# Padcev all sit in the same EV/peak-sales ballpark). Grouping by family
+# keeps cohorts at usable n=3+ without inventing comps. The label keeps
+# the user-readable form (e.g. "biologic") rather than the modality enum.
+_MODALITY_FAMILIES: dict[str, tuple[str, ...]] = {
+    "biologic": (
+        "monoclonal_antibody",
+        "antibody_drug_conjugate",
+        "protein",
+    ),
+    "cell_therapy": (
+        "cell_therapy_autologous",
+        "cell_therapy_allogeneic",
+    ),
+    "gene_therapy": ("gene_therapy",),
+    "small_molecule": ("small_molecule",),
+    "nucleic_acid": ("mrna", "oligonucleotide"),
+    "peptide": ("peptide",),
+    "other": ("other",),
+}
+
+
+def _family_for_modality(modality_value: str) -> str:
+    """Map a Modality enum value to its valuation family."""
+    for family, members in _MODALITY_FAMILIES.items():
+        if modality_value in members:
+            return family
+    return "other"
+
 # Display overrides for therapeutic-area enum values whose default
 # title-case rendering would be wrong (acronyms). Add to this dict if a
 # new TA enum needs a non-Title display form.
@@ -92,7 +124,12 @@ def _ev_to_peak_sales(data: dict) -> float | None:
 
 @lru_cache(maxsize=1)
 def _build_cohort_index() -> dict[tuple[str, str], list[str]]:
-    """Walk COMPARABLES_DIR and group comparable ids by (TA, modality).
+    """Walk COMPARABLES_DIR and group comparable ids by (TA, modality_family).
+
+    Each comparable JSON declares its fine-grained modality (e.g.
+    "antibody_drug_conjugate"); the index buckets by the corresponding
+    modality family (e.g. "biologic"), so mAb + ADC + protein deals end
+    up in the same bucket. The display label uses the family name.
 
     Cached because the JSON files don't change at runtime in production
     (they ship in the Docker image). Cache invalidates on process restart
@@ -113,7 +150,8 @@ def _build_cohort_index() -> dict[tuple[str, str], list[str]]:
             # (typically the per-asset "this is the target" JSONs, not
             # actual deal comps). Adagrasib's JSON is this case.
             continue
-        key = (str(ta), str(modality))
+        family = _family_for_modality(str(modality))
+        key = (str(ta), family)
         index.setdefault(key, []).append(path.stem)
     log.info(
         "comparables index: %d cohort buckets, %d total deals",
@@ -130,23 +168,27 @@ def _select_cohort(
 ) -> tuple[list[str], str, bool]:
     """Return (cohort_ids, human_readable_label, is_matched).
 
-    is_matched=True when the asset's (TA, modality) bucket has ≥
+    is_matched=True when the asset's (TA, modality_family) bucket has ≥
     MIN_MATCHED_COHORT_SIZE deals; False when we fall back to the
     kinase-TKI cohort. The label is what the UI displays.
     """
     index = _build_cohort_index()
-    key = (asset_ta.value, asset_modality.value)
+    family = _family_for_modality(asset_modality.value)
+    key = (asset_ta.value, family)
     bucket = list(index.get(key, []))
     if exclude_id is not None and exclude_id in bucket:
         bucket = [b for b in bucket if b != exclude_id]
     if len(bucket) >= MIN_MATCHED_COHORT_SIZE:
         # Acronym TAs render as ALL-CAPS rather than Title-Case ("CNS",
-        # not "Cns"; "IBD" not "Ibd"). Modalities don't need this
-        # treatment in current enums but the helper is forward-safe.
+        # not "Cns"; "IBD" not "Ibd").
         ta_label = _TA_LABELS.get(asset_ta.value) or asset_ta.value.replace("_", " ").title()
+        # Family label is the same string we indexed under, but rendered
+        # readably (underscore → space). We DON'T expose the raw
+        # underlying modality enum here because the bucket may contain
+        # multiple modalities under the same family.
         label = (
             f"{ta_label} · "
-            f"{asset_modality.value.replace('_', ' ')} ({len(bucket)} deals)"
+            f"{family.replace('_', ' ')} ({len(bucket)} deals)"
         )
         return bucket, label, True
     # Fallback: kinase-TKI cohort, with disclosure surfaced via the label

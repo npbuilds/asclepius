@@ -1,0 +1,17 @@
+{
+  "asset_name": "Breyanzi (lisocabtagene maraleucel)",
+  "therapeutic_area": "oncology",
+  "modality": "cell_therapy_autologous",
+  "acquirer": "Celgene (subsequently BMS)",
+  "target_company": "Juno Therapeutics",
+  "deal_value_usd_m": 9000.0,
+  "deal_date": "2018-01-22",
+  "deal_close_date": "2018-03-06",
+  "peak_sales_estimate_usd_m": 1500.0,
+  "asset_phase_at_deal": "phase_2",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2021-02-05",
+  "notes": "Celgene paid $9B for Juno Therapeutics — autologous anti-CD19 CAR-T cell therapy Breyanzi (lisocabtagene maraleucel) for relapsed/refractory large B-cell lymphoma. Phase 2 at deal time; FDA-approved Feb 2021. Subsequent label expansions. Note: Celgene was itself acquired by BMS in Nov 2019 (~$74B), so Breyanzi is now a BMS commercial asset. Peak sales estimate $1.5B reflects Breyanzi-specific consensus, somewhat below Yescarta due to its later launch and the dueling-CAR-T market dynamic.",
+  "selection_rationale": "Second canonical autologous CD19 CAR-T M&A. Phase 2 at deal time provides a useful pre-approval benchmark for the cell-therapy cohort (vs Kite's post-approval framing). The Celgene→BMS rollup is a real-world wrinkle; for cohort accounting we use the original Celgene-paid $9B as the deal value.",
+  "source": "Celgene press release Jan 22 2018; Juno SEC filings; FDA approval letter Feb 5 2021."
+}

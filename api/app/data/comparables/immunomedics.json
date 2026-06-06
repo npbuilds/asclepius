@@ -1,0 +1,17 @@
+{
+  "asset_name": "Trodelvy (sacituzumab govitecan)",
+  "therapeutic_area": "oncology",
+  "modality": "antibody_drug_conjugate",
+  "acquirer": "Gilead Sciences",
+  "target_company": "Immunomedics",
+  "deal_value_usd_m": 21000.0,
+  "deal_date": "2020-09-13",
+  "deal_close_date": "2020-10-23",
+  "peak_sales_estimate_usd_m": 3000.0,
+  "asset_phase_at_deal": "approved",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2020-04-22",
+  "notes": "Gilead paid $21B for Immunomedics' Trodelvy — an anti-TROP2 antibody-drug conjugate (ADC) for triple-negative breast cancer. FDA-approved Apr 2020 (accelerated, 3L+ TNBC); full approval Apr 2021. Deal closed Oct 2020. Subsequent label expansions into HR+/HER2- breast cancer, urothelial cancer. Peak sales estimate $3B reflects analyst consensus across approved + label-expansion indications. EV/peak ratio of 7.0× is on the high end for oncology ADCs, reflecting a strategic premium for Gilead's first ADC platform play.",
+  "selection_rationale": "Recent (2020), single-asset, oncology-ADC M&A with a clear lead asset already approved at deal time. Anchors the post-de-risking end of the oncology-mAb/ADC cohort.",
+  "source": "Gilead press release Sep 13 2020; Immunomedics SEC filings; FDA approval letter Apr 22 2020."
+}

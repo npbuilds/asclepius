@@ -1,0 +1,17 @@
+{
+  "asset_name": "Yescarta (axicabtagene ciloleucel)",
+  "therapeutic_area": "oncology",
+  "modality": "cell_therapy_autologous",
+  "acquirer": "Gilead Sciences",
+  "target_company": "Kite Pharma",
+  "deal_value_usd_m": 11900.0,
+  "deal_date": "2017-08-28",
+  "deal_close_date": "2017-10-03",
+  "peak_sales_estimate_usd_m": 2500.0,
+  "asset_phase_at_deal": "approved",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2017-10-18",
+  "notes": "Gilead paid $11.9B for Kite Pharma — autologous anti-CD19 CAR-T cell therapy Yescarta (axicabtagene ciloleucel) for relapsed/refractory large B-cell lymphoma. FDA-approved Oct 2017 (a few weeks after deal close). Subsequent label expansions into follicular lymphoma and 2L+ LBCL. Peak sales estimate $2.5B reflects Yescarta-specific sell-side consensus across the indications. EV/peak ratio of 4.76× reflects the strategic premium Gilead paid to enter cell therapy + the optionality on the broader Kite pipeline (KITE-585 BCMA, etc.).",
+  "selection_rationale": "Canonical autologous CD19 CAR-T M&A. Lead asset Yescarta was the first commercial CAR-T product. Anchors the Oncology · cell_therapy cohort with a post-de-risking benchmark.",
+  "source": "Gilead press release Aug 28 2017; Kite SEC filings; FDA approval letter Oct 18 2017."
+}

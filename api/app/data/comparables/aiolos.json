@@ -1,0 +1,16 @@
+{
+  "asset_name": "AIO-001 (anti-TSLP mAb)",
+  "therapeutic_area": "autoimmune",
+  "modality": "monoclonal_antibody",
+  "acquirer": "GSK",
+  "target_company": "Aiolos Bio",
+  "deal_value_usd_m": 1400.0,
+  "deal_date": "2024-01-08",
+  "deal_close_date": "2024-02-13",
+  "peak_sales_estimate_usd_m": 1500.0,
+  "asset_phase_at_deal": "phase_1",
+  "approved_post_deal": false,
+  "notes": "GSK paid $1B upfront + $400M in regulatory CVR milestones for Aiolos Bio's AIO-001 — a long-acting anti-TSLP monoclonal antibody for severe asthma, in-licensed from Jiangsu Hengrui in 2023. Phase 1 / Phase 2-ready at deal time. Positioned as a longer-dosing-interval competitor to Tezspire (tezepelumab, Amgen/AstraZeneca, also anti-TSLP). Total $1.4B reflects upfront + CVR; standalone upfront $1.0B is the comp value if you exclude milestones. Use $1.4B for the cohort to include the full deal value including milestone-contingent consideration.",
+  "selection_rationale": "Smaller-deal anchor for the autoimmune-mAb cohort to balance the larger Prometheus and Horizon comparables. Represents a Phase 1 / early-Phase-2 in-licensing-style acquisition rather than late-stage M&A — useful for triangulating the multiple paid for earlier-stage biologics. Also tests the framework's coverage of asthma/respiratory immunology, which often gets grouped with autoimmune in modeling.",
+  "source": "GSK press release Jan 8 2024; Aiolos Bio announcement; Endpoints News coverage."
+}

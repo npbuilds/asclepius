@@ -1,0 +1,18 @@
+{
+  "asset_name": "magrolimab (anti-CD47 mAb)",
+  "therapeutic_area": "oncology",
+  "modality": "monoclonal_antibody",
+  "acquirer": "Gilead Sciences",
+  "target_company": "Forty Seven Inc.",
+  "deal_value_usd_m": 4900.0,
+  "deal_date": "2020-03-02",
+  "deal_close_date": "2020-04-07",
+  "peak_sales_estimate_usd_m": 2000.0,
+  "asset_phase_at_deal": "phase_2",
+  "approved_post_deal": false,
+  "phase_3_outcome_post_deal": "failed",
+  "phase_3_outcome_date_post_deal": "2024-02-14",
+  "notes": "Gilead paid $4.9B for Forty Seven's magrolimab — an anti-CD47 (don't-eat-me-signal blocker) monoclonal antibody. Phase 2 at deal time in MDS, AML, and other hematologic malignancies; later expanded to solid tumors. CRITICAL POST-DEAL CONTEXT: Magrolimab failed pivotal AML and MDS Phase 3 trials in 2023-2024; Gilead discontinued the program in Feb 2024. The $2B peak sales estimate is the pre-failure consensus; post-failure realistic peak is near zero. Include in the cohort because the deal terms are real and acquirers DO pay for Phase 2 oncology mAbs with novel mechanisms — including ones that subsequently fail. This is the framework working as intended: M&A premia on Phase 2 oncology mAbs reflect real risk.",
+  "selection_rationale": "Recent (2020), single-asset, oncology mAb M&A at Phase 2 — important benchmark for the multiple paid for pre-pivotal oncology biologics with novel mechanisms. The post-deal failure is a feature, not a bug: the cohort should reflect what acquirers actually pay, including the deals that didn't work out.",
+  "source": "Gilead press release Mar 2 2020; Forty Seven SEC filings; Gilead Q4 2023 + Q1 2024 earnings (magrolimab discontinuation disclosure)."
+}

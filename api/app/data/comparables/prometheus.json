@@ -1,0 +1,16 @@
+{
+  "asset_name": "tulisokibart (PRA023)",
+  "therapeutic_area": "autoimmune",
+  "modality": "monoclonal_antibody",
+  "acquirer": "Merck & Co.",
+  "target_company": "Prometheus Biosciences",
+  "deal_value_usd_m": 10800.0,
+  "deal_date": "2023-04-16",
+  "deal_close_date": "2023-06-16",
+  "peak_sales_estimate_usd_m": 5000.0,
+  "asset_phase_at_deal": "phase_2",
+  "approved_post_deal": false,
+  "notes": "Merck paid $10.8B all-cash for Prometheus's anti-TL1A monoclonal antibody (PRA023, later tulisokibart) — at the time the most advanced anti-TL1A asset in development. Phase 2 ARTEMIS-UC was positive at deal time; Phase 3 ATLAS-UC launched post-close. Sell-side peak sales consensus in IBD ranged $3-7B depending on UC + Crohn's + RA penetration assumptions. The $5B midpoint reflects standard analyst assumptions for a first-in-class biologic in IBD.",
+  "selection_rationale": "Largest recent (2023) single-asset autoimmune monoclonal antibody M&A with public deal terms. Phase 2 asset M&A multiple is meaningfully discounted vs Phase 3 / approved assets — useful for calibrating expectations on developmental autoimmune biologics.",
+  "source": "Merck press release Apr 16 2023; Prometheus SEC filings; sell-side consensus pre-deal (Cowen, Goldman, Morgan Stanley)."
+}

@@ -1,0 +1,16 @@
+{
+  "asset_name": "bemarituzumab (anti-FGFR2b mAb)",
+  "therapeutic_area": "oncology",
+  "modality": "monoclonal_antibody",
+  "acquirer": "Amgen",
+  "target_company": "Five Prime Therapeutics",
+  "deal_value_usd_m": 1900.0,
+  "deal_date": "2021-03-04",
+  "deal_close_date": "2021-04-16",
+  "peak_sales_estimate_usd_m": 1000.0,
+  "asset_phase_at_deal": "phase_2",
+  "approved_post_deal": false,
+  "notes": "Amgen paid $1.9B for Five Prime's bemarituzumab — an anti-FGFR2b monoclonal antibody for FGFR2b-overexpressing gastric / GEJ adenocarcinoma. Phase 2 FIGHT data was positive at deal time (PFS benefit in biomarker-selected patients). Phase 3 FORTITUDE-101 and FORTITUDE-102 launched post-close; PFS readout in 2024-2025. Peak sales estimate $1B reflects analyst consensus for the biomarker-selected gastric cancer population (~30% of advanced gastric tumors express FGFR2b at high level). Targeted-therapy framing — comparable to other biomarker-defined oncology mAbs.",
+  "selection_rationale": "Smaller-deal anchor for the oncology-mAb/ADC cohort. Phase 2 single-asset, biomarker-defined, mid-cap acquirer (Amgen). Triangulates with Immunomedics (post-approval, large deal) and Forty Seven (Phase 2, larger deal but novel mechanism). Three deals spanning $1.9B-$21B and Phase 2 through approval gives a meaningful EV/peak range for the cohort.",
+  "source": "Amgen press release Mar 4 2021; Five Prime SEC filings; Amgen Q2-Q3 2024 earnings (FORTITUDE-101 enrollment progress disclosure)."
+}
