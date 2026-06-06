@@ -12,6 +12,7 @@ import TrialDesignCard from "@/components/cards/TrialDesignCard";
 import HeroBanner from "@/components/HeroBanner";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
 import RiskSection from "@/components/RiskSection";
+import UnresearchedAssetHero from "@/components/UnresearchedAssetHero";
 import { listModules } from "@/lib/api-client";
 import {
   ClientDiligenceRecord,
@@ -404,6 +405,18 @@ export default function DiligencePage({
     isAdagrasib || isDivarasib || isAducanumab || isLifileucel || isTulisokibart;
   const [assetFormOpen, setAssetFormOpen] = useState(!isStaged);
 
+  // v1.7.1: "ready to use" UX for the friend-test "type your own asset" path.
+  // A blank custom asset (no sponsor, no mechanism) has no real values to
+  // compute the framework against — the modules would render real-looking but
+  // meaningless numbers from the schema defaults (phase_2 / oncology /
+  // small_molecule / adequate). Detect this state and switch the page from
+  // "full workbench" to "focused research hero" — Auto-Diligence as the
+  // page's centerpiece, manual entry as a collapsed alternative. Once
+  // sponsor + mechanism are populated (via Auto-Diligence apply or manual
+  // edit), the predicate flips false and the full workbench renders.
+  const isUnresearched =
+    !isStaged && !record.asset.sponsor && !record.asset.mechanism;
+
   // v1.8.0 Phase 3: persona-driven layout. The page reads the current
   // persona on every render and looks up its config (module ordering,
   // hidden modules, banner variant, ActionSection visibility). For the
@@ -460,6 +473,35 @@ export default function DiligencePage({
 
   function updateAsset(asset: AssetInput) {
     setRecord({ asset });
+  }
+
+  // v1.7.1: ready-to-use empty-state. When `isUnresearched` is true the page
+  // renders a focused research hero instead of the full workbench — see the
+  // predicate definition above and UnresearchedAssetHero.tsx header for the
+  // full rationale. This early return keeps the unresearched layout
+  // visually minimal (header + hero only) and avoids 200+ lines of
+  // workbench JSX evaluating against meaningless schema-default inputs.
+  if (isUnresearched) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-8">
+        <header className="mb-6">
+          <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
+            ── Diligence workbench ──
+          </div>
+          <h1 className="mt-1 font-display text-xl font-bold uppercase leading-[1.15] tracking-[0.04em] text-text-bright sm:text-2xl">
+            {record.asset.asset_name}
+            <span className="ml-2.5 font-body text-[13px] font-normal normal-case tracking-normal text-amber-bright">
+              · unresearched
+            </span>
+          </h1>
+        </header>
+        <UnresearchedAssetHero
+          record={record}
+          setRecord={setRecord}
+          onAssetChange={updateAsset}
+        />
+      </div>
+    );
   }
 
   return (
@@ -591,33 +633,6 @@ export default function DiligencePage({
       ) : (
         <HeroBanner record={record} />
       )}
-
-      {/* v1.6 friend-test prompt: when an unstaged asset has an
-          essentially-blank record (no sponsor / no mechanism / default
-          competitors / default biomarker), surface a one-line nudge that
-          points at Auto-Diligence. Without this, the friend lands on a
-          half-empty form with no signal that the agent will populate it.
-          The heuristic for "blank": no sponsor AND no mechanism. Once
-          Auto-Diligence runs (or the analyst types into the form), one of
-          those will be populated and the prompt disappears — no manual
-          dismiss state needed. Adagrasib + divarasib bypass this entirely
-          because their pre-staged records always have sponsor + mechanism. */}
-      {!isStaged && !record.asset.sponsor && !record.asset.mechanism ? (
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 rounded border border-cyan-bright/30 bg-cyan-bright/5 p-3 text-[12px]">
-          <p className="font-prose text-text-primary">
-            <strong className="font-display text-[11px] uppercase tracking-wider text-cyan-bright">
-              Start here →
-            </strong>{" "}
-            Scroll to the bottom action strip and click{" "}
-            <span className="font-mono text-text-bright">Auto-Diligence</span>{" "}
-            to populate every field on this page from public sources
-            (CT.gov, FDA, EDGAR, top journals). Takes ~30 seconds.
-          </p>
-          <p className="font-mono text-[10px] uppercase tracking-wider text-text-dim">
-            or [ edit ] the asset strip below to enter values manually
-          </p>
-        </div>
-      ) : null}
 
       {/* v1.7.0 Phase 4: Asset form collapsed to a top strip with a
           one-line summary. Default-open on non-adagrasib assets (the user
