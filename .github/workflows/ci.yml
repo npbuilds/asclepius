@@ -64,6 +64,28 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Sync-drift check
+        # `pnpm typecheck` (and `pnpm build`) auto-run the two sync scripts
+        # via the `predev`/`prebuild`/`typecheck` chain. If a commit reached
+        # main where the committed methodology-content.ts or
+        # predictions-content.ts is stale relative to its source, the sync
+        # we just ran will have regenerated different content from what was
+        # committed — surfacing as an unstaged diff in the workspace.
+        # This step fails fast and tells the committer to re-run the
+        # pre-commit hook (scripts/hooks/pre-commit) and re-commit.
+        # The hook is the optimistic path; this check is the safety net.
+        run: |
+          if ! git diff --exit-code -- lib/methodology-content.ts lib/predictions-content.ts; then
+            echo ""
+            echo "::error::Sync drift detected. The committed generated files do not match"
+            echo "::error::what running the sync scripts produces from the current sources."
+            echo "::error::Fix locally with: cd web && pnpm sync:methodology && pnpm sync:predictions,"
+            echo "::error::then \`git add web/lib/methodology-content.ts web/lib/predictions-content.ts\`"
+            echo "::error::and amend / re-commit. Install scripts/hooks/install.sh to auto-prevent."
+            exit 1
+          fi
+          echo "Sync-drift check: clean"
+
       - name: Production build
         # API_BASE is not set in CI — Next.js rewrites still resolve at build
         # time; the build doesn't call the API, so empty is fine.

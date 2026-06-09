@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Pre-commit hook — keep the build-artifact files in sync with their source.
+#
+# WHY: methodology/*.md is the source-of-truth for the methodology writeups;
+# web/lib/methodology-content.ts is a generated TypeScript module the
+# Next.js app imports at build time (Vercel only deploys web/, so the
+# generated file has to be in git — see web/scripts/sync-methodology.mjs
+# for the constraint). The sync script also auto-runs on `predev` and
+# `prebuild` and inside `pnpm typecheck`, which means LOCAL development
+# always sees the right content even when the committed artifact is stale.
+# Drift is invisible until someone hits the live deploy and reads the
+# rendered page. Same pattern for predictions/*.json + predictions-content.ts.
+#
+# This hook closes the loop at commit time: if any methodology .md or
+# predictions .json is staged, re-run the sync and auto-stage the
+# regenerated artifact alongside the source change. Belt-and-suspenders
+# with the CI check in .github/workflows/ci.yml that fails the build
+# if a commit reaches main with drift.
+#
+# INSTALL: ./scripts/hooks/install.sh (symlinks into .git/hooks/pre-commit).
+# UNINSTALL: rm .git/hooks/pre-commit. Bypass for one commit: git commit --no-verify.
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# What's actually staged? We only act if the staged set includes a sync source.
+# --diff-filter=ACMR catches Adds / Copies / Modifies / Renames (skip Deletes
+# because the sync script handles a missing source file gracefully on its own).
+staged_methodology="$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^methodology/.*\.md$' || true)"
+staged_predictions="$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^predictions/.*\.json$' || true)"
+
+if [[ -z "$staged_methodology" && -z "$staged_predictions" ]]; then
+  # No sync sources touched; nothing to do.
+  exit 0
+fi
+
+# Sync scripts are Node ESM. If node isn't available we don't want to block
+# the commit — print a clear warning and let it proceed; CI will catch any
+# drift that lands on main.
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: WARNING — node not on PATH; skipping sync (CI will check)" >&2
+  exit 0
+fi
+
+cd web
+
+if [[ -n "$staged_methodology" ]]; then
+  echo "pre-commit: methodology .md changes staged → re-syncing methodology-content.ts"
+  node scripts/sync-methodology.mjs >/dev/null
+fi
+
+if [[ -n "$staged_predictions" ]]; then
+  echo "pre-commit: predictions .json changes staged → re-syncing predictions-content.ts"
+  node scripts/sync-predictions.mjs >/dev/null
+fi
+
+cd "$repo_root"
+
+# Stage the regenerated artifacts. `git add` is a no-op if nothing changed,
+# so this is safe whether or not the sync produced a diff. After this, the
+# working tree and the index agree on the generated files — that's the
+# invariant the CI check in .github/workflows/ci.yml re-verifies on main.
+git add web/lib/methodology-content.ts web/lib/predictions-content.ts 2>/dev/null || true
+
+echo "pre-commit: sync complete — staged artifacts now match sources"
