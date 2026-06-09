@@ -12,10 +12,28 @@
 # rendered page. Same pattern for predictions/*.json + predictions-content.ts.
 #
 # This hook closes the loop at commit time: if any methodology .md or
-# predictions .json is staged, re-run the sync and auto-stage the
-# regenerated artifact alongside the source change. Belt-and-suspenders
-# with the CI check in .github/workflows/ci.yml that fails the build
-# if a commit reaches main with drift.
+# predictions .json is staged (including a stage-for-deletion), re-run the
+# sync and auto-stage the regenerated artifact alongside the source change.
+# Belt-and-suspenders with the CI check in .github/workflows/ci.yml that
+# fails the build if a commit reaches main with drift.
+#
+# CORRECTNESS NOTES (from codex review + fable review):
+#   1. We include staged DELETIONS (--diff-filter=ACMRD includes D) so a
+#      removed source file triggers a sync that drops its entry from the
+#      generated .ts.
+#   2. The sync scripts read the WORKING TREE, so if a source file has both
+#      staged AND unstaged edits, the regenerated artifact reflects the full
+#      working-tree content rather than the staged-only content. We do NOT
+#      try to stash the unstaged changes away to correct this — a stash
+#      push/pop inside a pre-commit hook is destructive (it conflicts on the
+#      generated .ts in the common case where `pnpm dev`/typecheck left it
+#      dirty, and a failed pop leaves conflict markers + a dangling stash
+#      while the commit proceeds). Instead we WARN and proceed: the rare
+#      staged-vs-unstaged mismatch this allows is already caught by the CI
+#      drift check, which regenerates from the committed (staged-only)
+#      source and fails the build if the committed .ts doesn't match.
+#      Validation belongs in the layer that can fail safely (CI), not in a
+#      hook that can corrupt the working tree.
 #
 # INSTALL: ./scripts/hooks/install.sh (symlinks into .git/hooks/pre-commit).
 # UNINSTALL: rm .git/hooks/pre-commit. Bypass for one commit: git commit --no-verify.
@@ -25,11 +43,12 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-# What's actually staged? We only act if the staged set includes a sync source.
-# --diff-filter=ACMR catches Adds / Copies / Modifies / Renames (skip Deletes
-# because the sync script handles a missing source file gracefully on its own).
-staged_methodology="$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^methodology/.*\.md$' || true)"
-staged_predictions="$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^predictions/.*\.json$' || true)"
+# What's actually staged? We act if the staged set includes ANY change to a
+# sync source — including deletes. ACMRD covers Add / Copy / Modify / Rename /
+# Delete. Renames upstream of methodology/*.md aren't expected to occur in
+# practice but `R` keeps us correct if they do.
+staged_methodology="$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^methodology/.*\.md$' || true)"
+staged_predictions="$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^predictions/.*\.json$' || true)"
 
 if [[ -z "$staged_methodology" && -z "$staged_predictions" ]]; then
   # No sync sources touched; nothing to do.
@@ -42,6 +61,18 @@ fi
 if ! command -v node >/dev/null 2>&1; then
   echo "pre-commit: WARNING — node not on PATH; skipping sync (CI will check)" >&2
   exit 0
+fi
+
+# If any staged sync-source ALSO has unstaged edits, the regenerated
+# artifact will reflect the full working-tree content, not the staged-only
+# content. Warn so the developer isn't surprised; the CI drift check is the
+# backstop that fails the build if a real mismatch lands. We do not stash
+# (see CORRECTNESS NOTE 2 in the header).
+unstaged_sources="$(git diff --name-only -- methodology predictions | grep -E '^(methodology/.*\.md|predictions/.*\.json)$' || true)"
+if [[ -n "$unstaged_sources" ]]; then
+  echo "pre-commit: NOTE — these sync sources have unstaged edits; the regenerated" >&2
+  echo "pre-commit:        artifact will reflect the full working tree, not staged-only:" >&2
+  echo "$unstaged_sources" | sed 's/^/pre-commit:          /' >&2
 fi
 
 cd web
@@ -58,10 +89,8 @@ fi
 
 cd "$repo_root"
 
-# Stage the regenerated artifacts. `git add` is a no-op if nothing changed,
-# so this is safe whether or not the sync produced a diff. After this, the
-# working tree and the index agree on the generated files — that's the
-# invariant the CI check in .github/workflows/ci.yml re-verifies on main.
+# Stage the regenerated artifacts. `git add` is a no-op if the sync produced
+# no change, so this is safe whether or not the content moved.
 git add web/lib/methodology-content.ts web/lib/predictions-content.ts 2>/dev/null || true
 
 echo "pre-commit: sync complete — staged artifacts now match sources"

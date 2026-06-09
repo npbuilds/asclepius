@@ -70,18 +70,29 @@ jobs:
         # main where the committed methodology-content.ts or
         # predictions-content.ts is stale relative to its source, the sync
         # we just ran will have regenerated different content from what was
-        # committed — surfacing as an unstaged diff in the workspace.
-        # This step fails fast and tells the committer to re-run the
-        # pre-commit hook (scripts/hooks/pre-commit) and re-commit.
-        # The hook is the optimistic path; this check is the safety net.
+        # committed — surfacing as an unstaged diff (or, if the generated
+        # file was missing from the commit entirely, as a freshly-created
+        # untracked file).
+        #
+        # We use `git status --porcelain` instead of `git diff --exit-code`
+        # because diff doesn't include untracked files. The classic CI miss
+        # (per codex review): if a commit accidentally removes the .ts file,
+        # `pnpm typecheck` recreates it as untracked, `git diff` reports
+        # nothing, the build passes, and Vercel deploys a tree where the
+        # file isn't tracked — broken render. Porcelain catches modified +
+        # untracked + added + deleted in one check.
+        #
+        # This step fails fast and points at the local pre-commit hook
+        # (scripts/hooks/pre-commit) as the optimistic prevention.
         run: |
-          if ! git diff --exit-code -- lib/methodology-content.ts lib/predictions-content.ts; then
+          drift="$(git status --porcelain -- lib/methodology-content.ts lib/predictions-content.ts)"
+          if [[ -n "$drift" ]]; then
+            echo "::error::Sync drift detected. Generated files don't match their sources OR aren't tracked:"
+            echo "$drift"
             echo ""
-            echo "::error::Sync drift detected. The committed generated files do not match"
-            echo "::error::what running the sync scripts produces from the current sources."
-            echo "::error::Fix locally with: cd web && pnpm sync:methodology && pnpm sync:predictions,"
-            echo "::error::then \`git add web/lib/methodology-content.ts web/lib/predictions-content.ts\`"
-            echo "::error::and amend / re-commit. Install scripts/hooks/install.sh to auto-prevent."
+            echo "::error::Fix locally with: cd web && pnpm sync:methodology && pnpm sync:predictions"
+            echo "::error::Then: git add web/lib/methodology-content.ts web/lib/predictions-content.ts"
+            echo "::error::And amend / re-commit. Install scripts/hooks/install.sh to auto-prevent."
             exit 1
           fi
           echo "Sync-drift check: clean"
