@@ -187,10 +187,13 @@ methodology numbers below reconstruct exactly when you visit
    endpoint failure. Doing so would invite reflexive reasoning.
 3. **Reimbursement battles as PoS proxies.** The CMS coverage
    determination was the actual commercial death blow. The framework
-   bounds peak-sales downside (~$80M rNPV at the post-v1.7.7 ~14%
-   PoS <!-- parity-allow: model-output -->) but does not model the CMS-approval-vs-FDA-approval gap.
-   **This *is* a known framework limitation**, documented in the
-   LimitationsPanel.
+   prices a clean Phase 3 failure (`downside_failed_p3 = $106M` <!-- parity-allow: model-output -->
+   for these inputs) but does not model the CMS-approval-vs-FDA-approval
+   gap — the path where the FDA approves and CMS effectively denies
+   reimbursement, leaving the asset technically on-market but
+   commercially dead. This is the contested-political-process tail
+   risk on the downside, and it's a **known framework limitation**
+   documented in the LimitationsPanel.
 
 ## What the framework should do better
 
