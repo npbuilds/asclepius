@@ -116,6 +116,37 @@ class RecommendationClose(BaseModel):
     )
 
 
+class MemoContent(BaseModel):
+    """The model-generated portion of the memo — everything the LLM fills in.
+
+    v1.9.2: used as the tool-use `input_schema` for the Memo Writer's live
+    call. With `tool_choice` forcing this tool, the model returns a
+    schema-validated object (Anthropic validates against this schema before
+    returning), so the agent does NO prose parsing — `block.input` is already
+    a dict matching these fields. Every section is REQUIRED (no `| None`):
+    the whole point of the migration is that a memo can't come back empty.
+
+    The agent assembles the full `MemoOutput` from this + the envelope fields
+    (`body_markdown`, `model_used`, `from_cache`, `generated_at`) in code.
+    """
+
+    tldr: TLDR
+    asset_overview: AssetOverview
+    pos_analysis: PoSAnalysis
+    valuation: ValuationAnalysis
+    comparables: ComparablesInterpretation
+    operational: OperationalDiligence
+    risks: list[RiskItem] = Field(
+        description="2-5 ranked risks, highest-severity first."
+    )
+    recommendation_close: RecommendationClose
+    executive_summary: str = Field(description="100-200 word stand-alone summary.")
+    recommendation: Recommendation
+    red_flags: list[str] = Field(
+        description="Flat list of critical concerns (mirrors risks[].label).",
+    )
+
+
 class MemoOutput(BaseModel):
     # --- new structured fields ---
     tldr: TLDR | None = Field(

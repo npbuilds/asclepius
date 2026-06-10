@@ -1,8 +1,11 @@
-"""Memo Writer tests — exercise cache hit, live path with mocked SDK, error path.
+"""Memo Writer tests — cache hit, tool-use live path (mocked SDK), error paths.
 
-v1.7.7: tests updated for the new structured-JSON response format. The model
-now returns a single fenced JSON object with named sections; the agent
-assembles a markdown body from those sections.
+v1.9.2: the agent migrated from prose-parsing to tool-use. The model is forced
+(tool_choice) to call `emit_memo`, returning a `tool_use` block whose `.input`
+is a dict the Anthropic API already validated against MemoContent's schema. The
+agent re-validates through MemoContent, renders body_markdown, and wraps the
+envelope. These tests mock the SDK to return a tool_use block and assert the
+assembled MemoOutput — there is no longer any prose parser to test.
 """
 
 from __future__ import annotations
@@ -16,7 +19,7 @@ from unittest.mock import patch
 import pytest
 from fastapi import HTTPException
 
-from app.agents.memo_writer.agent import Agent, _parse_memo_response, _slugify_asset_name
+from app.agents.memo_writer.agent import MEMO_TOOL, Agent, _slugify_asset_name
 from app.domain import AssetInput, CapitalPosition, DiligenceRecord, Modality, Phase, TherapeuticArea
 from app.registry import AgentManifest
 
@@ -50,6 +53,86 @@ def _make_agent(tmp_path: Path, cached_assets: list[str]) -> Agent:
     return Agent(manifest=manifest, agent_dir=tmp_path)
 
 
+# A complete, valid MemoContent payload — the shape the model returns as the
+# emit_memo tool's `input`. The Anthropic API validates this against the tool
+# schema before we ever see it; here we supply it directly.
+_TOOL_INPUT = {
+    "tldr": {
+        "recommendation": "buy",
+        "loa_pct": 16.1,
+        "rnpv_base_usd_m": 516,
+        "rnpv_range_low_usd_m": 290,
+        "rnpv_range_high_usd_m": 698,
+        "thesis_one_liner": "Phase 2 KRAS G12C asset with a documentable PoS chain.",
+    },
+    "asset_overview": {
+        "paragraph": "Adagrasib is an oral KRAS G12C inhibitor in 2L+ NSCLC."
+    },
+    "pos_analysis": {
+        "waterfall_narrative": (
+            "From the base rate, biomarker-enrichment-boost x1.20 lifts the LOA, "
+            "then target-validated x1.15 closes the validation question, BTD x1.10 "
+            "reflects FDA pre-commitment."
+        ),
+        "reflexivity_note": "Mirati sits in the adequate reflexivity tier.",
+    },
+    "valuation": {
+        "valuation_narrative": (
+            "Base rNPV $516M, MC P25-P75 $290-$698M. Top tornado driver: peak sales."
+        )
+    },
+    "comparables": {
+        "cohort_paragraph": (
+            "Oncology small-molecule cohort, median EV/peak-sales 6.67x, closest "
+            "analog selpercatinib/Lilly."
+        )
+    },
+    "operational": {
+        "pillars_paragraph": "Clinical 8/10, regulatory 8/10, competitive 6/10 — no red flags."
+    },
+    "risks": [
+        {
+            "label": "Peak-sales concentration",
+            "description": "Second-mover share against sotorasib could compress the anchor.",
+            "severity": "high",
+        },
+        {
+            "label": "Single-asset concentration",
+            "description": "Mirati corporate exposure if KRYSTAL-12 fails.",
+            "severity": "medium",
+        },
+    ],
+    "recommendation_close": {
+        "recommendation": "buy",
+        "closing_paragraph": "At $474M asset-attributable, the framework brackets the entry as a buy.",
+        "kill_criterion": "A KRYSTAL-12 primary-endpoint miss flips the call to avoid.",
+    },
+    "executive_summary": "Adagrasib is a Phase 2 KRAS G12C asset with a 16.1% LOA and base rNPV $516M.",
+    "recommendation": "buy",
+    "red_flags": ["Peak-sales concentration", "Single-asset concentration"],
+}
+
+
+def _fake_client_returning(tool_input):
+    """A fake anthropic.Anthropic() whose messages.create returns a tool_use block."""
+    block = SimpleNamespace(type="tool_use", name="emit_memo", input=tool_input)
+    message = SimpleNamespace(content=[block])
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            # The migration must pass the tool + force its use.
+            assert kwargs["model"] == "claude-opus-4-7"
+            assert kwargs["tool_choice"] == {"type": "tool", "name": "emit_memo"}
+            assert any(t["name"] == "emit_memo" for t in kwargs["tools"])
+            return message
+
+    class FakeClient:
+        def __init__(self):
+            self.messages = FakeMessages()
+
+    return FakeClient()
+
+
 # ---------------------------------------------------------------------------
 # slugify
 # ---------------------------------------------------------------------------
@@ -62,113 +145,27 @@ def test_slugify_strips_punctuation_and_lowercases():
 
 
 # ---------------------------------------------------------------------------
-# Structured-JSON parser
+# tool schema
 # ---------------------------------------------------------------------------
 
 
-_FULL_STRUCTURED_RESPONSE = """```json
-{
-  "tldr": {
-    "recommendation": "buy",
-    "loa_pct": 16.1,
-    "rnpv_base_usd_m": 516,
-    "rnpv_range_low_usd_m": 290,
-    "rnpv_range_high_usd_m": 698,
-    "thesis_one_liner": "Phase 2 KRAS G12C asset with a documentable PoS chain and a strategic-sale liquidity unit."
-  },
-  "asset_overview": {
-    "paragraph": "Adagrasib is an oral KRAS G12C inhibitor in 2L+ NSCLC."
-  },
-  "pos_analysis": {
-    "waterfall_narrative": "From the 10.6% base rate, biomarker-enrichment-boost x1.20 lifts the LOA, then target-validated x1.15 closes the validation question, BTD x1.10 reflects FDA pre-commitment.",
-    "reflexivity_note": "Mirati sits in the adequate reflexivity tier — neither signaling deepest commitment nor pooling with distressed types."
-  },
-  "valuation": {
-    "valuation_narrative": "Base rNPV $516M, MC P25-P75 $290-$698M. Top tornado driver: peak sales. The asset trades closer to the cohort median than the precedent clearing price."
-  },
-  "comparables": {
-    "cohort_paragraph": "Oncology · small molecule cohort, median EV/peak-sales 6.67x, closest analog selpercatinib/Lilly."
-  },
-  "operational": {
-    "pillars_paragraph": "Clinical 8/10, regulatory 8/10, competitive 6/10 — no red flags."
-  },
-  "risks": [
-    {"label": "Peak-sales concentration", "description": "Second-mover share against sotorasib could collapse the $1.2B anchor.", "severity": "high"},
-    {"label": "Single-asset concentration", "description": "Mirati corporate exposure if KRYSTAL-12 fails.", "severity": "medium"}
-  ],
-  "recommendation_close": {
-    "recommendation": "buy",
-    "closing_paragraph": "At $474M asset-attributable, the framework brackets the entry as a buy.",
-    "kill_criterion": "A KRYSTAL-12 primary-endpoint miss flips the call to avoid."
-  },
-  "executive_summary": "Adagrasib is a Phase 2 KRAS G12C asset with a 16.1% LOA, base rNPV $516M, and a price-conditioned buy at or below the P50.",
-  "red_flags": []
-}
-```"""
-
-
-def test_parse_memo_response_extracts_structured_sections():
-    out = _parse_memo_response(_FULL_STRUCTURED_RESPONSE, model_used="test-model")
-    assert out["recommendation"] == "buy"
-    assert out["tldr"]["loa_pct"] == 16.1
-    assert out["tldr"]["rnpv_base_usd_m"] == 516
-    assert out["pos_analysis"]["waterfall_narrative"].startswith("From the 10.6%")
-    assert len(out["risks"]) == 2
-    assert out["risks"][0]["label"] == "Peak-sales concentration"
-    assert out["recommendation_close"]["kill_criterion"].endswith("avoid.")
-    # body_markdown should be assembled from the structured sections
-    assert "## TL;DR" in out["body_markdown"]
-    assert "## Recommendation" in out["body_markdown"]
-    assert "Kill criterion" in out["body_markdown"]
-    assert "```json" not in out["body_markdown"]
-
-
-def test_parse_memo_response_falls_back_when_json_missing():
-    raw = "## Executive summary\nA paragraph.\n\n## Recommendation\nHold."
-    out = _parse_memo_response(raw, model_used="test-model")
-    assert out["recommendation"] == "hold"
-    assert out["red_flags"] == []
-    # No structured sections at all when JSON is missing
-    assert out["tldr"] is None
-    assert out["pos_analysis"] is None
-    # Raw body preserved as the markdown body
-    assert "## Executive summary" in out["body_markdown"]
-
-
-def test_parse_memo_response_handles_malformed_json_block():
-    raw = "## Executive summary\nA.\n\n```json\n{not valid}\n```"
-    out = _parse_memo_response(raw, model_used="test-model")
-    assert out["recommendation"] == "hold"
-
-
-def test_parse_memo_response_rejects_unknown_recommendation_enum():
-    raw = """```json
-{
-  "tldr": {"recommendation": "love_it", "loa_pct": 10.0, "rnpv_base_usd_m": 100, "thesis_one_liner": "x"},
-  "executive_summary": "foo.",
-  "red_flags": []
-}
-```"""
-    out = _parse_memo_response(raw, model_used="test-model")
-    # tldr.recommendation is invalid → top-level coerced to "hold"
-    assert out["recommendation"] == "hold"
-
-
-def test_parse_memo_response_derives_red_flags_from_risks_when_missing():
-    raw = """```json
-{
-  "tldr": {"recommendation": "cautious", "loa_pct": 8.0, "rnpv_base_usd_m": 100, "thesis_one_liner": "x"},
-  "risks": [
-    {"label": "Competitive entry", "description": "...", "severity": "high"},
-    {"label": "Capital runway", "description": "...", "severity": "medium"}
-  ],
-  "executive_summary": "Foo."
-}
-```"""
-    out = _parse_memo_response(raw, model_used="test-model")
-    assert out["recommendation"] == "cautious"
-    assert "Competitive entry" in out["red_flags"]
-    assert "Capital runway" in out["red_flags"]
+def test_memo_tool_schema_requires_all_sections():
+    schema = MEMO_TOOL["input_schema"]
+    required = set(schema.get("required", []))
+    for section in (
+        "tldr",
+        "asset_overview",
+        "pos_analysis",
+        "valuation",
+        "comparables",
+        "operational",
+        "risks",
+        "recommendation_close",
+        "executive_summary",
+        "recommendation",
+        "red_flags",
+    ):
+        assert section in required, f"{section} should be required in the tool schema"
 
 
 # ---------------------------------------------------------------------------
@@ -189,14 +186,12 @@ def test_cache_hit_returns_disk_payload_with_from_cache_true(tmp_path: Path):
     }
     (tmp_path / "cache" / "adagrasib.json").write_text(json.dumps(cached_payload))
 
-    record = _make_record("adagrasib")
-    result = agent.run(record)
+    result = agent.run(_make_record("adagrasib"))
     assert result["from_cache"] is True
     assert result["body_markdown"] == "## Executive summary\ncached."
 
 
 def test_cache_miss_when_asset_not_in_manifest_list(tmp_path: Path, monkeypatch):
-    # Cache file exists, but asset not in manifest's cached_assets → miss
     agent = _make_agent(tmp_path, cached_assets=[])
     (tmp_path / "cache" / "adagrasib.json").write_text(json.dumps({"body_markdown": "x"}))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -207,36 +202,59 @@ def test_cache_miss_when_asset_not_in_manifest_list(tmp_path: Path, monkeypatch)
 
 
 # ---------------------------------------------------------------------------
-# live call with mocked SDK
+# tool-use live path (mocked SDK)
 # ---------------------------------------------------------------------------
 
 
-def test_live_call_with_mocked_anthropic(tmp_path: Path, monkeypatch):
+def test_live_call_assembles_memo_from_tool_use(tmp_path: Path, monkeypatch):
     agent = _make_agent(tmp_path, cached_assets=[])  # force live path
-
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
 
-    fake_block = SimpleNamespace(type="text", text=_FULL_STRUCTURED_RESPONSE)
-    fake_message = SimpleNamespace(content=[fake_block])
+    with patch("anthropic.Anthropic", return_value=_fake_client_returning(_TOOL_INPUT)):
+        result = agent.run(_make_record("vorasidenib"))
+
+    assert result["from_cache"] is False
+    assert result["recommendation"] == "buy"
+    assert result["tldr"]["rnpv_base_usd_m"] == 516
+    # reflexivity_note nested correctly inside pos_analysis (the v1.7.10 bug)
+    assert result["pos_analysis"]["reflexivity_note"] == "Mirati sits in the adequate reflexivity tier."
+    assert len(result["risks"]) == 2
+    assert result["recommendation_close"]["kill_criterion"].endswith("avoid.")
+    # body_markdown assembled from the structured sections, no fenced JSON
+    assert "## TL;DR" in result["body_markdown"]
+    assert "```json" not in result["body_markdown"]
+
+
+def test_live_call_502_when_model_omits_tool_block(tmp_path: Path, monkeypatch):
+    """If the model returns no tool_use block, surface a clean 502 (not an empty memo)."""
+    agent = _make_agent(tmp_path, cached_assets=[])
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
+
+    text_only = SimpleNamespace(content=[SimpleNamespace(type="text", text="oops, prose")])
 
     class FakeMessages:
         def create(self, **kwargs):
-            assert kwargs["model"] == "claude-opus-4-7"
-            assert kwargs["system"]  # non-empty
-            return fake_message
+            return text_only
 
     class FakeClient:
         def __init__(self):
             self.messages = FakeMessages()
 
     with patch("anthropic.Anthropic", return_value=FakeClient()):
-        result = agent.run(_make_record("vorasidenib"))
+        with pytest.raises(HTTPException) as exc:
+            agent.run(_make_record("vorasidenib"))
+    assert exc.value.status_code == 502
 
-    assert result["from_cache"] is False
-    assert result["recommendation"] == "buy"
-    assert result["tldr"]["rnpv_base_usd_m"] == 516
-    assert "## TL;DR" in result["body_markdown"]
-    assert "```json" not in result["body_markdown"]
+
+def test_live_call_rejects_incomplete_tool_input(tmp_path: Path, monkeypatch):
+    """A tool payload missing a required section fails MemoContent validation."""
+    agent = _make_agent(tmp_path, cached_assets=[])
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
+
+    incomplete = {"tldr": _TOOL_INPUT["tldr"]}  # missing everything else
+    with patch("anthropic.Anthropic", return_value=_fake_client_returning(incomplete)):
+        with pytest.raises(Exception):  # pydantic ValidationError
+            agent.run(_make_record("vorasidenib"))
 
 
 def test_live_call_503_when_no_api_key(tmp_path: Path, monkeypatch):
