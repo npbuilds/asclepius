@@ -15,6 +15,7 @@ import { useState } from "react";
 
 import { type AgentError, runAutoDiligence } from "@/lib/api-client";
 import type { ClientDiligenceRecord } from "@/lib/module-registry";
+import { STAGED_ASSETS } from "@/lib/staged-assets";
 import type {
   AssetInput,
   AutoDiligenceCitation,
@@ -25,6 +26,22 @@ import type {
   Phase,
   TherapeuticArea,
 } from "@/lib/types";
+
+// Richer, recovery-context descriptors for the 503-fallback "try these
+// instead" list — bespoke prose tuned for the "live agent is down, here's
+// what still works end-to-end" moment. The SET of assets is the canonical
+// STAGED_ASSETS registry (so a newly-added staged asset auto-appears);
+// only this short per-slug prose is local. Falls back to the registry
+// `story` for any slug without an entry here.
+const FALLBACK_503_BLURB: Record<string, string> = {
+  adagrasib: "KRAS G12C NSCLC; retrospective vs the BMS $4.8B Mirati deal.",
+  divarasib: "Roche's second-gen G12C; live forward prediction, resolves 2027.",
+  lifileucel:
+    "Iovance autologous TIL therapy in melanoma; tests cell-therapy economics.",
+  tulisokibart: "Merck anti-TL1A in IBD; novel-target forward prediction.",
+  aducanumab:
+    "Biogen anti-amyloid in Alzheimer's; a contested approval the framework can't predict.",
+};
 
 const CONFIDENCE_COLOR: Record<FieldConfidence, string> = {
   high: "text-green-bright",
@@ -189,66 +206,19 @@ export function AutoDiligencePanel({
               diligence looks like end-to-end.
             </p>
             <ul className="space-y-1.5 font-prose text-[12px] normal-case tracking-normal text-text-primary">
-              <li>
-                <a
-                  href="/diligence/adagrasib"
-                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
-                >
-                  adagrasib
-                </a>
-                <span className="text-text-dim">
-                  {" "}— KRAS G12C NSCLC; retrospective vs the BMS $4.8B
-                  Mirati deal.
-                </span>
-              </li>
-              <li>
-                <a
-                  href="/diligence/divarasib"
-                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
-                >
-                  divarasib
-                </a>
-                <span className="text-text-dim">
-                  {" "}— Roche's second-gen G12C; live forward
-                  prediction, resolves 2027.
-                </span>
-              </li>
-              <li>
-                <a
-                  href="/diligence/lifileucel"
-                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
-                >
-                  lifileucel
-                </a>
-                <span className="text-text-dim">
-                  {" "}— Iovance autologous TIL therapy in melanoma;
-                  tests cell-therapy economics.
-                </span>
-              </li>
-              <li>
-                <a
-                  href="/diligence/tulisokibart"
-                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
-                >
-                  tulisokibart
-                </a>
-                <span className="text-text-dim">
-                  {" "}— Merck anti-TL1A in IBD; novel-target forward
-                  prediction.
-                </span>
-              </li>
-              <li>
-                <a
-                  href="/diligence/aducanumab"
-                  className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
-                >
-                  aducanumab
-                </a>
-                <span className="text-text-dim">
-                  {" "}— Biogen anti-amyloid in Alzheimer's; a contested
-                  approval the framework can't predict.
-                </span>
-              </li>
+              {STAGED_ASSETS.map((a) => (
+                <li key={a.slug}>
+                  <a
+                    href={`/diligence/${a.slug}`}
+                    className="font-mono uppercase tracking-wider text-cyan-bright hover:underline"
+                  >
+                    {a.name}
+                  </a>
+                  <span className="text-text-dim">
+                    {" "}— {FALLBACK_503_BLURB[a.slug] ?? a.story}
+                  </span>
+                </li>
+              ))}
             </ul>
           </div>
         ) : (

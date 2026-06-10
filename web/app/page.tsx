@@ -5,16 +5,17 @@ import { useState } from "react";
 
 import { SystemStatus, type HealthStatus } from "@/components/SystemStatus";
 import { TryYourOwnAsset } from "@/components/TryYourOwnAsset";
+import { STAGED_ASSETS, type StagedAsset } from "@/lib/staged-assets";
 
 /**
  * v1.6 friend-test landing — asset library + "your own asset" tile.
  *
- * Each showcase card is one of the pre-staged assets wired in
- * app/diligence/[asset]/page.tsx (search for "isStaged" to see the list).
- * To add a new showcase, add an entry here AND wire it in the diligence
- * page (define const, add to the isName branching, add the framing
- * paragraph). The accent color on each card differentiates the mode
- * — cyan = retrospective backtest, magenta = forward prediction,
+ * The showcase cards iterate the canonical pre-staged registry in
+ * lib/staged-assets.ts (the same source the diligence + compare views use).
+ * To add a new showcase: add one entry to STAGED_ASSETS, then add its
+ * framing paragraph in app/diligence/[asset]/page.tsx — both surfaces here
+ * update automatically. The accent color on each card differentiates the
+ * mode — cyan = retrospective backtest, magenta = forward prediction,
  * amber = contested/atypical case.
  *
  * Layout: single column on mobile, two columns on sm+ so a generalist
@@ -23,76 +24,19 @@ import { TryYourOwnAsset } from "@/components/TryYourOwnAsset";
  * curated options, not as the primary call to action.
  */
 
-interface ShowcaseAsset {
-  slug: string;
-  name: string;
-  sponsor: string;
-  mode: "retrospective" | "forward" | "contested";
-  context: string; // phase · TA · modality, compact form
-  story: string; // 1-2 line "why this asset" hook
-}
-
-const SHOWCASE_ASSETS: ShowcaseAsset[] = [
-  {
-    slug: "adagrasib",
-    name: "adagrasib",
-    sponsor: "Mirati → BMS",
-    mode: "retrospective",
-    context: "Phase 2 · oncology · small molecule",
-    story:
-      "Worked example. June 2022 cutoff; framework brackets the BMS $4.8B deal within ~2%. Drag the reflexivity slider for the headline demo.",
-  },
-  {
-    slug: "divarasib",
-    name: "divarasib",
-    sponsor: "Roche",
-    mode: "forward",
-    context: "Phase 3 · oncology · small molecule",
-    story:
-      "Live forward prediction. Head-to-head vs sotorasib/adagrasib. PoS 59.3%, rNPV $948M committed to git before any outcome was known. Resolution 2027-09-30.",
-  },
-  {
-    slug: "lifileucel",
-    name: "lifileucel",
-    sponsor: "Iovance",
-    mode: "retrospective",
-    context: "Phase 3 · oncology · autologous cell therapy",
-    story:
-      "Cell therapy retrospective. January 2024 cutoff (BLA filed); framework on autologous TIL economics — 38% COGS, constrained sponsor, $300M launch costs. FDA approved Feb 2024 as Amtagvi.",
-  },
-  {
-    slug: "tulisokibart",
-    name: "tulisokibart",
-    sponsor: "Merck (ex-Prometheus)",
-    mode: "forward",
-    context: "Phase 3 · autoimmune · monoclonal antibody",
-    story:
-      "Autoimmune forward prediction. Anti-TL1A novel target (no anti-TL1A approved yet). Phase 3 ATLAS-UC + ATLAS-CD ongoing. Tests the new autoimmune-biologic cohort.",
-  },
-  {
-    slug: "aducanumab",
-    name: "aducanumab",
-    sponsor: "Biogen / Eisai",
-    mode: "contested",
-    context: "Phase 3 · CNS · monoclonal antibody",
-    story:
-      "Contested-approval retrospective. March 2019 cutoff, immediately post-ENGAGE/EMERGE futility failure. FDA later approved over a 10-0 AdCom reject — a political process the framework can't predict.",
-  },
-];
-
-const MODE_LABEL: Record<ShowcaseAsset["mode"], string> = {
+const MODE_LABEL: Record<StagedAsset["mode"], string> = {
   retrospective: "retrospective →",
   forward: "live forward prediction →",
   contested: "contested case →",
 };
 
-const MODE_ACCENT: Record<ShowcaseAsset["mode"], string> = {
+const MODE_ACCENT: Record<StagedAsset["mode"], string> = {
   retrospective: "hover:border-cyan-bright group-hover:text-cyan-bright",
   forward: "hover:border-magenta-bright group-hover:text-magenta-bright",
   contested: "hover:border-amber-bright group-hover:text-amber-bright",
 };
 
-const MODE_LABEL_COLOR: Record<ShowcaseAsset["mode"], string> = {
+const MODE_LABEL_COLOR: Record<StagedAsset["mode"], string> = {
   retrospective: "text-cyan-bright",
   forward: "text-magenta-bright",
   contested: "text-amber-bright",
@@ -147,7 +91,7 @@ export default function LandingPage() {
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {SHOWCASE_ASSETS.map((asset) => (
+          {STAGED_ASSETS.map((asset) => (
             <Link
               key={asset.slug}
               href={`/diligence/${asset.slug}`}

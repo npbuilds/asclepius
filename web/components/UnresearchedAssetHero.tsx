@@ -31,7 +31,7 @@
 // Same predicate that previously gated the "Start here →" banner, so
 // the behavior is consistent.
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { AssetForm } from "@/components/AssetForm";
 import { AutoDiligencePanel } from "@/components/agents/AutoDiligencePanel";
@@ -39,7 +39,21 @@ import type {
   ClientDiligenceRecord,
   ModulePanelProps,
 } from "@/lib/module-registry";
+import { STAGED_ASSETS } from "@/lib/staged-assets";
 import type { AssetInput } from "@/lib/types";
+
+// Terse one-line descriptors for the "not sure where to start?" footer
+// link list. The SET of assets comes from the canonical STAGED_ASSETS
+// registry (so a newly-added staged asset auto-appears in this footer);
+// only this short per-slug prose is local. Falls back to the registry
+// `mode` for any slug without an entry here.
+const FOOTER_BLURB: Record<string, string> = {
+  adagrasib: "retrospective backtest",
+  divarasib: "live forward prediction",
+  lifileucel: "cell therapy retrospective",
+  tulisokibart: "autoimmune forward",
+  aducanumab: "contested approval",
+};
 
 interface UnresearchedAssetHeroProps {
   record: ClientDiligenceRecord;
@@ -132,18 +146,25 @@ export default function UnresearchedAssetHero({
         <strong className="font-display text-[10px] uppercase tracking-[0.15em] text-cyan-bright">
           ● not sure where to start?
         </strong>{" "}
-        Try one of the five pre-staged assets — they showcase the framework
+        Try one of the pre-staged assets — they showcase the framework
         on different modalities, phases, and outcomes:{" "}
-        <a href="/diligence/adagrasib" className="text-cyan-bright underline hover:text-cyan-bright">adagrasib</a>{" "}
-        (retrospective backtest),{" "}
-        <a href="/diligence/divarasib" className="text-cyan-bright underline hover:text-cyan-bright">divarasib</a>{" "}
-        (live forward prediction),{" "}
-        <a href="/diligence/lifileucel" className="text-cyan-bright underline hover:text-cyan-bright">lifileucel</a>{" "}
-        (cell therapy retrospective),{" "}
-        <a href="/diligence/tulisokibart" className="text-cyan-bright underline hover:text-cyan-bright">tulisokibart</a>{" "}
-        (autoimmune forward), or{" "}
-        <a href="/diligence/aducanumab" className="text-cyan-bright underline hover:text-cyan-bright">aducanumab</a>{" "}
-        (contested approval).
+        {STAGED_ASSETS.map((a, i) => {
+          const prefix =
+            i === 0 ? "" : i === STAGED_ASSETS.length - 1 ? ", or " : ", ";
+          return (
+            <Fragment key={a.slug}>
+              {prefix}
+              <a
+                href={`/diligence/${a.slug}`}
+                className="text-cyan-bright underline hover:text-cyan-bright"
+              >
+                {a.name}
+              </a>{" "}
+              ({FOOTER_BLURB[a.slug] ?? a.mode})
+            </Fragment>
+          );
+        })}
+        .
       </div>
     </div>
   );
