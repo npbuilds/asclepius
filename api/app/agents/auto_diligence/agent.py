@@ -21,7 +21,7 @@ from fastapi import HTTPException
 from ...domain import DiligenceRecord, RegulatoryDesignation
 from ..base import BaseAgent
 from .prompts import ALLOWED_DOMAINS, SYSTEM_PROMPT, build_user_prompt
-from .schemas import AutoDiligenceOutput, Citation, ExtractedAsset
+from .schemas import AutoDiligenceOutput, Citation, DiligenceExtraction, ExtractedAsset
 
 # v1.6.2 (post-v1.5.3 hotfix): the LLM occasionally emits regulatory-
 # designation strings that aren't in the domain enum (most common: the
@@ -80,6 +80,21 @@ JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 from ...utils.text import slugify_asset_name as _slugify_asset_name  # noqa: E402,F401
 
 
+# v1.9.2: tool-use structured output. Unlike memo/adversary, emit_diligence is
+# OFFERED alongside web_search (not forced via tool_choice — the model must be
+# free to search first). The prompt tells the model to finish by calling it; if
+# it emits a fenced JSON block instead, _live_call falls back to the prose parser.
+EMIT_DILIGENCE_TOOL = {
+    "name": "emit_diligence",
+    "description": (
+        "Call this ONCE research is complete to return the structured extraction "
+        "(extracted fields + citations + field_confidence). Prefer this over "
+        "emitting a JSON block."
+    ),
+    "input_schema": DiligenceExtraction.model_json_schema(),
+}
+
+
 def _walk_response(message) -> tuple[str, list[dict], int]:
     """Walk the Anthropic message content blocks. Returns (full_text,
     web_search_citations, search_count). web_search_result_location blocks
@@ -109,22 +124,16 @@ def _walk_response(message) -> tuple[str, list[dict], int]:
     return "".join(full_text), web_citations, search_count
 
 
-def _parse_diligence_response(
-    raw_text: str,
+def _assemble_output(
+    parsed: dict[str, Any],
     web_citations: list[dict],
     search_count: int,
     model_used: str,
 ) -> dict[str, Any]:
-    """Extract the trailing JSON block. Defensive on every field — missing
-    or malformed values become null/empty rather than 500ing."""
-    match = JSON_BLOCK_RE.search(raw_text)
-    parsed: dict[str, Any] = {}
-    if match:
-        try:
-            parsed = json.loads(match.group(1))
-        except json.JSONDecodeError:
-            log.warning("auto_diligence returned malformed JSON; degrading to empty")
-
+    """Build AutoDiligenceOutput from a parsed extraction dict — sourced from
+    either the emit_diligence tool block or the fenced-JSON fallback.
+    Defensive on every field; merges web_search source URLs into citations.
+    """
     extracted_raw = parsed.get("extracted") or {}
     # v1.6.2: normalize regulatory_designations before constructing the
     # ExtractedAsset so any drift between the LLM's prompt and the domain
@@ -184,6 +193,25 @@ def _parse_diligence_response(
         from_cache=False,
         generated_at=datetime.now(timezone.utc),
     ).model_dump(mode="json")
+
+
+def _parse_diligence_response(
+    raw_text: str,
+    web_citations: list[dict],
+    search_count: int,
+    model_used: str,
+) -> dict[str, Any]:
+    """Extract the trailing JSON block. Defensive on every field — missing
+    or malformed values become null/empty rather than 500ing."""
+    match = JSON_BLOCK_RE.search(raw_text)
+    parsed: dict[str, Any] = {}
+    if match:
+        try:
+            parsed = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            log.warning("auto_diligence returned malformed JSON; degrading to empty")
+
+    return _assemble_output(parsed, web_citations, search_count, model_used)
 
 
 class Agent(BaseAgent):
@@ -257,12 +285,30 @@ class Agent(BaseAgent):
                     "name": "web_search",
                     "max_uses": 10,
                     "allowed_domains": ALLOWED_DOMAINS,
-                }
+                },
+                EMIT_DILIGENCE_TOOL,
             ],
             messages=[{"role": "user", "content": user_prompt}],
         )
 
         raw_text, web_citations, search_count = _walk_response(message)
+        # Preferred: the model finished by calling emit_diligence (schema-validated
+        # extraction). It's offered, not forced (web_search must stay available),
+        # so if the model emitted a fenced JSON block instead, fall back to the
+        # prose parser. Both paths share _assemble_output.
+        tool_block = next(
+            (
+                b
+                for b in message.content
+                if getattr(b, "type", None) == "tool_use"
+                and getattr(b, "name", None) == "emit_diligence"
+            ),
+            None,
+        )
+        if tool_block is not None:
+            return _assemble_output(
+                dict(tool_block.input), web_citations, search_count, model
+            )
         return _parse_diligence_response(
             raw_text=raw_text,
             web_citations=web_citations,

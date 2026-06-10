@@ -232,6 +232,62 @@ def test_live_call_with_mocked_anthropic_and_web_search(tmp_path: Path, monkeypa
     assert len(out["citations"]) == 1
 
 
+def test_live_call_prefers_emit_diligence_tool(tmp_path: Path, monkeypatch):
+    """v1.9.2: when the model calls emit_diligence, use the validated tool input
+    (the preferred path) rather than parsing prose. web_search provenance still
+    merges in via _walk_response."""
+    agent = _make_agent(tmp_path, cached_assets=[])
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
+
+    fake_message = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="server_tool_use", name="web_search"),
+            SimpleNamespace(type="text", text="Searched CT.gov and FDA.", citations=None),
+            SimpleNamespace(
+                type="tool_use",
+                name="emit_diligence",
+                input={
+                    "extracted": {
+                        "asset_name": "vorasidenib",
+                        "sponsor": "Servier",
+                        "phase": "approved",
+                        "modality": "small_molecule",
+                    },
+                    "citations": [
+                        {
+                            "field": "phase",
+                            "url": "https://www.fda.gov/news/vorasidenib",
+                            "span": "approved August 2024",
+                        }
+                    ],
+                    "field_confidence": {"phase": "high"},
+                },
+            ),
+        ]
+    )
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            names = [t.get("name") for t in kwargs["tools"]]
+            # emit_diligence offered alongside web_search (not forced)
+            assert "web_search" in names and "emit_diligence" in names
+            assert "tool_choice" not in kwargs  # offered, not forced
+            return fake_message
+
+    class FakeClient:
+        def __init__(self):
+            self.messages = FakeMessages()
+
+    with patch("anthropic.Anthropic", return_value=FakeClient()):
+        out = agent.run(_make_record("vorasidenib"))
+
+    assert out["from_cache"] is False
+    assert out["extracted"]["asset_name"] == "vorasidenib"
+    assert out["extracted"]["phase"] == "approved"
+    assert out["web_searches_used"] == 1
+    assert any(c["field"] == "phase" for c in out["citations"])
+
+
 # ---------------------------------------------------------------------------
 # v1.6.2 hotfix — regulatory_designations normalization
 # ---------------------------------------------------------------------------

@@ -47,6 +47,22 @@ class ExtractedAsset(BaseModel):
     capital_position: str | None = None
 
 
+class DiligenceExtraction(BaseModel):
+    """The model-generated extraction — the emit_diligence tool's input_schema
+    (v1.9.2 tool-use migration).
+
+    Unlike memo/adversary, auto-diligence ALSO needs the web_search server tool,
+    so emit_diligence is OFFERED (not forced via tool_choice — the model must be
+    free to search first). The prompt instructs the model to finish by calling
+    emit_diligence; if it emits a fenced JSON block instead, the agent falls
+    back to _parse_diligence_response. Either way the assembly is shared.
+    """
+
+    extracted: ExtractedAsset
+    citations: list[Citation] = Field(default_factory=list)
+    field_confidence: dict[str, Confidence] = Field(default_factory=dict)
+
+
 class AutoDiligenceOutput(BaseModel):
     extracted: ExtractedAsset
     citations: list[Citation] = Field(default_factory=list)

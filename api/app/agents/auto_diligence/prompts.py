@@ -64,8 +64,8 @@ post-NDA-acceptance review-pathway decision, not a pre-conferred designation, \
 and is not in the domain enum. **Do NOT emit `regenerative_medicine`** — use \
 `rmat` instead.
 
-After your research, output the result as a fenced JSON block at the end of \
-your response. The structure:
+After your research, call the `emit_diligence` tool with the structured \
+extraction. Its input matches this structure:
 
 ```json
 {
@@ -106,12 +106,13 @@ in `citations` with a matching `field` value.
 - Citations must be from the allowed domains. If the model finds a relevant \
 result outside the allowlist (e.g., a Wikipedia article), do not cite it — \
 search again on an allowed domain.
-- The trailing JSON block is mandatory and must parse.
+- Calling emit_diligence with the extraction is mandatory — it is how you \
+return the result.
 - Spans must be verbatim — do not paraphrase. If the source uses "Phase II" \
 write "Phase II" in the span (then map to `phase_2` in the extracted field).
 - Do not invent. Missing values are acceptable; fabricated values are not.
 
-Before the JSON block, briefly note (1-2 sentences) what sources you \
+Before calling emit_diligence, briefly note (1-2 sentences) what sources you \
 consulted and any field where you had to make a judgment call.
 """
 
@@ -119,6 +120,6 @@ consulted and any field where you had to make a judgment call.
 def build_user_prompt(asset_name: str) -> str:
     return (
         f"Run auto-diligence on the asset: **{asset_name}**.\n\n"
-        f"Search the allowed-domain sources for each schema field. "
-        f"Return the structured JSON block at the end of your response."
+        f"Search the allowed-domain sources for each schema field, then call "
+        f"the emit_diligence tool with the structured extraction."
     )
