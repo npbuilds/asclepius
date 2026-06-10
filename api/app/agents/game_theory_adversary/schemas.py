@@ -75,6 +75,32 @@ class AdversaryFlag(BaseModel):
     )
 
 
+class AdversaryContent(BaseModel):
+    """The model-generated portion of the critique — the emit_critique tool's
+    input_schema (v1.9.2 tool-use migration).
+
+    tool_choice forces this tool, so Anthropic validates the model's output
+    against this schema before returning and the agent does no prose parsing.
+    The agent wraps this with the envelope (model_used / from_cache /
+    generated_at) and an empty legacy `findings` list to build AdversaryOutput.
+    All fields required — a live critique always returns flags + a verdict.
+    """
+
+    body_markdown: str = Field(
+        description="Critique body markdown, rendered above the flag cards."
+    )
+    verdict_shift: VerdictShift = Field(
+        description="upgrade / hold / downgrade vs the memo's recommendation."
+    )
+    recommendation_shift_to: Recommendation | None = Field(
+        default=None,
+        description="The proposed new recommendation if verdict_shift != 'hold'.",
+    )
+    flags: list[AdversaryFlag] = Field(
+        description="3-5 framework-hooked flags, highest-severity first."
+    )
+
+
 class AdversaryOutput(BaseModel):
     body_markdown: str = Field(
         description="Critique body markdown (rendered above the structured flag cards)."

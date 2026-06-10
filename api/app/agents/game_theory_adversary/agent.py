@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,127 +23,26 @@ from fastapi import HTTPException
 from ...domain import DiligenceRecord
 from ..base import BaseAgent
 from .prompts import SYSTEM_PROMPT, build_user_prompt
-from .schemas import AdversarialFinding, AdversaryFlag, AdversaryOutput
+from .schemas import AdversaryContent, AdversaryOutput
 
 log = logging.getLogger(__name__)
-
-JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
-VALID_VERDICTS = {"upgrade", "hold", "downgrade"}
-VALID_RECS = {"strong_buy", "buy", "hold", "cautious", "avoid"}
-
-# Legacy findings shape
-VALID_LENSES = {"signaling", "auction", "persuasion"}
-VALID_SEVERITIES = {"minor", "moderate", "critical"}
-
-# v1.7.7 structured-flag shape
-VALID_FLAG_TYPES = {
-    "signaling_equilibrium",
-    "winners_curse",
-    "bayesian_persuasion",
-    "cohort_base_rate_check",
-    "data_quality",
-    "regulatory_path",
-}
-VALID_FLAG_SEVERITIES = {"high", "medium", "low"}
-
 
 # v1.6.1: slugify moved to app.utils.text (Codex F9).
 from ...utils.text import slugify_asset_name as _slugify_asset_name  # noqa: E402,F401
 
 
-def _coerce_cite(value: Any) -> list[str]:
-    """Accept either a list of strings or a single string in the ``cite`` slot."""
-    if value is None:
-        return []
-    if isinstance(value, str):
-        return [value] if value.strip() else []
-    if isinstance(value, list):
-        return [str(v) for v in value if isinstance(v, str) and v.strip()]
-    return []
-
-
-def _parse_adversary_response(raw: str, model_used: str) -> dict[str, Any]:
-    """Extract JSON block, validate, return AdversaryOutput-shaped dict.
-
-    Parses both the new ``flags`` list and the legacy ``findings`` list so
-    cached payloads from prior versions continue to round-trip.
-    """
-    match = JSON_BLOCK_RE.search(raw)
-    body = raw
-    parsed: dict[str, Any] = {}
-    if match:
-        try:
-            parsed = json.loads(match.group(1))
-            body = raw[: match.start()].rstrip()
-        except json.JSONDecodeError:
-            log.warning("adversary returned malformed JSON block; falling back")
-
-    verdict_shift = parsed.get("verdict_shift", "hold")
-    if verdict_shift not in VALID_VERDICTS:
-        verdict_shift = "hold"
-
-    recommendation_shift_to = parsed.get("recommendation_shift_to")
-    if recommendation_shift_to is not None and recommendation_shift_to not in VALID_RECS:
-        recommendation_shift_to = None
-
-    # New structured flags
-    raw_flags = parsed.get("flags", []) or []
-    flags: list[AdversaryFlag] = []
-    for f in raw_flags:
-        if not isinstance(f, dict):
-            continue
-        if f.get("flag_type") not in VALID_FLAG_TYPES:
-            continue
-        if f.get("severity") not in VALID_FLAG_SEVERITIES:
-            continue
-        title = f.get("title")
-        rationale = f.get("rationale")
-        test = f.get("test")
-        if not (isinstance(title, str) and title.strip()):
-            continue
-        if not (isinstance(rationale, str) and rationale.strip()):
-            continue
-        if not (isinstance(test, str) and test.strip()):
-            continue
-        flags.append(
-            AdversaryFlag(
-                flag_type=f["flag_type"],
-                severity=f["severity"],
-                title=title.strip(),
-                rationale=rationale.strip(),
-                test=test.strip(),
-                cite=_coerce_cite(f.get("cite")),
-            )
-        )
-
-    # Legacy findings (still tolerated)
-    raw_findings = parsed.get("findings", []) or []
-    findings: list[AdversarialFinding] = []
-    for f in raw_findings:
-        if not isinstance(f, dict):
-            continue
-        if f.get("lens") not in VALID_LENSES:
-            continue
-        if f.get("severity") not in VALID_SEVERITIES:
-            continue
-        if not f.get("claim"):
-            continue
-        findings.append(
-            AdversarialFinding(
-                lens=f["lens"], claim=f["claim"], severity=f["severity"]
-            )
-        )
-
-    return AdversaryOutput(
-        body_markdown=body,
-        verdict_shift=verdict_shift,
-        recommendation_shift_to=recommendation_shift_to,
-        flags=flags,
-        findings=findings,
-        model_used=model_used,
-        from_cache=False,
-        generated_at=datetime.now(timezone.utc),
-    ).model_dump(mode="json")
+# v1.9.2: tool-use replaces prose parsing (same migration as memo_writer).
+# tool_choice forces emit_critique; its input_schema is AdversaryContent's
+# JSON Schema, so block.input is already validated — no fenced-JSON parsing,
+# no empty-critique class.
+ADVERSARY_TOOL = {
+    "name": "emit_critique",
+    "description": (
+        "Emit the structured game-theory critique: a markdown body, the verdict "
+        "shift, and 3-5 framework-hooked flags. Fill every field."
+    ),
+    "input_schema": AdversaryContent.model_json_schema(),
+}
 
 
 def _extract_memo_body(record: DiligenceRecord) -> str | None:
@@ -194,6 +92,37 @@ class Agent(BaseAgent):
             self._client = anthropic.Anthropic()
         return self._client
 
+    def _assemble_from_tool(self, message, model_used: str) -> dict[str, Any]:
+        """Build AdversaryOutput from the forced emit_critique tool call.
+
+        tool_choice guarantees a tool_use block whose .input the API validated
+        against AdversaryContent. Re-validate, wrap with the envelope + an
+        empty legacy `findings` list. No prose parsing.
+        """
+        tool_block = next(
+            (
+                b
+                for b in message.content
+                if getattr(b, "type", None) == "tool_use"
+                and getattr(b, "name", None) == "emit_critique"
+            ),
+            None,
+        )
+        if tool_block is None:
+            raise HTTPException(
+                status_code=502,
+                detail="Game-Theory Adversary did not return the expected critique tool output.",
+            )
+        content = AdversaryContent(**tool_block.input)
+        out = AdversaryOutput(
+            **content.model_dump(),
+            findings=[],
+            model_used=model_used,
+            from_cache=False,
+            generated_at=datetime.now(timezone.utc),
+        )
+        return out.model_dump(mode="json")
+
     def _live_call(self, record: DiligenceRecord, memo_body: str | None = None) -> dict[str, Any]:
         if not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("ASCLEPIUS_ANTHROPIC_API_KEY"):
             raise HTTPException(
@@ -214,13 +143,11 @@ class Agent(BaseAgent):
             model=model,
             max_tokens=4096,
             system=self._system_prompt_with_methodology(SYSTEM_PROMPT),
+            tools=[ADVERSARY_TOOL],
+            tool_choice={"type": "tool", "name": "emit_critique"},
             messages=[{"role": "user", "content": user_prompt}],
         )
-        text = next(
-            (b.text for b in message.content if getattr(b, "type", None) == "text"),
-            "",
-        )
-        return _parse_adversary_response(text, model_used=model)
+        return self._assemble_from_tool(message, model_used=model)
 
     def run(self, record: DiligenceRecord) -> dict[str, Any]:
         cached = self._maybe_cached(record)

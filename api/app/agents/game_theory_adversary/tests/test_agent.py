@@ -1,4 +1,10 @@
-"""Game-Theory Adversary tests."""
+"""Game-Theory Adversary tests — cache, tool-use live path (mocked SDK), errors.
+
+v1.9.2: migrated from prose-parsing to tool-use (mirrors memo_writer). The model
+is forced (tool_choice) to call `emit_critique`, returning a tool_use block whose
+`.input` the Anthropic API validated against AdversaryContent's schema. The agent
+re-validates and wraps the envelope — no prose parser remains to test.
+"""
 
 from __future__ import annotations
 
@@ -12,8 +18,8 @@ import pytest
 from fastapi import HTTPException
 
 from app.agents.game_theory_adversary.agent import (
+    ADVERSARY_TOOL,
     Agent,
-    _parse_adversary_response,
     _slugify_asset_name,
 )
 from app.domain import AssetInput, CapitalPosition, DiligenceRecord, Modality, Phase, TherapeuticArea
@@ -49,6 +55,51 @@ def _make_agent(tmp_path: Path, cached_assets: list[str]) -> Agent:
     return Agent(manifest=manifest, agent_dir=tmp_path)
 
 
+# A complete, valid AdversaryContent payload — the emit_critique tool `input`.
+_TOOL_INPUT = {
+    "body_markdown": "## Signaling lens\nA finding.\n\n## Verdict\nHold.",
+    "verdict_shift": "hold",
+    "recommendation_shift_to": None,
+    "flags": [
+        {
+            "flag_type": "data_quality",
+            "severity": "low",
+            "title": "Missing target_validated flag",
+            "rationale": "The brief does not set target_validated, which makes the "
+            "cohort_base_rate_check inert.",
+            "test": "Confirm the target's mechanistic validation against the literature.",
+            "cite": ["methodology/01-pos-framework.md"],
+        },
+        {
+            "flag_type": "signaling_equilibrium",
+            "severity": "medium",
+            "title": "Adequate-capital sponsor running a standard trial",
+            "rationale": "Capital tier sits at adequate, so the costly-signal read is muted.",
+            "test": "Compare trial N and design rigor to the BIO cohort median.",
+            "cite": ["methodology/06-signaling-equilibrium.md"],
+        },
+    ],
+}
+
+
+def _fake_client_returning(tool_input):
+    block = SimpleNamespace(type="tool_use", name="emit_critique", input=tool_input)
+    message = SimpleNamespace(content=[block])
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            assert kwargs["model"] == "claude-opus-4-7"
+            assert kwargs["tool_choice"] == {"type": "tool", "name": "emit_critique"}
+            assert any(t["name"] == "emit_critique" for t in kwargs["tools"])
+            return message
+
+    class FakeClient:
+        def __init__(self):
+            self.messages = FakeMessages()
+
+    return FakeClient()
+
+
 # ---------------------------------------------------------------------------
 
 
@@ -56,144 +107,10 @@ def test_slugify_handles_real_asset_names():
     assert _slugify_asset_name("adagrasib (MRTX849)") == "adagrasib_mrtx849"
 
 
-def test_parse_extracts_findings_and_verdict_shift():
-    raw = """## Signaling lens
-Finding A here.
-
-## Verdict
-Hold the recommendation.
-
-```json
-{
-  "verdict_shift": "hold",
-  "recommendation_shift_to": null,
-  "findings": [
-    {"lens": "signaling", "claim": "Capital adequate but single-arm trial reads as constrained-tier", "severity": "moderate"},
-    {"lens": "auction", "claim": "Comparable median biased upward by winner's-curse on Encorafenib bid", "severity": "minor"}
-  ]
-}
-```"""
-    out = _parse_adversary_response(raw, model_used="test")
-    assert out["verdict_shift"] == "hold"
-    assert out["recommendation_shift_to"] is None
-    assert len(out["findings"]) == 2
-    assert out["findings"][0]["lens"] == "signaling"
-    # New structured flags absent in legacy input → empty list, not missing
-    assert out["flags"] == []
-    assert "```json" not in out["body_markdown"]
-
-
-def test_parse_rejects_invalid_lens_severity_verdict():
-    raw = """## Verdict
-text.
-
-```json
-{
-  "verdict_shift": "ascend",
-  "recommendation_shift_to": "yolo",
-  "findings": [
-    {"lens": "garbage", "claim": "x", "severity": "moderate"},
-    {"lens": "signaling", "claim": "y", "severity": "fatal"},
-    {"lens": "signaling", "claim": "valid one", "severity": "critical"}
-  ]
-}
-```"""
-    out = _parse_adversary_response(raw, model_used="test")
-    assert out["verdict_shift"] == "hold"  # invalid → hold
-    assert out["recommendation_shift_to"] is None  # invalid → None
-    assert len(out["findings"]) == 1
-    assert out["findings"][0]["claim"] == "valid one"
-
-
-def test_parse_downgrade_with_recommendation_shift():
-    raw = """## Verdict
-Downgrade to cautious.
-
-```json
-{
-  "verdict_shift": "downgrade",
-  "recommendation_shift_to": "cautious",
-  "findings": []
-}
-```"""
-    out = _parse_adversary_response(raw, model_used="test")
-    assert out["verdict_shift"] == "downgrade"
-    assert out["recommendation_shift_to"] == "cautious"
-
-
-def test_parse_fallback_when_no_json_block():
-    raw = "## Verdict\nNothing structured.\n\n(no json block)"
-    out = _parse_adversary_response(raw, model_used="test")
-    assert out["verdict_shift"] == "hold"
-    assert out["findings"] == []
-    assert out["flags"] == []
-
-
-def test_parse_extracts_structured_flags():
-    raw = """Overall posture: cautious on the thesis.
-
-## Verdict
-Downgrade.
-
-```json
-{
-  "verdict_shift": "downgrade",
-  "recommendation_shift_to": "cautious",
-  "flags": [
-    {
-      "flag_type": "signaling_equilibrium",
-      "severity": "high",
-      "title": "Single-arm Ph3 with well-capitalized sponsor",
-      "rationale": "Sponsor has 18 months runway yet ran a single-arm registrational trial. Under Spence (1973), a well-capitalized sponsor with a high-PoS asset would have committed to the costly randomized design; the chosen design reads as constrained-tier signaling and breaks the separating equilibrium.",
-      "test": "Compare the trial's N to the BIO cohort median for similar phase; if N is below the 25th percentile despite capital adequacy, the read holds.",
-      "cite": ["methodology/06-signaling-equilibrium.md"]
-    },
-    {
-      "flag_type": "bayesian_persuasion",
-      "severity": "medium",
-      "title": "Post-hoc subgroup highlighted in press release",
-      "rationale": "The Q3 release foregrounds a KRAS G12C subgroup not pre-specified in the SAP while omitting the ITT result. Under Kamenica-Gentzkow, this is the textbook persuasion-optimal signal partition (Yi et al. 2024).",
-      "test": "Pull the trial's SAP from ClinicalTrials.gov and confirm the subgroup is not pre-specified; recover the ITT P-value from the registration data.",
-      "cite": ["methodology/07-bayesian-persuasion-disclosure.md"]
-    }
-  ]
-}
-```"""
-    out = _parse_adversary_response(raw, model_used="test")
-    assert out["verdict_shift"] == "downgrade"
-    assert out["recommendation_shift_to"] == "cautious"
-    assert len(out["flags"]) == 2
-    f0 = out["flags"][0]
-    assert f0["flag_type"] == "signaling_equilibrium"
-    assert f0["severity"] == "high"
-    assert f0["title"].startswith("Single-arm")
-    assert "Spence" in f0["rationale"]
-    assert "cohort" in f0["test"].lower()
-    assert f0["cite"] == ["methodology/06-signaling-equilibrium.md"]
-    assert out["flags"][1]["flag_type"] == "bayesian_persuasion"
-
-
-def test_parse_rejects_flags_with_invalid_type_or_missing_fields():
-    raw = """## Verdict
-Hold.
-
-```json
-{
-  "verdict_shift": "hold",
-  "flags": [
-    {"flag_type": "unicorn_curse", "severity": "high", "title": "x", "rationale": "y", "test": "z"},
-    {"flag_type": "signaling_equilibrium", "severity": "catastrophic", "title": "x", "rationale": "y", "test": "z"},
-    {"flag_type": "winners_curse", "severity": "high", "title": "", "rationale": "y", "test": "z"},
-    {"flag_type": "winners_curse", "severity": "high", "title": "kept", "rationale": "valid rationale", "test": "valid test", "cite": "methodology/05-worked-example-adagrasib.md"}
-  ]
-}
-```"""
-    out = _parse_adversary_response(raw, model_used="test")
-    assert len(out["flags"]) == 1
-    kept = out["flags"][0]
-    assert kept["title"] == "kept"
-    # cite passed as a bare string should be normalized to a single-item list
-    assert kept["cite"] == ["methodology/05-worked-example-adagrasib.md"]
+def test_adversary_tool_schema_requires_core_fields():
+    required = set(ADVERSARY_TOOL["input_schema"].get("required", []))
+    for field in ("body_markdown", "verdict_shift", "flags"):
+        assert field in required, f"{field} should be required in the tool schema"
 
 
 def test_cache_hit_serves_disk(tmp_path: Path):
@@ -211,8 +128,6 @@ def test_cache_hit_serves_disk(tmp_path: Path):
     out = agent.run(_make_record("adagrasib"))
     assert out["from_cache"] is True
     assert out["body_markdown"] == "cached body"
-    # Older cache payloads predate ``flags`` — the agent should backfill it.
-    assert out["flags"] == []
 
 
 def test_live_call_503_when_no_key(tmp_path: Path, monkeypatch):
@@ -224,43 +139,46 @@ def test_live_call_503_when_no_key(tmp_path: Path, monkeypatch):
     assert exc.value.status_code == 503
 
 
-def test_live_call_with_mocked_anthropic(tmp_path: Path, monkeypatch):
+def test_live_call_assembles_from_tool_use(tmp_path: Path, monkeypatch):
     agent = _make_agent(tmp_path, cached_assets=[])
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
-    fake_text = """## Signaling lens
-A finding.
 
-## Verdict
-Hold.
+    with patch("anthropic.Anthropic", return_value=_fake_client_returning(_TOOL_INPUT)):
+        out = agent.run(_make_record("vorasidenib"))
 
-```json
-{
-  "verdict_shift": "hold",
-  "recommendation_shift_to": null,
-  "flags": [
-    {"flag_type": "data_quality", "severity": "low", "title": "Missing target_validated flag", "rationale": "The brief does not set target_validated, which makes the cohort_base_rate_check inert. Downstream PoS adjustments may rest on an implicit assumption.", "test": "Confirm the target's mechanistic validation status against the published literature.", "cite": ["methodology/01-pos-framework.md"]}
-  ],
-  "findings": [{"lens":"signaling","claim":"sample","severity":"minor"}]
-}
-```"""
-    fake_message = SimpleNamespace(
-        content=[SimpleNamespace(type="text", text=fake_text)]
-    )
+    assert out["from_cache"] is False
+    assert out["verdict_shift"] == "hold"
+    assert len(out["flags"]) == 2
+    assert out["flags"][0]["flag_type"] == "data_quality"
+    assert out["flags"][1]["cite"] == ["methodology/06-signaling-equilibrium.md"]
+    # legacy findings backfilled empty
+    assert out["findings"] == []
+    assert "## Verdict" in out["body_markdown"]
+
+
+def test_live_call_502_when_model_omits_tool_block(tmp_path: Path, monkeypatch):
+    agent = _make_agent(tmp_path, cached_assets=[])
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
+    text_only = SimpleNamespace(content=[SimpleNamespace(type="text", text="prose")])
 
     class FakeMessages:
         def create(self, **kwargs):
-            assert kwargs["model"] == "claude-opus-4-7"
-            return fake_message
+            return text_only
 
     class FakeClient:
         def __init__(self):
             self.messages = FakeMessages()
 
     with patch("anthropic.Anthropic", return_value=FakeClient()):
-        out = agent.run(_make_record("vorasidenib"))
-    assert out["from_cache"] is False
-    assert out["verdict_shift"] == "hold"
-    assert len(out["flags"]) == 1
-    assert out["flags"][0]["flag_type"] == "data_quality"
-    # Legacy findings still flow through
-    assert len(out["findings"]) == 1
+        with pytest.raises(HTTPException) as exc:
+            agent.run(_make_record("vorasidenib"))
+    assert exc.value.status_code == 502
+
+
+def test_live_call_rejects_incomplete_tool_input(tmp_path: Path, monkeypatch):
+    agent = _make_agent(tmp_path, cached_assets=[])
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-fake")
+    incomplete = {"body_markdown": "x"}  # missing verdict_shift + flags
+    with patch("anthropic.Anthropic", return_value=_fake_client_returning(incomplete)):
+        with pytest.raises(Exception):  # pydantic ValidationError
+            agent.run(_make_record("vorasidenib"))
