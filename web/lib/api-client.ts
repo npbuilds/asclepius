@@ -31,6 +31,31 @@ export interface AgentError {
   message: string;
 }
 
+// v1.9.1 access gate (agent routes only). The backend gates the three
+// money-spending agents behind a shared passphrase (ASCLEPIUS_ACCESS_PASSPHRASE
+// Fly secret); see api/app/agents/routes.py. The owner shares a link of the
+// form `…/?access=<passphrase>`; we read that token once, persist it to
+// localStorage, and attach it as the `X-Asclepius-Access` header on agent
+// calls. No token / wrong token → the backend 403s (only when the gate is
+// active; it's inert until the secret is set). Deterministic module calls
+// never send this header — they're public.
+const ACCESS_STORAGE_KEY = "asclepius_access";
+
+function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const fromUrl = new URL(window.location.href).searchParams.get("access");
+    if (fromUrl) {
+      // Persist so the token survives navigation away from the ?access= link.
+      window.localStorage.setItem(ACCESS_STORAGE_KEY, fromUrl);
+      return fromUrl;
+    }
+    return window.localStorage.getItem(ACCESS_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 async function jsonFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     headers: { "Content-Type": "application/json" },
@@ -171,9 +196,14 @@ export async function runAgent<T>(
   agentId: string,
   record: Record<string, unknown>,
 ): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const accessToken = getAccessToken();
+  if (accessToken) headers["X-Asclepius-Access"] = accessToken;
   const res = await fetch(`/api/agents/${agentId}/run`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     cache: "no-store",
     body: JSON.stringify(stripClientOnlyFields(record)),
   });
