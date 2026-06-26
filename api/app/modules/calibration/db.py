@@ -17,6 +17,7 @@ defaults to True; each call opens its own connection.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import uuid
 from datetime import date, datetime, timezone
@@ -29,10 +30,20 @@ from .schemas import (
     SegmentStats,
 )
 
-# Database lives in api/app/data/calibration.db (already in .gitignore so it
-# doesn't bloat the repo). The seed JSON is committed; the DB derives from it.
+# The DB DIRECTORY is env-configurable so prod can point it at a persistent
+# Fly volume (writes survive redeploys). It must live OUTSIDE api/app/data/ in
+# prod: that dir is baked into the image with the static reference JSON, so a
+# volume mounted over it would hide base_rates.json etc. Unset (local dev / CI)
+# → api/app/data/ alongside the committed seed JSON. The .db file itself stays
+# gitignored. _connect() mkdir's the dir on first use.
 _MODULE_DIR = Path(__file__).resolve().parent
-_DB_PATH = _MODULE_DIR.parent.parent / "data" / "calibration.db"
+_DEFAULT_DATA_DIR = _MODULE_DIR.parent.parent / "data"
+_DB_DIR = (
+    Path(os.environ["ASCLEPIUS_DB_DIR"])
+    if os.getenv("ASCLEPIUS_DB_DIR")
+    else _DEFAULT_DATA_DIR
+)
+_DB_PATH = _DB_DIR / "calibration.db"
 _SEED_PATH = _MODULE_DIR / "seed_data.json"
 
 

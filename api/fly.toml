@@ -39,3 +39,19 @@ primary_region = "iad"
   # portfolio traffic.
   size = "shared-cpu-2x"
   memory = "1024mb"
+
+# Persistent volume for the SQLite databases (calibration + feedback). Without
+# this they live on the container's ephemeral filesystem and are wiped on every
+# redeploy. Mounted at /data; ASCLEPIUS_DB_DIR points the DB paths there (the
+# static reference JSON stays baked into the image at api/app/data/, so we mount
+# a SEPARATE dir, not over it). Create the volume once with:
+#   fly volumes create asclepius_data --region iad --size 1 -a asclepius-api
+# Note: a Fly volume binds to one machine, so with one volume the app runs a
+# single machine (fine for personal + small-circle traffic). Add volumes if you
+# later need concurrent machines.
+[mounts]
+  source = "asclepius_data"
+  destination = "/data"
+
+[env]
+  ASCLEPIUS_DB_DIR = "/data"

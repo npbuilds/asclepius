@@ -22,6 +22,7 @@ Design choices:
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import time
 import uuid
@@ -32,7 +33,16 @@ from pydantic import BaseModel, ConfigDict, Field
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "feedback.db"
+# DB directory is env-configurable so prod can point it at a persistent Fly
+# volume (writes survive redeploys); unset (local dev / CI) → api/app/data/.
+# _open() mkdir's the dir on first use.
+_DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+_DB_DIR = (
+    Path(os.environ["ASCLEPIUS_DB_DIR"])
+    if os.getenv("ASCLEPIUS_DB_DIR")
+    else _DEFAULT_DATA_DIR
+)
+DB_PATH = _DB_DIR / "feedback.db"
 
 # Cap the body to a sensible length — friend-test users aren't writing
 # papers, and unbounded text on a public endpoint is asking for abuse.
