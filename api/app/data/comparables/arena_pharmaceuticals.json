@@ -1,0 +1,17 @@
+{
+  "asset_name": "etrasimod (Velsipity)",
+  "therapeutic_area": "autoimmune",
+  "modality": "small_molecule",
+  "acquirer": "Pfizer",
+  "target_company": "Arena Pharmaceuticals",
+  "deal_value_usd_m": 6700.0,
+  "deal_date": "2021-12-13",
+  "deal_close_date": "2022-03-11",
+  "peak_sales_estimate_usd_m": 2000.0,
+  "asset_phase_at_deal": "phase_3",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2023-10-12",
+  "notes": "Pfizer paid ~$6.7B all-cash for Arena Pharmaceuticals, whose lead asset etrasimod is an oral, once-daily, selective sphingosine 1-phosphate (S1P) receptor modulator for immuno-inflammatory disease. Etrasimod was in Phase 3 for ulcerative colitis at deal time and went on to FDA approval as Velsipity in Oct 2023. Peak-sales figure of $2.0B is a sell-side ESTIMATE reflecting consensus across UC and broader IBD/immunology indications (atopic dermatitis, eosinophilic esophagitis exploratory) — not a Pfizer-disclosed number. EV/peak of ~3.35x reflects an oral S1P modulator in a competitive UC market (vs Zeposia, JAK inhibitors).",
+  "selection_rationale": "Clean single-lead-asset autoimmune small-molecule M&A with public deal terms. Oral S1P modulator for IBD anchors the autoimmune · small_molecule cohort alongside Receptos/ozanimod (same mechanism class) and Principia/rilzabrutinib (oral BTK).",
+  "source": "Pfizer/Arena press release Dec 13 2021; Arena SEC filings; FDA Velsipity approval Oct 2023. Peak-sales is a sell-side consensus ESTIMATE (not company-disclosed)."
+}

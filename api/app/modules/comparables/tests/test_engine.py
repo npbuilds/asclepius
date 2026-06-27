@@ -60,6 +60,66 @@ def test_radiopharmaceutical_cohort_matches() -> None:
     assert "actinium-225" in names or "radioligand" in names
 
 
+def test_autoimmune_small_molecule_cohort_matches() -> None:
+    """An autoimmune small-molecule asset (e.g. KT-621-style oral immunology)
+    routes to the curated autoimmune · small_molecule cohort (Arena/etrasimod,
+    Receptos/ozanimod, Principia/rilzabrutinib), NOT the oncology kinase-TKI
+    fallback. Regression guard for the autoimmune coverage fix."""
+    record = DiligenceRecord(
+        asset=AssetInput(
+            asset_name="kt-621-style oral immunology asset",
+            phase=Phase.PHASE_2,
+            therapeutic_area=TherapeuticArea.AUTOIMMUNE,
+            modality=Modality.SMALL_MOLECULE,
+        ),
+        rnpv_inputs=RnpvInputs(peak_sales_usd_m=1500.0),
+    )
+    out = compute(record)
+    assert out.cohort_matched is True
+    assert "Autoimmune" in out.cohort_label
+    assert "small molecule" in out.cohort_label
+    assert len(out.cohort) == 3
+    names = " ".join(c.asset_name for c in out.cohort).lower()
+    assert "etrasimod" in names
+    assert "ozanimod" in names
+    assert "rilzabrutinib" in names
+    # And it is NOT the cancer kinase fallback.
+    assert "kinase" not in out.cohort_label.lower()
+
+
+def test_same_ta_approximation_fallback() -> None:
+    """Smarter same-TA fallback: an autoimmune asset whose exact
+    (TA, modality_family) bucket is empty (e.g. an autoimmune gene therapy,
+    of which there are no deals) falls back to ANOTHER cohort in the SAME
+    therapeutic area (autoimmune small_molecule) rather than to the oncology
+    kinase-TKI cohort. cohort_matched stays False because it is not an exact
+    modality match — the 'Same-TA approximation' label carries the nuance."""
+    record = DiligenceRecord(
+        asset=AssetInput(
+            asset_name="hypothetical autoimmune gene therapy",
+            phase=Phase.PHASE_1,
+            therapeutic_area=TherapeuticArea.AUTOIMMUNE,
+            modality=Modality.GENE_THERAPY,
+        ),
+        rnpv_inputs=RnpvInputs(peak_sales_usd_m=1500.0),
+    )
+    out = compute(record)
+    assert out.cohort_matched is False
+    assert out.cohort_label.startswith("Same-TA approximation:")
+    assert "Autoimmune" in out.cohort_label
+    # Autoimmune has two qualifying same-TA cohorts: biologic (3 deals) and
+    # small_molecule (3 deals). They tie on size, so the deterministic
+    # alphabetical tie-break picks "biologic" (b < s). Either way it is a
+    # same-TA autoimmune cohort, NOT the oncology kinase-TKI fallback.
+    assert "biologic" in out.cohort_label
+    assert len(out.cohort) == 3
+    names = " ".join(c.asset_name for c in out.cohort).lower()
+    # Explicitly NOT the cancer kinase fallback.
+    assert "encorafenib" not in names
+    assert "selpercatinib" not in names
+    assert "larotrectinib" not in names
+
+
 def test_each_comparable_has_ev_peak_multiple() -> None:
     out = compute(_record())
     for c in out.cohort:

@@ -1,0 +1,17 @@
+{
+  "asset_name": "ozanimod (Zeposia)",
+  "therapeutic_area": "autoimmune",
+  "modality": "small_molecule",
+  "acquirer": "Celgene",
+  "target_company": "Receptos",
+  "deal_value_usd_m": 7200.0,
+  "deal_date": "2015-07-14",
+  "deal_close_date": "2015-08-27",
+  "peak_sales_estimate_usd_m": 1800.0,
+  "asset_phase_at_deal": "phase_3",
+  "approved_post_deal": true,
+  "approval_date_post_deal": "2020-03-25",
+  "notes": "Celgene paid ~$7.2B for Receptos, whose lead asset ozanimod is an oral, selective sphingosine 1-phosphate (S1P) receptor modulator developed for both ulcerative colitis and relapsing multiple sclerosis. Ozanimod was in Phase 3 at deal time and later won FDA approval as Zeposia (MS 2020, UC 2021). Peak-sales figure of $1.8B is a sell-side ESTIMATE reflecting consensus across the MS + UC indications at the time of the deal — not a Celgene-disclosed number. EV/peak of ~4.0x reflects a de-risked oral S1P modulator with dual large-indication optionality.",
+  "selection_rationale": "Oral S1P modulator autoimmune small-molecule M&A with public deal terms — same mechanistic class as etrasimod (Arena), giving the autoimmune · small_molecule cohort a coherent S1P-modulator core plus the oral BTK (Principia) data point.",
+  "source": "Celgene/Receptos press release Jul 14 2015; Receptos SEC filings; FDA Zeposia approvals 2020-2021. Peak-sales is a sell-side consensus ESTIMATE (not company-disclosed)."
+}

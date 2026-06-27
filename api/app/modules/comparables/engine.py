@@ -168,6 +168,14 @@ def _build_cohort_index() -> dict[tuple[str, str], list[str]]:
     return index
 
 
+def _ta_label(asset_ta_value: str) -> str:
+    """Render a TA enum value for display.
+
+    Acronym TAs render ALL-CAPS rather than Title-Case ("CNS", not "Cns").
+    """
+    return _TA_LABELS.get(asset_ta_value) or asset_ta_value.replace("_", " ").title()
+
+
 def _select_cohort(
     asset_ta: TherapeuticArea,
     asset_modality: Modality,
@@ -175,31 +183,65 @@ def _select_cohort(
 ) -> tuple[list[str], str, bool]:
     """Return (cohort_ids, human_readable_label, is_matched).
 
-    is_matched=True when the asset's (TA, modality_family) bucket has ≥
-    MIN_MATCHED_COHORT_SIZE deals; False when we fall back to the
-    kinase-TKI cohort. The label is what the UI displays.
+    Routing order:
+      1. Exact (TA, modality_family) bucket with ≥ MIN_MATCHED_COHORT_SIZE
+         deals → matched cohort (is_matched=True).
+      2. Otherwise, the largest cohort in the SAME therapeutic_area (any
+         modality family) with ≥ MIN_MATCHED_COHORT_SIZE deals → a
+         "Same-TA approximation" cohort. This keeps an autoimmune asset
+         valued against autoimmune deals rather than oncology kinase
+         deals. is_matched=False because it is NOT an exact modality
+         match — the label communicates the nuance.
+      3. Otherwise, the canonical kinase-TKI fallback (is_matched=False).
     """
     index = _build_cohort_index()
     family = _family_for_modality(asset_modality.value)
-    key = (asset_ta.value, family)
-    bucket = list(index.get(key, []))
-    if exclude_id is not None and exclude_id in bucket:
-        bucket = [b for b in bucket if b != exclude_id]
+
+    def _bucket_for(key: tuple[str, str]) -> list[str]:
+        b = list(index.get(key, []))
+        if exclude_id is not None and exclude_id in b:
+            b = [x for x in b if x != exclude_id]
+        return b
+
+    # 1. Exact (TA, modality_family) match.
+    bucket = _bucket_for((asset_ta.value, family))
     if len(bucket) >= MIN_MATCHED_COHORT_SIZE:
-        # Acronym TAs render as ALL-CAPS rather than Title-Case ("CNS",
-        # not "Cns"; "IBD" not "Ibd").
-        ta_label = _TA_LABELS.get(asset_ta.value) or asset_ta.value.replace("_", " ").title()
         # Family label is the same string we indexed under, but rendered
         # readably (underscore → space). We DON'T expose the raw
         # underlying modality enum here because the bucket may contain
         # multiple modalities under the same family.
         label = (
-            f"{ta_label} · "
+            f"{_ta_label(asset_ta.value)} · "
             f"{family.replace('_', ' ')} ({len(bucket)} deals)"
         )
         return bucket, label, True
-    # Fallback: kinase-TKI cohort, with disclosure surfaced via the label
-    # and the cohort_matched=False flag.
+
+    # 2. Same-TA approximation: any OTHER modality family in the same
+    # therapeutic area with enough deals. Prefer the largest cohort; break
+    # ties deterministically (alphabetical by family) so routing is stable
+    # and testable.
+    same_ta_candidates: list[tuple[str, list[str]]] = []
+    for (ta_value, fam), _ids in index.items():
+        if ta_value != asset_ta.value or fam == family:
+            continue
+        cand_bucket = _bucket_for((ta_value, fam))
+        if len(cand_bucket) >= MIN_MATCHED_COHORT_SIZE:
+            same_ta_candidates.append((fam, cand_bucket))
+    if same_ta_candidates:
+        # Largest cohort wins; alphabetical family is a deterministic
+        # tie-break (sort by -size so largest is first, then family name
+        # ascending, and take the head).
+        best_family, best_bucket = sorted(
+            same_ta_candidates, key=lambda c: (-len(c[1]), c[0])
+        )[0]
+        label = (
+            f"Same-TA approximation: {_ta_label(asset_ta.value)} · "
+            f"{best_family.replace('_', ' ')} ({len(best_bucket)} deals)"
+        )
+        return best_bucket, label, False
+
+    # 3. Fallback: kinase-TKI cohort, with disclosure surfaced via the
+    # label and the cohort_matched=False flag.
     return list(_KINASE_TKI_FALLBACK_IDS), _KINASE_TKI_FALLBACK_LABEL, False
 
 

@@ -1,0 +1,16 @@
+{
+  "asset_name": "rilzabrutinib",
+  "therapeutic_area": "autoimmune",
+  "modality": "small_molecule",
+  "acquirer": "Sanofi",
+  "target_company": "Principia Biopharma",
+  "deal_value_usd_m": 3680.0,
+  "deal_date": "2020-08-17",
+  "deal_close_date": "2020-09-29",
+  "peak_sales_estimate_usd_m": 1000.0,
+  "asset_phase_at_deal": "phase_3",
+  "approved_post_deal": false,
+  "notes": "Sanofi paid ~$3.68B all-cash for Principia Biopharma, whose lead asset rilzabrutinib is an oral, reversible covalent BTK inhibitor for immune-mediated diseases (pemphigus, immune thrombocytopenia / ITP, IgG4-related disease). Sanofi already partnered with Principia on a separate CNS-penetrant BTK program (tolebrutinib for MS); the buyout consolidated full rights. Peak-sales figure of $1.0B is a sell-side ESTIMATE across the immune-mediated indications — not a Sanofi-disclosed number. EV/peak of ~3.68x reflects an oral BTK inhibitor with multiple immunology indications but earlier commercial visibility than the S1P comps.",
+  "selection_rationale": "Oral BTK-inhibitor autoimmune small-molecule M&A with public deal terms. Diversifies the autoimmune · small_molecule cohort beyond the S1P-modulator pair (Arena/etrasimod, Receptos/ozanimod) with a distinct oral immunology mechanism.",
+  "source": "Sanofi/Principia press release Aug 17 2020; Principia SEC filings. Peak-sales is a sell-side consensus ESTIMATE (not company-disclosed)."
+}
