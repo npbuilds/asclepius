@@ -23,6 +23,7 @@ import Link from "next/link";
 
 import { AutoDiligencePanel } from "@/components/agents/AutoDiligencePanel";
 import { MemoPanel } from "@/components/agents/MemoPanel";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import type {
   ClientDiligenceRecord,
   ModulePanelProps,
@@ -61,6 +62,7 @@ export default function ActionSection({ record, setRecord }: ActionSectionProps)
           >
             [ read methodology → ]
           </Link>
+          <SaveAnalysisButton record={record} />
           <button
             type="button"
             disabled

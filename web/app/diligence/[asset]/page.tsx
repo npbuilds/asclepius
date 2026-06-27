@@ -13,7 +13,7 @@ import HeroBanner from "@/components/HeroBanner";
 import { ReflexivitySlider } from "@/components/ReflexivitySlider";
 import RiskSection from "@/components/RiskSection";
 import UnresearchedAssetHero from "@/components/UnresearchedAssetHero";
-import { listModules } from "@/lib/api-client";
+import { getAnalysis, listModules } from "@/lib/api-client";
 import {
   ClientDiligenceRecord,
   getPanelFor,
@@ -155,6 +155,53 @@ export default function DiligencePage({
     (u: Partial<ClientDiligenceRecord> | ((p: ClientDiligenceRecord) => ClientDiligenceRecord)) => void
   >((u) => {
     setRecordState((prev) => (typeof u === "function" ? u(prev) : { ...prev, ...u }));
+  }, []);
+
+  // Reload-from-saved: if the URL carries ?analysis_id=<uuid>, hydrate the full
+  // record from the saved-analyses store, overriding the staged/blank defaults.
+  // Read from window.location (client-only) so we don't need a Suspense
+  // boundary. The deterministic module panels recompute identically from the
+  // restored asset; agent outputs (memo/adversary) re-run on demand as before.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const analysisId = new URL(window.location.href).searchParams.get(
+      "analysis_id",
+    );
+    if (!analysisId) return;
+    let cancelled = false;
+    getAnalysis(analysisId)
+      .then((detail) => {
+        if (cancelled) return;
+        const r = detail.record as {
+          asset: AssetInput;
+          rnpv_inputs?: RnpvInputs;
+          pos?: ClientDiligenceRecord["pos"];
+          rnpv?: ClientDiligenceRecord["rnpv"];
+          scorecard?: ClientDiligenceRecord["scorecard"];
+          comparables?: ClientDiligenceRecord["comparables"];
+        };
+        setRecordState({
+          asset: r.asset,
+          pos: r.pos ?? null,
+          rnpv_inputs: r.rnpv_inputs ?? stagedRnpv,
+          rnpv: r.rnpv ?? null,
+          scorecard: r.scorecard ?? null,
+          comparables: r.comparables ?? null,
+          ml_pos: null,
+          ml_pos_nct_id: stagedNctId,
+          ml_pos_criteria_text: null,
+        });
+      })
+      .catch((e) => {
+        // Leave the staged/blank defaults in place on failure (e.g. 403 when
+        // the access token is missing, or 404 for a deleted analysis).
+        if (!cancelled) console.error("reload saved analysis failed:", e);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Run once on mount — the analysis_id is a deep-link param, not reactive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [manifests, setManifests] = useState<ModuleManifest[]>([]);

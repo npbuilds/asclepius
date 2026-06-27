@@ -56,6 +56,12 @@ def create_app() -> FastAPI:
 
     app.include_router(feedback_router)
 
+    # Saved analyses — persist / list / reload a completed DiligenceRecord.
+    # Framework infra like feedback; gated behind the shared access passphrase.
+    from .analyses import router as analyses_router
+
+    app.include_router(analyses_router)
+
     # ---- Built-in routes ----
 
     @app.get("/health")

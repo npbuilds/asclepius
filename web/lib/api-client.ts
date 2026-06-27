@@ -7,6 +7,8 @@
 import type {
   AdversaryOutput,
   AgentManifest,
+  AnalysisDetail,
+  AnalysisSummary,
   AssetCalibrationContext,
   AssetInput,
   AssetSizingInput,
@@ -237,6 +239,75 @@ export async function runAutoDiligence(
   record: Record<string, unknown>,
 ): Promise<AutoDiligenceOutput> {
   return runAgent<AutoDiligenceOutput>("auto_diligence", record);
+}
+
+// --- Saved analyses (persistence) -----------------------------------------
+// The /api/analyses routes are gated behind the same shared passphrase as the
+// agents, so these calls attach the X-Asclepius-Access header (read from the
+// ?access= link / localStorage, exactly like runAgent).
+
+// Save persists the canonical DiligenceRecord. Unlike agent calls we KEEP
+// rnpv_inputs (a real DiligenceRecord field the reload needs to restore the
+// economic assumptions) and strip only the pure UI-state fields.
+const UI_ONLY_RECORD_FIELDS = [
+  "ml_pos",
+  "ml_pos_nct_id",
+  "ml_pos_criteria_text",
+] as const;
+
+function stripUiOnlyFields(
+  record: Record<string, unknown>,
+): Record<string, unknown> {
+  const out = { ...record };
+  for (const field of UI_ONLY_RECORD_FIELDS) delete out[field];
+  return out;
+}
+
+async function accessFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const accessToken = getAccessToken();
+  if (accessToken) headers["X-Asclepius-Access"] = accessToken;
+  const res = await fetch(path, { cache: "no-store", ...init, headers });
+  if (!res.ok) {
+    let detail: string = res.statusText;
+    try {
+      const body = (await res.json()) as { detail?: unknown };
+      if (body.detail !== undefined) detail = formatErrorDetail(body.detail);
+    } catch {
+      // not JSON; keep statusText
+    }
+    const err: AgentError = { status: res.status, message: detail };
+    throw err;
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function saveAnalysis(
+  record: Record<string, unknown>,
+  label?: string | null,
+): Promise<{ id: string }> {
+  return accessFetch<{ id: string }>("/api/analyses", {
+    method: "POST",
+    body: JSON.stringify({
+      record: stripUiOnlyFields(record),
+      label: label ?? null,
+    }),
+  });
+}
+
+export async function listAnalyses(): Promise<AnalysisSummary[]> {
+  const data = await accessFetch<{ analyses: AnalysisSummary[] }>("/api/analyses");
+  return data.analyses;
+}
+
+export async function getAnalysis(id: string): Promise<AnalysisDetail> {
+  return accessFetch<AnalysisDetail>(`/api/analyses/${id}`);
+}
+
+export async function deleteAnalysis(id: string): Promise<{ deleted: boolean }> {
+  return accessFetch<{ deleted: boolean }>(`/api/analyses/${id}`, {
+    method: "DELETE",
+  });
 }
 
 // --- Portfolio Sizing (v2.0) ----------------------------------------------

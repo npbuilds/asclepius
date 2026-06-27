@@ -403,6 +403,33 @@ export interface PredictionLogEntry {
   outcome_source: string | null;
 }
 
+// --- Saved analyses (persistence) -----------------------------------------
+
+// One row of the saved-analyses list view — denormalized card fields only.
+export interface AnalysisSummary {
+  id: string;
+  created_at: number; // unix seconds
+  label: string | null;
+  asset_name: string;
+  phase: string | null;
+  therapeutic_area: string | null;
+  modality: string | null;
+  final_loa: number | null;
+  rnpv_base_usd_m: number | null;
+  recommendation: string | null;
+}
+
+// A full reload payload: the envelope + the rehydrated canonical record.
+export interface AnalysisDetail {
+  id: string;
+  created_at: number;
+  label: string | null;
+  // The canonical DiligenceRecord shape (asset + pos + rnpv + scorecard +
+  // comparables + rnpv_inputs). Typed loosely here; the diligence page maps it
+  // back into a ClientDiligenceRecord on reload.
+  record: Record<string, unknown>;
+}
+
 // --- ML PoS Prior (v1.5.1) ------------------------------------------------
 
 export type DisagreementLevel = "aligned" | "moderate" | "divergent";
