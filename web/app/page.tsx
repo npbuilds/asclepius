@@ -113,7 +113,7 @@ export default function LandingPage() {
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {STAGED_ASSETS.map((asset) => (
+          {STAGED_ASSETS.filter((a) => !a.hidden).map((asset) => (
             <Link
               key={asset.slug}
               href={`/diligence/${asset.slug}`}

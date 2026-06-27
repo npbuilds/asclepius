@@ -37,6 +37,11 @@ export interface StagedAsset {
   /** NCT ID for the MLPosPriorPanel criteria-fetch path. Null for assets
    *  whose lead trial isn't on CT.gov in a useful form. */
   ml_pos_nct_id: string | null;
+  /** Loadable by slug but excluded from the landing grid. Used for
+   *  showcase-only exemplars (e.g. the Ac-225 case study asset) that the
+   *  /showcase CTA deep-links into but that aren't real named backtests/
+   *  predictions belonging in the curated "pre-staged assets" grid. */
+  hidden?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +194,42 @@ const TULISOKIBART_RNPV: RnpvInputs = {
   years_per_phase: { phase_1: 0, phase_2: 0, phase_3: 3, regulatory: 1 },
 };
 
+// Ac-225 — the /showcase case-study asset. An illustrative frontier exemplar
+// (not a specific company's drug), kept `hidden` so it loads at
+// /diligence/ac-225 with these exact inputs (the showcase CTA's deep-link
+// target) but doesn't appear in the curated landing grid of real assets.
+// rNPV inputs mirror the engine defaults + peak $1,500M so the live workbench
+// reproduces the numbers shown on the showcase page verbatim.
+const AC225: AssetInput = {
+  asset_name: "Ac-225 alpha-emitter (radioligand therapy)",
+  sponsor: "Illustrative frontier exemplar",
+  phase: "phase_1",
+  therapeutic_area: "oncology",
+  modality: "radiopharmaceutical",
+  capital_position: "constrained",
+  supply_constraint: "severe",
+  mechanism: "Actinium-225 targeted alpha therapy",
+  target: "tumor-associated antigen (e.g. PSMA / SSTR)",
+  indication: "Advanced solid tumor (biomarker-selected)",
+  regulatory_designations: ["orphan_drug", "fast_track"],
+  num_competitors: 2,
+  target_validated: true,
+  biomarker_enrichment: true,
+};
+
+const AC225_RNPV: RnpvInputs = {
+  peak_sales_usd_m: 1500,
+  years_to_peak: 5,
+  years_of_exclusivity: 12,
+  cogs_pct: 0.20,
+  wacc: 0.12,
+  dev_cost_phase_1_usd_m: 25,
+  dev_cost_phase_2_usd_m: 75,
+  dev_cost_phase_3_usd_m: 250,
+  launch_cost_usd_m: 150,
+  years_per_phase: { phase_1: 1.5, phase_2: 2.5, phase_3: 3, regulatory: 1 },
+};
+
 // ---------------------------------------------------------------------------
 // Registry — ordered for narrative flow (oncology workhorse → forward
 // prediction → cell therapy → autoimmune → contested). The landing tile
@@ -256,6 +297,19 @@ export const STAGED_ASSETS: StagedAsset[] = [
     asset: ADUCANUMAB,
     rnpv: ADUCANUMAB_RNPV,
     ml_pos_nct_id: "NCT02484547",
+  },
+  {
+    slug: "ac-225",
+    name: "Ac-225 radioligand",
+    sponsor: "Illustrative frontier exemplar",
+    mode: "forward",
+    context: "Phase 1 · oncology · radiopharmaceutical",
+    story:
+      "Showcase case-study asset (see /showcase). Severe isotope supply + a capital-constrained sponsor light up both path-dependencies at once.",
+    asset: AC225,
+    rnpv: AC225_RNPV,
+    ml_pos_nct_id: null,
+    hidden: true,
   },
 ];
 

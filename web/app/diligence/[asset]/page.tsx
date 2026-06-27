@@ -110,6 +110,7 @@ export default function DiligencePage({
   const isAducanumab = assetSlug === "aducanumab";
   const isLifileucel = assetSlug === "lifileucel";
   const isTulisokibart = assetSlug === "tulisokibart";
+  const isAc225 = assetSlug === "ac-225";
 
   // Pre-staged asset wiring: each known showcase asset gets its hardcoded
   // AssetInput + RnpvInputs + (optionally) an NCT ID for the PubMedBERT
@@ -217,7 +218,7 @@ export default function DiligencePage({
   // test, not to populate. Unknown assets default-open because the form
   // is the only way to populate them.
   const isStaged =
-    isAdagrasib || isDivarasib || isAducanumab || isLifileucel || isTulisokibart;
+    isAdagrasib || isDivarasib || isAducanumab || isLifileucel || isTulisokibart || isAc225;
   const [assetFormOpen, setAssetFormOpen] = useState(!isStaged);
 
   // v1.7.1: "ready to use" UX for the friend-test "type your own asset" path.
@@ -435,6 +436,21 @@ export default function DiligencePage({
             class — no anti-TL1A asset has been FDA-approved yet (Roivant&apos;s
             parallel program is also in Phase 3). Exercises the framework on
             the new autoimmune-biologic cohort.
+          </p>
+        ) : isAc225 ? (
+          <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
+            <strong className="text-text-bright">Frontier case study.</strong>{" "}
+            An illustrative Actinium-225 alpha-emitter from a capital-constrained
+            junior — the asset behind the{" "}
+            <a href="/showcase" className="underline hover:text-cyan-bright">
+              /showcase
+            </a>{" "}
+            walkthrough. It exercises both path-dependencies at once: the
+            reflexivity multiplier (constrained capital) and the supply
+            constraint (severe isotope supply — a PoS multiplier{" "}
+            <em>and</em> a peak-sales ceiling in rNPV), plus the curated
+            radiopharmaceutical comp cohort. Not a specific company&apos;s drug;
+            a representative frontier exemplar.
           </p>
         ) : null}
 

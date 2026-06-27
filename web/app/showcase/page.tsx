@@ -266,10 +266,10 @@ export default function ShowcasePage() {
       {/* CTA */}
       <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-border-dim pt-5">
         <Link
-          href="/diligence/adagrasib"
+          href="/diligence/ac-225"
           className="rounded border border-cyan-bright bg-cyan-bright/10 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-cyan-bright hover:bg-cyan-bright/20"
         >
-          [ run the live workbench → ]
+          [ run this asset in the live workbench → ]
         </Link>
         <Link
           href="/methodology"
