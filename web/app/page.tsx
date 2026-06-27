@@ -60,6 +60,28 @@ export default function LandingPage() {
         Biotech venture valuation · reflexivity-adjusted PoS · phase-gated rNPV
       </p>
 
+      {/* Featured: the narrated case study. The get-hired centerpiece — makes
+          the differentiated thinking legible without the reader having to
+          construct the triggering asset. Placed above the fold, prominent. */}
+      <Link
+        href="/showcase"
+        className="mt-6 block rounded border border-cyan-bright/50 bg-cyan-bright/[0.06] p-3 transition hover:bg-cyan-bright/[0.12]"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="font-display text-[13px] font-semibold uppercase tracking-wider text-cyan-bright">
+            How the tool thinks — a worked case
+          </span>
+          <span className="font-mono text-[9px] uppercase tracking-wider text-cyan-bright">
+            Ac-225 case study →
+          </span>
+        </div>
+        <p className="mt-1 font-prose text-[12px] leading-snug text-text-dim">
+          A frontier asset read end to end — the reflexivity and
+          supply-constraint theses in action, where a generic DCF stops at a
+          single number.
+        </p>
+      </Link>
+
       {apiOffline ? (
         <div
           role="status"
