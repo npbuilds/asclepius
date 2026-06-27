@@ -1,0 +1,52 @@
+{
+  "body_markdown": "## Adversarial pass \u2014 adagrasib / Mirati\n\nThe memo is internally coherent and the PoS chain is defensible on its own terms, but the adversarial pass surfaces three structural tensions the buy thesis underweights. First, the comparables cohort is dominated by contested 2023-adjacent strategic takeouts in targeted oncology \u2014 the implied $8B \"clearing price\" carries an unacknowledged winner's-curse premium that should be subtracted before any disciplined entry is sized to it. Second, the reflexivity tier assignment (adequate, \u00d71.00) is generous given the brief's own footnote that Mirati holds ~$890M against ~$95M quarterly burn \u2014 under twelve months of bare runway sits squarely in the *constrained* tier (\u00d70.88) absent the capital-markets-access carve-out, which is itself a Bayesian-persuasion-sensitive signal. Third, the BTD-driven \u00d71.10 and the target-validated \u00d71.15 are partially redundant in a context where sotorasib's confirmatory data are themselves under FDA scrutiny \u2014 the target-validation read is fragile.\n\nThe verdict can stand at **buy** but the disciplined entry should be tightened \u2014 closer to P25 ($300M) than the memo's P50 anchor (~$474M) \u2014 to absorb the auction-clearing and reflexivity adjustments below.\n\n**Verdict: hold** (the call stands; disciplined entry should shift toward P25).\n\n```json\n{\"verdict_shift\": \"hold\"}\n```",
+  "verdict_shift": "hold",
+  "recommendation_shift_to": null,
+  "flags": [
+    {
+      "flag_type": "winners_curse",
+      "severity": "high",
+      "title": "Cohort-implied $8B clearing price carries unadjusted auction premium",
+      "rationale": "The comparables cohort median of 6.67\u00d7 EV/peak-sales implying $8,004M is anchored on three contested strategic takeouts: Pfizer/Array ($11.4B at 15.2\u00d7), Bayer/Lilly larotrectinib ($1.55B at 3.88\u00d7), and Lilly/Loxo selpercatinib ($8.0B at 6.67\u00d7). All three were contested processes in targeted oncology where multiple Big Pharma franchises had identifiable strategic interest. Per the adagrasib worked example in methodology, the median multiple from contested-process comparables is biased upward by the winning bid in each contest; a baseline 5-8% winner's-curse discount is warranted, and the Loxo deal in particular cleared during the 2019-2020 targeted-oncology bidding cycle that BioPharma Dive subsequently flagged as premium-inflated.\n\nThe memo treats $8,004M as 'the post-approval clearing price the cohort transactions imply' without subtracting the auction premium. A disciplined post-readout fair value is closer to $7.2-7.6B (5-8% haircut), and the gap between the framework's pre-readout $516M rNPV and the *adjusted* cohort number is correspondingly smaller. This matters because the memo's 'buy at or below P50 (~$474M)' anchor implicitly leans on the un-haircut $8B exit case to justify the multiple expansion from rNPV to cohort.",
+      "test": "Re-run the comparables median after applying a 6% winner's-curse discount to each contested transaction; if implied value falls below ~$7.5B, the memo's exit-case math should be re-stated at the lower number and disciplined entry tightened toward Monte Carlo P25 ($300M).",
+      "cite": [
+        "methodology/05-worked-example-adagrasib.md"
+      ]
+    },
+    {
+      "flag_type": "signaling_equilibrium",
+      "severity": "high",
+      "title": "Reflexivity tier 'adequate' contradicts the brief's own runway disclosure",
+      "rationale": "The memo classifies Mirati as adequate-tier (\u00d71.00, 12-24 months runway) but the body text concedes ~$890M cash against ~$95M quarterly burn \u2014 which is ~9.4 months of bare runway, structurally a constrained-tier (\u00d70.88) signature under the framework's own definition (6-12 months). The carve-out invoked is 'demonstrated repeated capital-markets access in the prior twenty-four months,' but per Spence (1973) signaling logic, repeated dilutive raises by a sponsor with a pre-readout binary asset is itself the costly-signal pattern of a *constrained* type, not evidence of adequacy. The well-capitalized counterfactual would have been a single large raise or a structured deal pre-KRYSTAL-12; serial smaller raises read as the constrained sponsor smoothing burn against a binary readout.\n\nIf the reflexivity tier is correctly re-set to constrained (\u00d70.88), the final LOA drops from 16.1% to ~14.2%, and the rNPV base shifts roughly proportionally from $516M to ~$455M \u2014 which moves disciplined entry from the memo's ~$474M P50 anchor toward the P25 ($300M). The Lo & Thakor (2022) financing-frictions read reinforces this: capital-constrained sponsors with one pivotal asset face systematically different trial-execution risk than the base rate captures.",
+      "test": "Recompute final LOA at reflexivity \u00d70.88 and re-run the Monte Carlo; if the revised P50 falls below $450M, the memo's 'buy at or below P50 (~$474M)' anchor should be restated. Separately, audit Mirati's 2021-2022 financing cadence \u2014 three or more dilutive raises in 24 months confirms the constrained-tier signaling read.",
+      "cite": [
+        "methodology/06-signaling-equilibrium.md",
+        "methodology/02-reflexivity-thesis.md"
+      ]
+    },
+    {
+      "flag_type": "bayesian_persuasion",
+      "severity": "medium",
+      "title": "Sotorasib precedent risk and Kao-style competitor-disclosure asymmetry",
+      "rationale": "The target-validated \u00d71.15 modifier rests on sotorasib's May 2021 accelerated approval, but Amgen's CodeBreaK-200 confirmatory readout has been the subject of FDA scrutiny over PFS magnitude and OS curve crossover. Per Kao (2024, Management Science 71(7):5948-5970), a competitor's approval reduces the focal firm's own clinical-trial disclosure within two years by ~13 percentage points \u2014 meaning Mirati's KRYSTAL-1/KRYSTAL-12 communication cadence is itself endogenous to sotorasib's evolving regulatory status. The 'target-validated' read is thus partially contaminated: if sotorasib's confirmatory data are weak enough to trigger a class-wide FDA reassessment of KRAS G12C inhibitor benefit-risk, the \u00d71.15 modifier is the wrong sign.\n\nAdditionally, the memo cites 'mature KRYSTAL-1 data' (clinical pillar 7.0) without flagging whether the headline ORR is the pre-specified ITT primary or a biomarker-refined subgroup. Per Yi et al. (2024), post-hoc subgroup disclosure in oncology trials roughly doubled 2000-2014 \u2192 2019-2022 with ~95% lacking multiplicity adjustment \u2014 a textbook Kamenica-Gentzkow signal partition.",
+      "test": "Pull Mirati's KRYSTAL-1 press releases and the SAP from clinicaltrials.gov; confirm the headline ORR figure matches the pre-specified primary in the ITT population. Separately, monitor sotorasib's CodeBreaK-200 ODAC trajectory \u2014 any FDA-driven label restriction within 12 months would force a downward revision of the target-validated \u00d71.15.",
+      "cite": [
+        "methodology/07-bayesian-persuasion-disclosure.md"
+      ]
+    },
+    {
+      "flag_type": "cohort_base_rate_check",
+      "severity": "low",
+      "title": "Stacked multipliers produce 1.52\u00d7 lift on the base rate \u2014 at the edge of empirical support",
+      "rationale": "The PoS chain stacks biomarker (\u00d71.20) \u00d7 target-validated (\u00d71.15) \u00d7 BTD (\u00d71.10) = \u00d71.518 on the 10.6% base, reaching 16.1%. This is *below* the framework's hard-cap heuristic (3\u00d7 base would be ~32%) so it does not trip the explicit guardrail, but the multiplicative stacking implicitly assumes the three modifiers are independent \u2014 which Wong 2019 does not directly support. Biomarker-enriched trials are *also* more likely to be at validated targets and *also* more likely to receive BTD; the conditional uplift, given the other two, is likely smaller than the marginal point estimates. A more defensible chain might apply the largest single modifier in full and discount the others by 50%, yielding a final LOA closer to 13-14%.\n\nThis is a low-severity flag because the framework's confidence band (14.8%-17.4%) already partially absorbs the uncertainty, and the buy verdict is robust to a ~2pp LOA shift. But it should be noted for the calibration dashboard.",
+      "test": "Pull the Wong 2019 \u00a74.3 conditional analysis: among biomarker-enriched oncology trials at validated targets with BTD, what is the realized P2\u2192approval rate? If the cohort empirical is <14%, the multiplicative-independence assumption is over-stating LOA.",
+      "cite": [
+        "methodology/01-pos-framework.md"
+      ]
+    }
+  ],
+  "findings": [],
+  "model_used": "claude-opus-4-7",
+  "from_cache": false,
+  "generated_at": "2026-06-27T05:08:32.202904Z"
+}
