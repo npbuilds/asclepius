@@ -53,6 +53,11 @@ class PoSAnalysis(BaseModel):
 
     The prose must reference specific multiplier names from the chain
     (e.g. 'biomarker-enrichment-boost', 'target-validated', 'reflexivity').
+
+    Carries the tool's TWO path-dependency reads side by side:
+    `reflexivity_note` (capital -> PoS) and `supply_note` (supply -> PoS AND
+    a peak-sales ceiling in rNPV). Pairing them is deliberate — they are the
+    framework's distinctive structural overlays.
     """
 
     waterfall_narrative: str = Field(
@@ -63,6 +68,13 @@ class PoSAnalysis(BaseModel):
     reflexivity_note: str = Field(
         description="One paragraph on the Spence-style reflexivity reading: what "
         "the capital tier signals and whether it changes the verdict."
+    )
+    supply_note: str = Field(
+        description="One paragraph on the supply-constraint reading: the supply tier "
+        "(unconstrained/moderate/severe), its DUAL effect — a PoS multiplier AND a "
+        "peak-sales ceiling in rNPV — and whether it changes the verdict. If the asset "
+        "is unconstrained, say so in one sentence (it is not a binding factor) rather "
+        "than padding."
     )
 
 
@@ -103,16 +115,36 @@ class RiskItem(BaseModel):
 
 
 class RecommendationClose(BaseModel):
-    """The /05-style opinion-paragraph close."""
+    """The /05-style opinion-paragraph close.
+
+    This is where the call is made *defensible*: an explicit conviction level,
+    a one-line statement of how the two path-dependencies (reflexivity + supply)
+    net moved the verdict, the priced opinion paragraph, and a falsifiable kill
+    criterion.
+    """
 
     recommendation: Recommendation
+    conviction: Literal["high", "medium", "low"] = Field(
+        description="Explicit conviction in the call — orthogonal to the buy/hold/avoid "
+        "direction. 'high' only when the rNPV bracket and the comp-clearing read agree "
+        "and no single tornado driver can flip the sign; 'low' when the verdict hinges "
+        "on one contested input."
+    )
+    path_dependency_verdict: str = Field(
+        description="One or two sentences naming how the reflexivity tier AND the supply "
+        "tier net moved the call — e.g. 'the distressed reflexivity tier (×0.85) and "
+        "severe supply ceiling (peak −35%) together pull this from buy to cautious.' "
+        "If both are neutral, say so explicitly."
+    )
     closing_paragraph: str = Field(
         description="The 'at $X, the framework brackets...' close from methodology/05. "
         "Names the entry-price discipline if price-conditioned."
     )
     kill_criterion: str = Field(
-        description="The single specific readout, event, or data point that would "
-        "flip the verdict to avoid."
+        description="A FALSIFIABLE kill criterion: a NAMED, observable event with a "
+        "THRESHOLD and DIRECTION that would flip the verdict to avoid — e.g. 'Phase 3 "
+        "ORR < 40% at the H2'26 readout' or 'a competitor's confirmatory survival "
+        "miss reopens the endpoint debate'. NOT a vague 'if efficacy disappoints'."
     )
 
 

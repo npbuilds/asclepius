@@ -20,7 +20,18 @@ import pytest
 from fastapi import HTTPException
 
 from app.agents.memo_writer.agent import MEMO_TOOL, Agent, _slugify_asset_name
-from app.domain import AssetInput, CapitalPosition, DiligenceRecord, Modality, Phase, TherapeuticArea
+from app.agents.memo_writer.prompts import build_user_prompt
+from app.domain import (
+    AssetInput,
+    CapitalPosition,
+    DiligenceRecord,
+    Modality,
+    Phase,
+    RnpvInputs,
+    RnpvResult,
+    SupplyConstraint,
+    TherapeuticArea,
+)
 from app.registry import AgentManifest
 
 
@@ -75,6 +86,7 @@ _TOOL_INPUT = {
             "reflects FDA pre-commitment."
         ),
         "reflexivity_note": "Mirati sits in the adequate reflexivity tier.",
+        "supply_note": "Unconstrained small-molecule supply — not a binding factor.",
     },
     "valuation": {
         "valuation_narrative": (
@@ -104,8 +116,13 @@ _TOOL_INPUT = {
     ],
     "recommendation_close": {
         "recommendation": "buy",
+        "conviction": "medium",
+        "path_dependency_verdict": (
+            "Adequate reflexivity tier (x1.00) and unconstrained supply leave the "
+            "call unmoved by either path-dependency."
+        ),
         "closing_paragraph": "At $474M asset-attributable, the framework brackets the entry as a buy.",
-        "kill_criterion": "A KRYSTAL-12 primary-endpoint miss flips the call to avoid.",
+        "kill_criterion": "A KRYSTAL-12 confirmatory ORR < 30% at the H2'26 readout flips the call to avoid.",
     },
     "executive_summary": "Adagrasib is a Phase 2 KRAS G12C asset with a 16.1% LOA and base rNPV $516M.",
     "recommendation": "buy",
@@ -142,6 +159,56 @@ def test_slugify_strips_punctuation_and_lowercases():
     assert _slugify_asset_name("adagrasib (MRTX849)") == "adagrasib_mrtx849"
     assert _slugify_asset_name("ADAGRASIB") == "adagrasib"
     assert _slugify_asset_name("") == "unnamed"
+
+
+# ---------------------------------------------------------------------------
+# brief serialization — the supply differentiator must reach the agent
+# ---------------------------------------------------------------------------
+
+
+def test_brief_includes_supply_tier_and_rnpv_ceiling():
+    """A severe-supply asset whose rNPV carries a peak ceiling must surface BOTH
+    the supply tier (ASSET block) and the ceiling (RNPV block) in the brief.
+    Regression guard: before the synthesis pass the memo agent was blind to
+    supply entirely — capital_position was serialized but supply_constraint and
+    the rNPV ceiling were not."""
+    record = DiligenceRecord(
+        asset=AssetInput(
+            asset_name="ac-225 alpha emitter",
+            phase=Phase.PHASE_1,
+            therapeutic_area=TherapeuticArea.ONCOLOGY,
+            modality=Modality.RADIOPHARMACEUTICAL,
+            supply_constraint=SupplyConstraint.SEVERE,
+        ),
+        rnpv_inputs=RnpvInputs(peak_sales_usd_m=1500.0),
+        rnpv=RnpvResult(
+            base_case_usd_m=900.0,
+            supply_peak_ceiling_pct=0.65,
+            supply_adjusted_peak_usd_m=975.0,
+        ),
+    )
+    brief = build_user_prompt(record)
+    assert "Supply constraint: severe" in brief
+    assert "Supply ceiling: ×0.65" in brief
+    assert "effective peak $975M" in brief
+
+
+def test_brief_omits_supply_ceiling_when_unconstrained():
+    """An unconstrained asset (ceiling 1.0 / None) gets NO ceiling line — the
+    brief stays clean and the model isn't prompted to invent a supply effect."""
+    record = DiligenceRecord(
+        asset=AssetInput(
+            asset_name="adagrasib",
+            phase=Phase.PHASE_2,
+            therapeutic_area=TherapeuticArea.ONCOLOGY,
+            modality=Modality.SMALL_MOLECULE,
+        ),
+        rnpv_inputs=RnpvInputs(peak_sales_usd_m=1200.0),
+        rnpv=RnpvResult(base_case_usd_m=516.0),
+    )
+    brief = build_user_prompt(record)
+    assert "Supply constraint: unconstrained" in brief
+    assert "Supply ceiling" not in brief
 
 
 # ---------------------------------------------------------------------------
@@ -218,11 +285,21 @@ def test_live_call_assembles_memo_from_tool_use(tmp_path: Path, monkeypatch):
     assert result["tldr"]["rnpv_base_usd_m"] == 516
     # reflexivity_note nested correctly inside pos_analysis (the v1.7.10 bug)
     assert result["pos_analysis"]["reflexivity_note"] == "Mirati sits in the adequate reflexivity tier."
+    # supply_note — the second path-dependency, paired with reflexivity
+    assert "supply" in result["pos_analysis"]["supply_note"].lower()
     assert len(result["risks"]) == 2
+    # defensibility fields on the close: explicit conviction + path-dependency verdict
+    assert result["recommendation_close"]["conviction"] == "medium"
+    assert "reflexivity" in result["recommendation_close"]["path_dependency_verdict"].lower()
     assert result["recommendation_close"]["kill_criterion"].endswith("avoid.")
     # body_markdown assembled from the structured sections, no fenced JSON
     assert "## TL;DR" in result["body_markdown"]
     assert "```json" not in result["body_markdown"]
+    # the new defensibility fields propagate into the back-compat markdown too
+    # (regression guard for the partial-propagation bug)
+    assert "not a binding factor" in result["body_markdown"]  # supply_note
+    assert "**Conviction:** medium" in result["body_markdown"]
+    assert "Path-dependency verdict" in result["body_markdown"]
 
 
 def test_live_call_502_when_model_omits_tool_block(tmp_path: Path, monkeypatch):

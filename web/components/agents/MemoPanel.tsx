@@ -16,6 +16,7 @@ import remarkGfm from "remark-gfm";
 import { type AgentError, runMemoWriter } from "@/lib/api-client";
 import type { ClientDiligenceRecord } from "@/lib/module-registry";
 import type {
+  MemoConviction,
   MemoOutput,
   MemoRiskItem,
   MemoRiskSeverity,
@@ -28,6 +29,14 @@ const REC_COLOR: Record<Recommendation, string> = {
   hold: "bg-bg-panel-hover text-text-primary",
   cautious: "bg-cyan-bright/10 text-cyan-bright",
   avoid: "bg-red-bright/20 text-red-bright",
+};
+
+// Conviction is orthogonal to the buy/hold direction — a confidence meter, not
+// a verdict. Muted, monochromatic-ish scale so it never reads as good/bad.
+const CONVICTION_COLOR: Record<MemoConviction, string> = {
+  high: "border-cyan-bright/50 text-cyan-bright",
+  medium: "border-amber-bright/40 text-amber-bright",
+  low: "border-text-dim/40 text-text-dim",
 };
 
 const SEVERITY_COLOR: Record<MemoRiskSeverity, string> = {
@@ -156,6 +165,14 @@ function StructuredMemo({ memo }: { memo: MemoOutput }) {
             </div>
             <ProseBlock>{memo.pos_analysis.reflexivity_note}</ProseBlock>
           </div>
+          {memo.pos_analysis.supply_note ? (
+            <div className="mt-2 border-t border-bg-panel-hover pt-2">
+              <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-text-dim">
+                Supply constraint (PoS × rNPV ceiling)
+              </div>
+              <ProseBlock>{memo.pos_analysis.supply_note}</ProseBlock>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -184,14 +201,33 @@ function StructuredMemo({ memo }: { memo: MemoOutput }) {
 
       {close ? (
         <div className={`rounded border p-3 ${closeBorder}`}>
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <SectionHeader>Recommendation</SectionHeader>
-            <span
-              className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${REC_COLOR[close.recommendation]}`}
-            >
-              ● {close.recommendation.replace("_", " ")}
-            </span>
+            <div className="flex items-center gap-1.5">
+              {close.conviction ? (
+                <span
+                  className={`rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${CONVICTION_COLOR[close.conviction]}`}
+                >
+                  {close.conviction} conviction
+                </span>
+              ) : null}
+              <span
+                className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${REC_COLOR[close.recommendation]}`}
+              >
+                ● {close.recommendation.replace("_", " ")}
+              </span>
+            </div>
           </div>
+          {close.path_dependency_verdict ? (
+            <div className="mb-2 rounded border border-cyan-bright/30 bg-cyan-bright/5 p-2">
+              <div className="mb-0.5 font-mono text-[10px] uppercase tracking-wider text-cyan-bright">
+                Path-dependency verdict
+              </div>
+              <div className="font-prose text-[12px] text-text-primary">
+                {close.path_dependency_verdict}
+              </div>
+            </div>
+          ) : null}
           <ProseBlock>{close.closing_paragraph}</ProseBlock>
           <div className="mt-2 rounded border border-red-bright/40 bg-red-bright/10 p-2">
             <div className="mb-0.5 font-mono text-[10px] uppercase tracking-wider text-red-bright">

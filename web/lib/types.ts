@@ -232,6 +232,10 @@ export interface MemoAssetOverview {
 export interface MemoPoSAnalysis {
   waterfall_narrative: string;
   reflexivity_note: string;
+  // The second path-dependency, paired with reflexivity: supply tier + its dual
+  // effect (PoS multiplier + rNPV peak-sales ceiling). Optional for back-compat
+  // with memos generated before the synthesis pass.
+  supply_note?: string;
 }
 
 export interface MemoValuation {
@@ -254,8 +258,16 @@ export interface MemoRiskItem {
   severity: MemoRiskSeverity;
 }
 
+export type MemoConviction = "high" | "medium" | "low";
+
 export interface MemoRecommendationClose {
   recommendation: Recommendation;
+  // Explicit conviction in the call, orthogonal to the buy/hold direction.
+  // Optional for back-compat with pre-synthesis-pass memos.
+  conviction?: MemoConviction;
+  // One or two sentences: how the reflexivity + supply path-dependencies net
+  // moved the verdict. Optional for back-compat.
+  path_dependency_verdict?: string;
   closing_paragraph: string;
   kill_criterion: string;
 }

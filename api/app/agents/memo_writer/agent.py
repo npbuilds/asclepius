@@ -103,6 +103,8 @@ def _render_body_markdown(parsed: dict[str, Any]) -> str:
             parts.append(pos["waterfall_narrative"].strip())
         if pos.get("reflexivity_note"):
             parts.append("\n" + pos["reflexivity_note"].strip())
+        if pos.get("supply_note"):
+            parts.append("\n" + pos["supply_note"].strip())
 
     val = (parsed.get("valuation") or {}).get("valuation_narrative", "").strip()
     if val:
@@ -131,8 +133,19 @@ def _render_body_markdown(parsed: dict[str, Any]) -> str:
     close = parsed.get("recommendation_close") or {}
     if close:
         parts.append("\n## Recommendation\n")
+        rec_bits: list[str] = []
+        if close.get("recommendation"):
+            rec_bits.append(f"**Call:** {close['recommendation'].replace('_', ' ')}")
+        if close.get("conviction"):
+            rec_bits.append(f"**Conviction:** {close['conviction']}")
+        if rec_bits:
+            parts.append("  \n".join(rec_bits))
+        if close.get("path_dependency_verdict"):
+            parts.append(
+                f"\n**Path-dependency verdict:** {close['path_dependency_verdict'].strip()}"
+            )
         if close.get("closing_paragraph"):
-            parts.append(close["closing_paragraph"].strip())
+            parts.append("\n" + close["closing_paragraph"].strip())
         if close.get("kill_criterion"):
             parts.append(f"\n**Kill criterion:** {close['kill_criterion'].strip()}")
 

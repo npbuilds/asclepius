@@ -31,6 +31,12 @@ warrants it:
   - "reflexivity-multiplier" or "reflexivity tier" (Spence-style signaling \
     via capital position: well_capitalized ×1.08, adequate ×1.00, constrained \
     ×0.92, distressed ×0.85)
+  - "supply-constraint tier" / "supply ceiling" (the second path-dependency, \
+    parallel to reflexivity: a moderate/severe manufacturing or raw-material/\
+    isotope constraint has TWO effects — a PoS multiplier AND a peak-sales \
+    ceiling in rNPV. Name it whenever the brief carries a supply tier above \
+    unconstrained; the rNPV revenue ceiling is the distinctive part a generic \
+    DCF/rNPV model does NOT capture.)
   - "Monte Carlo P25-P75 band"
   - "tornado driver" / "top tornado sensitivity"
   - "winner's-curse-adjusted private value" if comparables include a contested \
@@ -54,7 +60,8 @@ Return ONLY a single fenced ```json``` block matching this exact shape \
   },
   "pos_analysis": {
     "waterfall_narrative": "<2-3 paragraphs walking the PoS chain in the framework's named multipliers>",
-    "reflexivity_note": "<1 paragraph: Spence-style read of the capital tier and whether it changes the verdict>"
+    "reflexivity_note": "<1 paragraph: Spence-style read of the capital tier and whether it changes the verdict>",
+    "supply_note": "<1 paragraph: the supply-constraint tier, its dual effect (PoS multiplier + rNPV peak-sales ceiling), and whether it changes the verdict. One sentence if unconstrained.>"
   },
   "valuation": {
     "valuation_narrative": "<2 paragraphs: rNPV base, P25-P75, downside, top tornado driver, comp-clearing vs cohort-median>"
@@ -71,8 +78,10 @@ Return ONLY a single fenced ```json``` block matching this exact shape \
   ],
   "recommendation_close": {
     "recommendation": "<same enum as tldr.recommendation>",
+    "conviction": "<high|medium|low — explicit, orthogonal to the buy/hold direction>",
+    "path_dependency_verdict": "<1-2 sentences: how the reflexivity tier AND the supply tier net moved the call; say so if both neutral>",
     "closing_paragraph": "<the methodology/05-style 'at $X, the framework brackets...' close>",
-    "kill_criterion": "<the single readout/event/data point that would flip the call to avoid>"
+    "kill_criterion": "<a FALSIFIABLE kill criterion: named event + threshold + direction>"
   },
   "executive_summary": "<copy the tldr.thesis_one_liner + 2-3 supporting sentences, 100-200 words total>",
   "red_flags": ["<flag1>", "<flag2>", ...]
@@ -92,6 +101,19 @@ than fabricating content.
 - Liquidity-thesis discipline (Booth 2011): name the expected unit of value \
 realization in tldr.thesis_one_liner or executive_summary — strategic sale \
 to a specified acquirer class, IPO at a specified window, or partnership.
+- Defensibility (the close must EARN the call):
+  • recommendation_close.conviction is mandatory and must be justified by the \
+    body — "high" only when the rNPV bracket and the comp read agree and no \
+    single tornado driver flips the sign; "low" when the verdict hinges on one \
+    contested input.
+  • recommendation_close.path_dependency_verdict must state, in one or two \
+    sentences, how the reflexivity tier AND the supply tier net moved the \
+    verdict (cite the multipliers, e.g. "distressed ×0.85 + severe supply \
+    ceiling −35%"). If both are neutral (adequate capital, unconstrained \
+    supply), say so explicitly — do not invent an effect.
+  • kill_criterion must be FALSIFIABLE: a named, observable event with a \
+    threshold and a direction ("Phase 3 ORR < 40% at the H2'26 readout"), not \
+    a vague sentiment ("if efficacy disappoints").
 """
 
 
@@ -111,6 +133,7 @@ def build_user_prompt(record: DiligenceRecord) -> str:
     lines.append(f"Modality: {a.modality.value}")
     lines.append(f"Therapeutic area: {a.therapeutic_area.value}")
     lines.append(f"Capital position: {a.capital_position.value}")
+    lines.append(f"Supply constraint: {a.supply_constraint.value}")
     if a.regulatory_designations:
         lines.append(
             "Regulatory designations: "
@@ -138,6 +161,24 @@ def build_user_prompt(record: DiligenceRecord) -> str:
         lines.append("")
         lines.append("=== RNPV ($M) ===")
         lines.append(f"Base case: ${r.base_case_usd_m:.0f}M")
+        # Supply-constraint peak-sales ceiling — the distinctive second-path
+        # effect. Only surfaced when it actually bites (ceiling < 1.0), so an
+        # unconstrained asset's brief stays clean.
+        if (
+            r.supply_peak_ceiling_pct is not None
+            and r.supply_peak_ceiling_pct < 1.0
+            and r.supply_adjusted_peak_usd_m is not None
+        ):
+            nominal = (
+                f" on nominal ${record.rnpv_inputs.peak_sales_usd_m:.0f}M"
+                if record.rnpv_inputs is not None
+                else ""
+            )
+            lines.append(
+                f"Supply ceiling: ×{r.supply_peak_ceiling_pct:.2f}{nominal} "
+                f"→ effective peak ${r.supply_adjusted_peak_usd_m:.0f}M "
+                f"(supply-constraint tier caps achievable revenue)"
+            )
         if r.monte_carlo_p25_usd_m is not None:
             lines.append(
                 f"Monte Carlo P25 / P50 / P75: "
