@@ -81,6 +81,13 @@ _MODALITY_FAMILIES: dict[str, tuple[str, ...]] = {
     "small_molecule": ("small_molecule",),
     "nucleic_acid": ("mrna", "oligonucleotide"),
     "peptide": ("peptide",),
+    # v1.1 frontier modalities — each its own valuation family (acquirers
+    # price these distinctly). Radiopharma has a curated cohort (see
+    # data/comparables/); degrader + epigenetic editing have no cohort yet
+    # and fall back honestly until one is curated.
+    "radiopharmaceutical": ("radiopharmaceutical",),
+    "degrader": ("targeted_protein_degrader",),
+    "epigenetic": ("epigenetic_editing",),
     "other": ("other",),
 }
 

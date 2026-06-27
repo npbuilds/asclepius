@@ -1,0 +1,14 @@
+{
+  "asset_name": "FPI-2265 (actinium-225 PSMA radioligand therapy)",
+  "therapeutic_area": "oncology",
+  "modality": "radiopharmaceutical",
+  "acquirer": "AstraZeneca",
+  "target_company": "Fusion Pharmaceuticals",
+  "deal_value_usd_m": 2400.0,
+  "deal_date": "2024-03-19",
+  "peak_sales_estimate_usd_m": 1200.0,
+  "asset_phase_at_deal": "phase_2",
+  "notes": "AstraZeneca acquired Fusion for ~$2.4B — $2.0B upfront ($21.00/share) plus a $0.4B CVR ($3.00/share) — its entry into targeted alpha therapy. Lead asset FPI-2265 is an actinium-225 alpha-emitter targeting PSMA, in Phase 2 for metastatic castration-resistant prostate cancer (mCRPC), positioned for the post-Lu-177 setting. Peak-sales estimate $1.2B is sell-side; EV/peak ~2.0x. Same Ac-225 alpha class as RayzeBio's RYZ101, different antigen (PSMA vs SSTR2).",
+  "selection_rationale": "Second large-cap Ac-225 alpha-emitter acquisition, PSMA-targeted — the most-pursued radioligand antigen. Reinforces the Oncology · radiopharmaceutical cohort with an alpha-emitter at an earlier (Phase 2) stage.",
+  "source": "AstraZeneca press release Mar 19 2024; Fusion SEC filings; sell-side peak-sales estimate (not company guidance)."
+}

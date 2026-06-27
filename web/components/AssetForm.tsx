@@ -27,6 +27,9 @@ const MODALITIES: Modality[] = [
   "protein",
   "oligonucleotide",
   "peptide",
+  "targeted_protein_degrader",
+  "radiopharmaceutical",
+  "epigenetic_editing",
   "other",
 ];
 const CAPITAL_POSITIONS: CapitalPosition[] = [

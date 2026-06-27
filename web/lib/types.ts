@@ -34,6 +34,9 @@ export type Modality =
   | "protein"
   | "oligonucleotide"
   | "peptide"
+  | "targeted_protein_degrader"
+  | "radiopharmaceutical"
+  | "epigenetic_editing"
   | "other";
 
 export type CapitalPosition =

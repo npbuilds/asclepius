@@ -39,6 +39,27 @@ def test_default_cohort_has_three_assets() -> None:
     assert any("larotrectinib" in n for n in names)
 
 
+def test_radiopharmaceutical_cohort_matches() -> None:
+    """v1.1 frontier modality: an oncology radiopharmaceutical (e.g. an Ac-225
+    alpha emitter) routes to the curated radiopharma cohort, NOT the kinase-TKI
+    fallback. Regression guard for the dogfood-driven coverage fix."""
+    record = DiligenceRecord(
+        asset=AssetInput(
+            asset_name="ac-225 alpha emitter",
+            phase=Phase.PHASE_1,
+            therapeutic_area=TherapeuticArea.ONCOLOGY,
+            modality=Modality.RADIOPHARMACEUTICAL,
+        ),
+        rnpv_inputs=RnpvInputs(peak_sales_usd_m=1500.0),
+    )
+    out = compute(record)
+    assert out.cohort_matched is True
+    assert "radiopharmaceutical" in out.cohort_label
+    assert len(out.cohort) >= 3
+    names = " ".join(c.asset_name for c in out.cohort).lower()
+    assert "actinium-225" in names or "radioligand" in names
+
+
 def test_each_comparable_has_ev_peak_multiple() -> None:
     out = compute(_record())
     for c in out.cohort:

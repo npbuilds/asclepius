@@ -1,0 +1,15 @@
+{
+  "asset_name": "PNT2002 (lutetium-177 PSMA radioligand therapy)",
+  "therapeutic_area": "oncology",
+  "modality": "radiopharmaceutical",
+  "acquirer": "Eli Lilly",
+  "target_company": "POINT Biopharma",
+  "deal_value_usd_m": 1400.0,
+  "deal_date": "2023-10-03",
+  "deal_close_date": "2023-12-27",
+  "peak_sales_estimate_usd_m": 1000.0,
+  "asset_phase_at_deal": "phase_3",
+  "notes": "Eli Lilly acquired POINT Biopharma for ~$1.4B ($12.50/share) — Lilly's entry into radioligand therapy, including a radioisotope manufacturing + supply capability (a deliberate move given the field's supply constraints). Lead asset PNT2002 is a lutetium-177 BETA-emitter targeting PSMA, Phase 3 (SPLASH) in mCRPC. Beta (Lu-177), not alpha (Ac-225), but the same radioligand-therapy valuation family. Peak-sales estimate $1.0B; EV/peak ~1.4x — the lower multiple reflects a crowded Lu-177 PSMA field (vs Pluvicto) and a beta vs alpha differentiation question.",
+  "selection_rationale": "Radioligand-therapy M&A with an explicit supply-chain rationale (Lilly bought manufacturing, not just the asset) — relevant to the supply-constrained framing of the modality. Rounds the Oncology · radiopharmaceutical cohort to n=3 with a beta-emitter data point alongside the two alpha deals.",
+  "source": "Eli Lilly press release Oct 3 2023; POINT Biopharma SEC filings; sell-side peak-sales estimate (not company guidance)."
+}

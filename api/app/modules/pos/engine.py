@@ -78,7 +78,12 @@ def _compute_for_asset(asset: AssetInput) -> PoSResult:
             name=f"modality: {asset.modality.value}",
             multiplier=mod_mult,
             rationale=mod["rationale"],
-            source=f"BIO/Informa 2021 modality cohort — {mod['source']}",
+            # v1.1 modality data: the source field is now self-describing
+            # (BIO/Informa for established modalities; explicit "Asclepius
+            # estimate" for frontier ones with no cohort). Render it verbatim
+            # rather than hardcoding a BIO/Informa attribution that would be
+            # false for degraders / radiopharma / epigenetic editing.
+            source=mod["source"],
         )
     )
 

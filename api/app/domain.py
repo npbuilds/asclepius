@@ -56,6 +56,11 @@ class Modality(str, Enum):
     PROTEIN = "protein"
     OLIGONUCLEOTIDE = "oligonucleotide"
     PEPTIDE = "peptide"
+    # v1.10 frontier modalities (dogfood-driven): the 2023-2025 classes a
+    # biotech investor actually tracks, which the 2021-era taxonomy lacked.
+    TARGETED_PROTEIN_DEGRADER = "targeted_protein_degrader"  # PROTAC / molecular glue
+    RADIOPHARMACEUTICAL = "radiopharmaceutical"  # radioligand therapy (incl. Ac-225 alpha)
+    EPIGENETIC_EDITING = "epigenetic_editing"  # epigenetic silencing/activation
     OTHER = "other"
 
 

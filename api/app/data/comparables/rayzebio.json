@@ -1,0 +1,15 @@
+{
+  "asset_name": "RYZ101 (actinium-225 SSTR2 radioligand therapy)",
+  "therapeutic_area": "oncology",
+  "modality": "radiopharmaceutical",
+  "acquirer": "Bristol Myers Squibb",
+  "target_company": "RayzeBio",
+  "deal_value_usd_m": 4100.0,
+  "deal_date": "2023-12-26",
+  "deal_close_date": "2024-02-26",
+  "peak_sales_estimate_usd_m": 1500.0,
+  "asset_phase_at_deal": "phase_3",
+  "notes": "BMS acquired RayzeBio for ~$4.1B ($62.50/share) — the standout radiopharmaceutical M&A of the 2023-24 cycle and BMS's entry into targeted alpha therapy. Lead asset RYZ101 is an actinium-225 alpha-emitter targeting SSTR2, in Phase 3 for SSTR2+ gastroenteropancreatic neuroendocrine tumors (GEP-NET) post-Lutathera, with SCLC expansion. Peak-sales estimate $1.5B is sell-side consensus across GEP-NET + early indications; EV/peak ~2.7x reflects the strategic premium for an Ac-225 supply-chain + clinical-stage alpha platform, not just the single asset.",
+  "selection_rationale": "Canonical actinium-225 alpha-emitter M&A — directly analogous to early-stage Ac-225 programs (Aktis, Convergent, Mariana). Anchors the Oncology · radiopharmaceutical cohort with the highest-profile alpha deal.",
+  "source": "BMS press release Dec 26 2023; RayzeBio SEC filings; sell-side peak-sales consensus pre-deal (estimate, not company guidance)."
+}
