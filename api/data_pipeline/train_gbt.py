@@ -476,6 +476,161 @@ def bootstrap_intervals(
     return mean_pred, q_low, q_high
 
 
+# ---------------------------------------------------------------------------
+# v1.5.4 — Locally-adaptive (heteroskedastic) split-conformal calibration.
+#
+# v1.5.3 shipped TWO uncertainty bands but they answered different questions:
+#   - Bootstrap percentile (displayed in UI): useful adaptive shape, no
+#     formal coverage guarantee
+#   - Mondrian split-conformal (recorded only): formal 90% guarantee per
+#     phase, but radii so wide (~0.70) the bands collapse to [0, 1] for
+#     any prediction near 0.5 — mathematically correct, practically
+#     uninformative.
+#
+# v1.5.4 merges them via Conformalized Quantile Regression-style
+# heteroskedastic conformal (Romano, Patterson, Candès 2019). The
+# bootstrap ensemble's per-prediction std σ̂(x) is the variance proxy;
+# the conformal radius scales each prediction by this proxy. Where the
+# bootstrap models agree → tight band. Where they disagree → wide band.
+# Coverage guarantee survives because conformalization is post-hoc on
+# the val split.
+#
+# Algorithm:
+#   1. On val split, compute mean prediction p̂_mean(x) and std σ̂(x)
+#      across the K bootstrap models.
+#   2. Scaled residual at each cal point:
+#        s_i = |y_i − p̂_mean(x_i)| / max(σ̂(x_i), σ_floor)
+#      σ_floor avoids divide-by-zero when bootstrap models agree
+#      perfectly (rare but observable).
+#   3. Conformal scaling factor:
+#        r = quantile_{1-α}^{(n+1)/n}(s_i)
+#      This is a SCALAR — same for all test predictions.
+#   4. At inference for novel x_new:
+#        band = [p̂_mean(x_new) − r·σ̂(x_new),
+#                p̂_mean(x_new) + r·σ̂(x_new)]
+#      clipped to [0, 1].
+#
+# Coverage guarantee (under exchangeability of test + val):
+#   Pr( y_new ∈ band ) ≥ 1 - α
+# with the (n+1)/n finite-sample correction. Width adapts to local
+# bootstrap disagreement instead of being a flat Mondrian per-phase
+# scalar.
+# ---------------------------------------------------------------------------
+
+
+SIGMA_FLOOR = 1e-3  # bootstrap std floor; tiny but nonzero to keep
+                    # divisions stable when all 10 models converge
+
+
+def _bootstrap_mean_std(
+    bootstrap_models: list[lgb.LGBMClassifier],
+    X: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return (mean, std) of the K bootstrap models' predict_proba[:,1] for
+    every row in X. Vectorized once, no Python loop on rows."""
+    preds = np.stack([m.predict_proba(X)[:, 1] for m in bootstrap_models], axis=0)
+    return preds.mean(axis=0), preds.std(axis=0, ddof=0)
+
+
+def compute_adaptive_radius(
+    bootstrap_models: list[lgb.LGBMClassifier],
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+    *,
+    alpha: float = CONFORMAL_ALPHA,
+    sigma_floor: float = SIGMA_FLOOR,
+) -> tuple[float, dict[str, float]]:
+    """Compute the locally-adaptive conformal scaling factor r on the val
+    split. Returns (r, diagnostics) where diagnostics records the median
+    σ̂ on val, the min σ̂ (after floor), and the n used.
+
+    The σ_floor prevents pathological behavior when bootstrap models all
+    agree on a point (σ̂ ≈ 0 → scaled residual blows up). 1e-3 is small
+    enough not to dominate well-uncertain points but large enough to
+    keep the quantile finite for sharp-prediction outliers.
+    """
+    mean_val, std_val = _bootstrap_mean_std(bootstrap_models, X_val)
+    sigma = np.maximum(std_val, sigma_floor)
+    scaled_residuals = np.abs(y_val.astype(float) - mean_val) / sigma
+    r = _conformal_quantile(scaled_residuals, alpha)
+    return r, {
+        "median_sigma_val": float(np.median(std_val)),
+        "min_sigma_val_pre_floor": float(np.min(std_val)),
+        "min_sigma_val_post_floor": float(np.min(sigma)),
+        "n_val": int(len(y_val)),
+        "sigma_floor": sigma_floor,
+    }
+
+
+def adaptive_band(
+    bootstrap_models: list[lgb.LGBMClassifier],
+    X: np.ndarray,
+    r: float,
+    *,
+    sigma_floor: float = SIGMA_FLOOR,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """At inference: for each row of X return (mean, low, high) where
+    [low, high] = [mean - r·σ̂, mean + r·σ̂], clipped to [0, 1]."""
+    mean, std = _bootstrap_mean_std(bootstrap_models, X)
+    sigma = np.maximum(std, sigma_floor)
+    half = r * sigma
+    low = np.clip(mean - half, 0.0, 1.0)
+    high = np.clip(mean + half, 0.0, 1.0)
+    return mean, low, high
+
+
+def compute_adaptive_coverage(
+    bootstrap_models: list[lgb.LGBMClassifier],
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    phases_test: np.ndarray,
+    r: float,
+    *,
+    sigma_floor: float = SIGMA_FLOOR,
+) -> dict[str, float]:
+    """Empirical coverage of the locally-adaptive band on test. Reports
+    per-phase and overall. Sanity check that the val-calibrated r
+    generalizes."""
+    mean_test, low_test, high_test = adaptive_band(
+        bootstrap_models, X_test, r, sigma_floor=sigma_floor,
+    )
+    in_band = (low_test <= y_test) & (y_test <= high_test)
+
+    coverage: dict[str, float] = {}
+    for phase in CONFORMAL_PHASES:
+        mask = phases_test == phase
+        if not mask.any():
+            continue
+        coverage[phase] = float(in_band[mask].mean())
+    coverage["overall"] = float(in_band.mean())
+    return coverage
+
+
+def compute_adaptive_band_widths(
+    bootstrap_models: list[lgb.LGBMClassifier],
+    X_test: np.ndarray,
+    r: float,
+    *,
+    sigma_floor: float = SIGMA_FLOOR,
+) -> dict[str, float]:
+    """Diagnostic widths to report alongside coverage — avg / p25 / p75
+    band width on test. Lets the reader see whether locally-adaptive is
+    actually adapting (wide spread between p25 and p75 widths means
+    yes; narrow spread means it's effectively constant-radius)."""
+    _, low_test, high_test = adaptive_band(
+        bootstrap_models, X_test, r, sigma_floor=sigma_floor,
+    )
+    widths = high_test - low_test
+    return {
+        "avg": float(widths.mean()),
+        "p25": float(np.quantile(widths, 0.25)),
+        "p50": float(np.quantile(widths, 0.50)),
+        "p75": float(np.quantile(widths, 0.75)),
+        "min": float(widths.min()),
+        "max": float(widths.max()),
+    }
+
+
 def save_artifact(
     model,
     metrics: dict,
@@ -660,6 +815,47 @@ def main(argv: list[str]) -> int:
     log.info("bootstrap band: avg width on test = %.4f (target: 0.05-0.20 for useful UX)", avg_width)
     metrics["bootstrap_avg_band_width_test"] = avg_width
     metrics["bootstrap_n_models"] = args.n_bootstrap_models
+
+    # v1.5.4: locally-adaptive (heteroskedastic) split-conformal radius.
+    # Uses the bootstrap ensemble's per-prediction std as the variance proxy
+    # so the conformal scaling factor produces tight bands where the K
+    # bootstrap models agree and wide bands where they disagree. This
+    # supersedes the v1.5.3 Mondrian-by-phase fixed radii (which are still
+    # persisted alongside as a methodology-grade comparison baseline).
+    log.info("computing v1.5.4 locally-adaptive conformal radius on val…")
+    adaptive_r, adaptive_diag = compute_adaptive_radius(
+        boot_models, X[val_mask], y[val_mask], alpha=CONFORMAL_ALPHA,
+    )
+    adaptive_coverage = compute_adaptive_coverage(
+        boot_models, X[test_mask], y[test_mask], phases_all[test_mask],
+        adaptive_r,
+    )
+    adaptive_widths = compute_adaptive_band_widths(
+        boot_models, X[test_mask], adaptive_r,
+    )
+    log.info("locally-adaptive r=%.4f, test coverage=%s", adaptive_r, adaptive_coverage)
+    log.info("locally-adaptive band widths on test: %s", adaptive_widths)
+    adaptive_payload = {
+        "alpha": CONFORMAL_ALPHA,
+        "method": "split_conformal_adaptive_heteroskedastic",
+        "scaling_factor_r": adaptive_r,
+        "sigma_floor": SIGMA_FLOOR,
+        "test_coverage": adaptive_coverage,
+        "test_band_widths": adaptive_widths,
+        "diagnostics": adaptive_diag,
+        "calibration_split": "valid",
+    }
+    metrics["adaptive_conformal_test_coverage"] = adaptive_coverage
+    metrics["adaptive_conformal_band_widths_test"] = adaptive_widths
+
+    # Combine Mondrian (legacy v1.5.3, kept for comparison) + adaptive
+    # (v1.5.4, the new primary band) into the artifact's conformal block.
+    # Engine reads adaptive.scaling_factor_r at inference; Mondrian stays
+    # available for any consumer that wants the per-phase fixed radii.
+    conformal_payload = {
+        **conformal_payload,
+        "adaptive": adaptive_payload,
+    }
 
     artifact_path = save_artifact(
         model, metrics, seed=args.seed,
