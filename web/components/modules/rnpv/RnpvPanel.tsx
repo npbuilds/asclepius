@@ -110,6 +110,13 @@ function ResultStats({
         value={fmt(result.downside_failed_p3_usd_m)}
         bad
       />
+      {result.supply_peak_ceiling_pct != null &&
+      result.supply_peak_ceiling_pct < 1 ? (
+        <Stat
+          label={`Supply-capped peak (${Math.round(result.supply_peak_ceiling_pct * 100)}% ceiling)`}
+          value={fmt(result.supply_adjusted_peak_usd_m)}
+        />
+      ) : null}
       <div className="text-[9px] uppercase tracking-[0.15em] text-text-dim">
         {result.monte_carlo_paths.toLocaleString()} simulated paths · seeded
       </div>

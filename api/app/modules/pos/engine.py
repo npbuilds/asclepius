@@ -58,6 +58,7 @@ def _compute_for_asset(asset: AssetInput) -> PoSResult:
     bio = reg.data_sources["bio_base_rates"]
     modality = reg.data_sources["modality_multipliers"]
     reflexivity = reg.data_sources["reflexivity_adjustments"]
+    supply = reg.data_sources["supply_adjustments"]
 
     # 1. Base rate from BIO/Informa for this TA + phase
     base = bio.fetch(
@@ -164,6 +165,26 @@ def _compute_for_asset(asset: AssetInput) -> PoSResult:
             multiplier=refl_mult,
             rationale=refl["reflexivity_rationale"],
             source="Asclepius methodology/02-reflexivity-thesis.md (Spence-style signaling equilibrium; empirical backing from Ma et al. 2025 trial-accrual model AUC 0.74).",
+        )
+    )
+
+    # 5b. Supply constraint (manufacturing / raw-material path-dependency) —
+    # applied right after reflexivity. This is the second structural overlay:
+    # a binding supply constraint adds trial-execution risk (the PoS effect
+    # here) and separately caps achievable peak sales (the rNPV effect, applied
+    # in the rnpv engine). We emit the row even when the multiplier is 1.0
+    # (unconstrained) so the audit trail shows the dimension was considered —
+    # a clean no-op rather than a silent omission. The source is the JSON's
+    # honest self-describing provenance string, rendered verbatim.
+    sup = supply.fetch({"supply_constraint": asset.supply_constraint.value})
+    supply_mult: float = sup["supply_pos_multiplier"]
+    running *= supply_mult
+    adjustments.append(
+        PoSAdjustment(
+            name=f"supply constraint: {asset.supply_constraint.value}",
+            multiplier=supply_mult,
+            rationale=sup["supply_rationale"],
+            source=sup["supply_source"],
         )
     )
 

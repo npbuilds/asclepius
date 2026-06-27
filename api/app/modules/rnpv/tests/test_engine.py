@@ -9,6 +9,7 @@ from app.domain import (
     Modality,
     Phase,
     RnpvInputs,
+    SupplyConstraint,
     TherapeuticArea,
 )
 from app.modules.rnpv.engine import compute
@@ -131,6 +132,52 @@ def test_monte_carlo_median_within_bound_of_base_case() -> None:
         f"MC median diverged from closed-form base by {rel:.1%}: "
         f"p50={out.monte_carlo_p50_usd_m} vs base={out.base_case_usd_m}"
     )
+
+
+def _record_with_supply(tier: SupplyConstraint, **rnpv_overrides) -> DiligenceRecord:
+    asset = AssetInput(
+        asset_name="TestAsset",
+        phase=Phase.PHASE_2,
+        therapeutic_area=TherapeuticArea.ONCOLOGY,
+        modality=Modality.SMALL_MOLECULE,
+        capital_position=CapitalPosition.ADEQUATE,
+        supply_constraint=tier,
+    )
+    fields: dict = {"peak_sales_usd_m": 500.0, "wacc": 0.12}
+    fields.update(rnpv_overrides)
+    record = DiligenceRecord(asset=asset, rnpv_inputs=RnpvInputs(**fields))
+    record.pos = compute_pos(record)
+    return record
+
+
+def test_severe_supply_ceiling_lowers_rnpv_vs_unconstrained() -> None:
+    """Severe supply constraint caps achievable peak sales (peak_ceiling 0.65),
+    which must lower rNPV relative to an unconstrained asset with identical
+    economics. This is the distinctive second-path effect: pricing the supply
+    side of peak sales, not just the demand side."""
+    unconstrained = compute(_record_with_supply(SupplyConstraint.UNCONSTRAINED))
+    severe = compute(_record_with_supply(SupplyConstraint.SEVERE))
+
+    assert severe.base_case_usd_m < unconstrained.base_case_usd_m
+    # Effective peak surfaced honestly: 500 * 0.65 = 325; unconstrained = 500.
+    assert unconstrained.supply_adjusted_peak_usd_m == 500.0
+    assert severe.supply_adjusted_peak_usd_m == 325.0
+    assert severe.supply_peak_ceiling_pct == 0.65
+    assert unconstrained.supply_peak_ceiling_pct == 1.0
+    # Monte Carlo median also reflects the lower effective peak.
+    assert severe.monte_carlo_p50_usd_m is not None
+    assert unconstrained.monte_carlo_p50_usd_m is not None
+    assert severe.monte_carlo_p50_usd_m < unconstrained.monte_carlo_p50_usd_m
+
+
+def test_unconstrained_supply_is_backward_compatible() -> None:
+    """Default (unconstrained) leaves the effective peak untouched, so rNPV is
+    identical to a record that never set the field — backward compatibility."""
+    explicit = compute(_record_with_supply(SupplyConstraint.UNCONSTRAINED))
+    defaulted = compute(_record())  # asset has no supply_constraint set → defaults
+    assert explicit.base_case_usd_m == defaulted.base_case_usd_m
+    assert defaulted.supply_adjusted_peak_usd_m == 500.0
+    assert defaulted.supply_peak_ceiling_pct == 1.0
 
 
 def test_phase_3_higher_rnpv_than_phase_2_same_inputs() -> None:

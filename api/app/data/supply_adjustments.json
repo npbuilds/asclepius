@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "description": "Supply-constraint adjustments by manufacturing / raw-material tier. A second path-dependency in the same intellectual key as the reflexivity adjustment: just as sponsor capital structurally shapes trial design, a binding supply constraint (scarce isotopes, complex autologous manufacturing, limited fill-finish capacity) shapes BOTH trial throughput (a PoS risk) and the achievable commercial ceiling (a peak-sales haircut). Most rNPV tools price only the demand side of peak sales; the distinctive move here is to also price the supply side — you cannot sell what you cannot make.",
+  "primary_sources": [
+    {
+      "id": "asclepius_supply_dimension",
+      "citation": "Asclepius framework dimension — supply-as-path-dependency; tiers are reasoned estimates anchored on the Ac-225 isotope-supply constraint and cell-therapy manufacturing precedent (no published cohort).",
+      "note": "Honest provenance: these tiers are NOT derived from a published outcome cohort. They are reasoned estimates anchored on two well-documented real-world constraints (actinium-225 alpha-emitter scarcity; autologous cell-therapy manufacturing complexity)."
+    }
+  ],
+  "adjustments": [
+    {
+      "supply_constraint": "unconstrained",
+      "pos_multiplier": 1.00,
+      "peak_ceiling_pct": 1.00,
+      "rationale": "no binding supply constraint; standard manufacturing scales with demand.",
+      "source": "Asclepius framework dimension — supply-as-path-dependency; tiers are reasoned estimates anchored on the Ac-225 isotope-supply constraint and cell-therapy manufacturing precedent (no published cohort)."
+    },
+    {
+      "supply_constraint": "moderate",
+      "pos_multiplier": 0.97,
+      "peak_ceiling_pct": 0.85,
+      "rationale": "complex but scalable manufacturing (e.g. autologous cell therapy, bispecifics, viral vectors); supply adds modest trial-execution risk and a soft revenue ceiling.",
+      "source": "Asclepius framework dimension — supply-as-path-dependency; tiers are reasoned estimates anchored on the Ac-225 isotope-supply constraint and cell-therapy manufacturing precedent (no published cohort)."
+    },
+    {
+      "supply_constraint": "severe",
+      "pos_multiplier": 0.93,
+      "peak_ceiling_pct": 0.65,
+      "rationale": "a binding raw-material / isotope / capacity constraint (e.g. actinium-225 alpha emitters — Ac-225 global supply is scarce); supply gates BOTH trial throughput and achievable peak sales.",
+      "source": "Asclepius framework dimension — supply-as-path-dependency; tiers are reasoned estimates anchored on the Ac-225 isotope-supply constraint and cell-therapy manufacturing precedent (no published cohort)."
+    }
+  ]
+}

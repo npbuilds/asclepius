@@ -19,6 +19,27 @@ def test_data_sources_discovered() -> None:
     assert "edgar_filings" in reg.data_sources
 
 
+def test_supply_adjustments_data_source_discovered_and_fetches() -> None:
+    """The supply-constraint data source auto-registers via filesystem discovery
+    (no __init__.py edit needed) and returns the per-tier multiplier + ceiling."""
+    reg = get_registry()
+    assert "supply_adjustments" in reg.data_sources
+    supply = reg.data_sources["supply_adjustments"]
+
+    severe = supply.fetch({"supply_constraint": "severe"})
+    assert severe["supply_pos_multiplier"] == 0.93
+    assert severe["supply_peak_ceiling_pct"] == 0.65
+    assert severe["supply_source"], "severe tier must carry a source"
+
+    unconstrained = supply.fetch({"supply_constraint": "unconstrained"})
+    assert unconstrained["supply_pos_multiplier"] == 1.0
+    assert unconstrained["supply_peak_ceiling_pct"] == 1.0
+
+    # Unknown tier falls back to unconstrained (the safe no-op default).
+    fallback = supply.fetch({"supply_constraint": "bogus"})
+    assert fallback["supply_constraint_used"] == "unconstrained"
+
+
 def test_modules_discovered() -> None:
     reg = get_registry()
     assert "pos" in reg.modules

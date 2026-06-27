@@ -1,6 +1,6 @@
 "use client";
 
-import type { AssetInput, CapitalPosition, Modality, Phase, RegulatoryDesignation, TherapeuticArea } from "@/lib/types";
+import type { AssetInput, CapitalPosition, Modality, Phase, RegulatoryDesignation, SupplyConstraint, TherapeuticArea } from "@/lib/types";
 
 const PHASES: Phase[] = ["preclinical", "phase_1", "phase_2", "phase_3", "nda", "approved"];
 const TAS: TherapeuticArea[] = [
@@ -37,6 +37,11 @@ const CAPITAL_POSITIONS: CapitalPosition[] = [
   "adequate",
   "constrained",
   "distressed",
+];
+const SUPPLY_CONSTRAINTS: SupplyConstraint[] = [
+  "unconstrained",
+  "moderate",
+  "severe",
 ];
 const REG_DESIGNATIONS: RegulatoryDesignation[] = [
   "breakthrough_therapy",
@@ -116,6 +121,17 @@ export function AssetForm({
           placeholder="e.g. KRAS G12C inhibitor"
           value={value.mechanism ?? ""}
           onChange={(e) => set("mechanism", e.target.value || null)}
+        />
+      </Row>
+
+      {/* Supply constraint — the second path-dependency (mirrors capital_position).
+          Drives a PoS multiplier and, distinctively, a peak-sales ceiling in rNPV.
+          Optional on the type; defaults to "unconstrained" on the backend. */}
+      <Row label="Supply constraint (manufacturing / raw material)">
+        <Select
+          value={value.supply_constraint ?? "unconstrained"}
+          onChange={(v) => set("supply_constraint", v as SupplyConstraint)}
+          options={SUPPLY_CONSTRAINTS}
         />
       </Row>
 

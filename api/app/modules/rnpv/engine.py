@@ -30,6 +30,7 @@ from ...domain import (
     RnpvResult,
     TornadoBar,
 )
+from ...registry import get_registry
 
 # Monte Carlo defaults — tuned for snappy interactive use; 10k paths converge
 # the percentiles to ~0.5% precision while running in <50ms on a laptop.
@@ -326,20 +327,52 @@ def _run_monte_carlo(
 # ---- Required entrypoint for the registry ----
 
 
+def _apply_supply_ceiling(asset: AssetInput, inputs: RnpvInputs) -> tuple[RnpvInputs, float]:
+    """Haircut the effective peak sales by the supply-constraint ceiling.
+
+    The distinctive second-path effect: a binding supply constraint (scarce
+    isotopes, limited autologous-manufacturing throughput, capacity-bound
+    fill-finish) caps achievable peak sales — you cannot sell what you cannot
+    make. Most rNPV tools price only the demand side of peak sales; here we also
+    price the supply side.
+
+    We fold the ceiling into a single effective peak and return a *modified copy*
+    of the inputs so that the closed-form, tornado, and Monte Carlo all run off
+    the same constrained peak — the haircut therefore propagates consistently
+    through every downstream computation (incl. the peak_sales tornado swing,
+    which correctly swings around the constrained level).
+
+    Returns (effective_inputs, ceiling_pct).
+    """
+    supply = get_registry().data_sources["supply_adjustments"]
+    sup = supply.fetch({"supply_constraint": asset.supply_constraint.value})
+    ceiling: float = sup["supply_peak_ceiling_pct"]
+    if ceiling >= 1.0:
+        return inputs, ceiling
+    effective = inputs.model_copy(
+        update={"peak_sales_usd_m": inputs.peak_sales_usd_m * ceiling}
+    )
+    return effective, ceiling
+
+
 def compute(record: DiligenceRecord) -> RnpvResult:
     if record.pos is None:
         raise ValueError("rNPV requires a computed PoS result on the record")
     if record.rnpv_inputs is None:
         raise ValueError("rNPV requires rnpv_inputs on the record")
 
-    base = _closed_form_rnpv(record.asset, record.pos, record.rnpv_inputs)
-    downside = _downside_failed_p3(record.asset, record.pos, record.rnpv_inputs)
-    tornado = _tornado(record.asset, record.pos, record.rnpv_inputs, base)
+    # Apply the supply-constraint peak ceiling up front so every downstream
+    # computation (closed-form base, downside, tornado, Monte Carlo) runs off the
+    # same supply-adjusted effective peak. Unconstrained assets pass through
+    # unchanged (ceiling = 1.0), preserving prior behavior exactly.
+    eff_inputs, ceiling = _apply_supply_ceiling(record.asset, record.rnpv_inputs)
+
+    base = _closed_form_rnpv(record.asset, record.pos, eff_inputs)
+    downside = _downside_failed_p3(record.asset, record.pos, eff_inputs)
+    tornado = _tornado(record.asset, record.pos, eff_inputs, base)
 
     # Monte Carlo
-    p25, p50, p75, _sample = _run_monte_carlo(
-        record.asset, record.pos, record.rnpv_inputs
-    )
+    p25, p50, p75, _sample = _run_monte_carlo(record.asset, record.pos, eff_inputs)
 
     return RnpvResult(
         base_case_usd_m=round(base, 1),
@@ -351,4 +384,6 @@ def compute(record: DiligenceRecord) -> RnpvResult:
         monte_carlo_p25_usd_m=round(p25, 1),
         monte_carlo_p50_usd_m=round(p50, 1),
         monte_carlo_p75_usd_m=round(p75, 1),
+        supply_peak_ceiling_pct=ceiling,
+        supply_adjusted_peak_usd_m=round(eff_inputs.peak_sales_usd_m, 1),
     )

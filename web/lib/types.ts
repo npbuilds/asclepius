@@ -45,6 +45,8 @@ export type CapitalPosition =
   | "constrained"
   | "distressed";
 
+export type SupplyConstraint = "unconstrained" | "moderate" | "severe";
+
 export type RegulatoryDesignation =
   | "breakthrough_therapy"
   | "orphan_drug"
@@ -60,6 +62,9 @@ export interface AssetInput {
   therapeutic_area: TherapeuticArea;
   modality: Modality;
   capital_position: CapitalPosition;
+  // Optional so existing staged-asset literals that predate the supply
+  // dimension still typecheck; the backend defaults it to "unconstrained".
+  supply_constraint?: SupplyConstraint;
   mechanism?: string | null;
   target?: string | null;
   indication?: string | null;
@@ -109,6 +114,10 @@ export interface RnpvResult {
   base_case_usd_m: number;
   low_case_usd_m: number | null;
   high_case_usd_m: number | null;
+  // Supply-constraint peak-sales ceiling: the multiplier applied to nominal peak
+  // (1.0 when unconstrained) and the resulting effective peak the model used.
+  supply_peak_ceiling_pct?: number | null;
+  supply_adjusted_peak_usd_m?: number | null;
   downside_failed_p3_usd_m: number | null;
   tornado: TornadoBar[];
   monte_carlo_paths: number;

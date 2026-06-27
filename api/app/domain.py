@@ -73,6 +73,20 @@ class CapitalPosition(str, Enum):
     DISTRESSED = "distressed"              # <6mo cash, going concern overhang
 
 
+class SupplyConstraint(str, Enum):
+    """Supply / manufacturing constraint tier — a second path-dependency.
+
+    Like reflexivity (which keys PoS off sponsor capital), supply constraint is a
+    structural overlay: scarce raw materials / isotopes / manufacturing capacity
+    add trial-execution risk (PoS) AND cap achievable peak sales (rNPV). Drives the
+    supply adjustment in the pos engine and the peak-sales ceiling in the rnpv engine.
+    """
+
+    UNCONSTRAINED = "unconstrained"  # standard manufacturing scales with demand
+    MODERATE = "moderate"            # complex but scalable (cell therapy, bispecifics)
+    SEVERE = "severe"                # binding raw-material/isotope/capacity constraint
+
+
 class RegulatoryDesignation(str, Enum):
     BTD = "breakthrough_therapy"
     ORPHAN = "orphan_drug"
@@ -98,6 +112,10 @@ class AssetInput(BaseModel):
     therapeutic_area: TherapeuticArea
     modality: Modality
     capital_position: CapitalPosition = CapitalPosition.ADEQUATE
+    # Supply-constraint tier. Defaults to UNCONSTRAINED so every existing
+    # AssetInput(...) call and staged-asset literal keeps working unchanged —
+    # the second path-dependency is opt-in, never a silent behavior change.
+    supply_constraint: SupplyConstraint = SupplyConstraint.UNCONSTRAINED
     mechanism: str | None = Field(
         default=None, description="Free-text mechanism of action (e.g. 'KRAS G12C inhibitor')."
     )
@@ -187,6 +205,12 @@ class RnpvResult(BaseModel):
     base_case_usd_m: float
     low_case_usd_m: float | None = None
     high_case_usd_m: float | None = None
+    # Supply-constraint ceiling on peak sales (the distinctive second-path effect).
+    # `supply_peak_ceiling_pct` is the multiplier applied to the user's nominal peak
+    # (1.0 when unconstrained); `supply_adjusted_peak_usd_m` is the effective peak the
+    # revenue model actually used. Surfaced so the haircut is inspectable, not hidden.
+    supply_peak_ceiling_pct: float | None = None
+    supply_adjusted_peak_usd_m: float | None = None
     downside_failed_p3_usd_m: float | None = Field(
         default=None,
         description="Terminal value if asset fails Phase 3 (residual cash + IP).",

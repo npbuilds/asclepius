@@ -9,6 +9,7 @@ from app.domain import (
     Modality,
     Phase,
     RegulatoryDesignation,
+    SupplyConstraint,
     TherapeuticArea,
 )
 from app.modules.pos.engine import compute
@@ -151,6 +152,44 @@ def test_cap_does_not_apply_when_target_validated() -> None:
         f"in the ~50-60% range; got {pos.final_loa:.3f}"
     )
     assert not any("unvalidated target" in a.name.lower() for a in pos.adjustments)
+
+
+def test_supply_constraint_severe_lowers_loa() -> None:
+    """Severe supply constraint applies a <1 pos_multiplier, lowering LOA vs
+    the (default) unconstrained baseline with all other inputs equal."""
+    unconstrained = compute(_record()).final_loa
+    severe = compute(
+        _record(supply_constraint=SupplyConstraint.SEVERE)
+    ).final_loa
+    moderate = compute(
+        _record(supply_constraint=SupplyConstraint.MODERATE)
+    ).final_loa
+    assert severe < moderate < unconstrained
+    # severe pos_multiplier is 0.93 → ~7% relative haircut
+    assert 0.90 < severe / unconstrained < 0.96
+
+
+def test_supply_constraint_default_is_noop_preserving_prior_loa() -> None:
+    """The default (unconstrained) supply tier is a clean no-op: it emits a row
+    with multiplier 1.0 and leaves final LOA equal to the no-supply-dimension
+    baseline (which is itself unconstrained), proving backward compatibility."""
+    explicit = compute(
+        _record(supply_constraint=SupplyConstraint.UNCONSTRAINED)
+    )
+    defaulted = compute(_record())  # field defaults to UNCONSTRAINED
+    assert explicit.final_loa == defaulted.final_loa
+    supply_adj = next(
+        (a for a in defaulted.adjustments if a.name.startswith("supply constraint")),
+        None,
+    )
+    assert supply_adj is not None, "supply row should be emitted even when unconstrained"
+    assert supply_adj.multiplier == 1.0
+    assert supply_adj.source, "supply adjustment must carry a source"
+    # Placed right after reflexivity in the chain.
+    names = [a.name for a in defaulted.adjustments]
+    refl_idx = next(i for i, n in enumerate(names) if n.startswith("reflexivity"))
+    sup_idx = next(i for i, n in enumerate(names) if n.startswith("supply constraint"))
+    assert sup_idx == refl_idx + 1
 
 
 def test_cap_does_not_apply_when_biomarker_enrichment_true() -> None:
