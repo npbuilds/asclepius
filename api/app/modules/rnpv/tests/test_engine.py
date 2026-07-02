@@ -72,6 +72,50 @@ def test_downside_is_negative() -> None:
     assert out.downside_failed_p3_usd_m < 0
 
 
+# --- Phase completeness (S1/S2 regression guards) --------------------------
+# Every other test uses Phase 2/3; these pin the previously-broken phases.
+
+
+def _record_for_phase(phase: Phase, **rnpv_overrides) -> DiligenceRecord:
+    asset = AssetInput(
+        asset_name="PhaseTest",
+        phase=phase,
+        therapeutic_area=TherapeuticArea.ONCOLOGY,
+        modality=Modality.SMALL_MOLECULE,
+        capital_position=CapitalPosition.ADEQUATE,
+    )
+    fields: dict = {"peak_sales_usd_m": 1000.0, "wacc": 0.12}
+    fields.update(rnpv_overrides)
+    record = DiligenceRecord(asset=asset, rnpv_inputs=RnpvInputs(**fields))
+    record.pos = compute_pos(record)
+    return record
+
+
+def test_approved_has_no_failed_p3_downside() -> None:
+    """An APPROVED asset has cleared Phase 3 — the 'fails P3' downside is
+    undefined (None), not a phantom loss. Regression guard for S1."""
+    out = compute(_record_for_phase(Phase.APPROVED))
+    assert out.downside_failed_p3_usd_m is None
+
+
+def test_nda_has_no_failed_p3_downside() -> None:
+    """Same for an asset at NDA — past Phase 3, no fail-P3 scenario."""
+    out = compute(_record_for_phase(Phase.NDA))
+    assert out.downside_failed_p3_usd_m is None
+
+
+def test_preclinical_is_risk_ordered_below_later_phases() -> None:
+    """A PRECLINICAL asset must charge dev cost + weight by its (low) LOA, so
+    for identical inputs its rNPV is LOWER than a Phase 3 asset's — not the
+    pre-fix launch-certain, zero-cost overstatement. Regression guard for S2."""
+    pre = compute(_record_for_phase(Phase.PRECLINICAL)).base_case_usd_m
+    p3 = compute(_record_for_phase(Phase.PHASE_3)).base_case_usd_m
+    assert pre == pre  # finite (not NaN)
+    assert pre < p3
+    # And its own fail-P3 downside is still defined (P3 lies ahead of it).
+    assert compute(_record_for_phase(Phase.PRECLINICAL)).downside_failed_p3_usd_m is not None
+
+
 def test_monte_carlo_percentiles_are_ordered_and_finite() -> None:
     out = compute(_record())
     assert out.monte_carlo_paths == 10_000

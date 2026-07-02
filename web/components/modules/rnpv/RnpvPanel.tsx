@@ -287,7 +287,7 @@ function Histogram({
       </div>
       <div className="relative h-8 rounded bg-bg-panel-hover">
         <div
-          className="absolute h-full rounded bg-cyan-bright/50/50"
+          className="absolute h-full rounded bg-cyan-bright/50"
           style={{ left: `${leftP25}%`, width: `${leftP75 - leftP25}%` }}
         />
         <div

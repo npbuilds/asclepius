@@ -34,7 +34,7 @@ import {
   runRnpv,
   runScorecard,
 } from "@/lib/api-client";
-import { findStagedAsset, STAGED_ASSETS } from "@/lib/staged-assets";
+import { findStagedAsset, visibleStagedAssets } from "@/lib/staged-assets";
 import type {
   AssetInput,
   ComparablesResult,
@@ -265,7 +265,9 @@ function AssetSelector({
 
   // Pre-staged assets not already selected — surfaced as chips in the
   // "add from library" row.
-  const available = STAGED_ASSETS.filter((a) => !selectedSlugs.includes(a.slug));
+  const available = visibleStagedAssets().filter(
+    (a) => !selectedSlugs.includes(a.slug),
+  );
 
   function onSubmitCustom(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

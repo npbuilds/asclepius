@@ -39,7 +39,7 @@ import type {
   ClientDiligenceRecord,
   ModulePanelProps,
 } from "@/lib/module-registry";
-import { STAGED_ASSETS } from "@/lib/staged-assets";
+import { visibleStagedAssets } from "@/lib/staged-assets";
 import type { AssetInput } from "@/lib/types";
 
 // Terse one-line descriptors for the "not sure where to start?" footer
@@ -148,9 +148,9 @@ export default function UnresearchedAssetHero({
         </strong>{" "}
         Try one of the pre-staged assets — they showcase the framework
         on different modalities, phases, and outcomes:{" "}
-        {STAGED_ASSETS.map((a, i) => {
+        {visibleStagedAssets().map((a, i, arr) => {
           const prefix =
-            i === 0 ? "" : i === STAGED_ASSETS.length - 1 ? ", or " : ", ";
+            i === 0 ? "" : i === arr.length - 1 ? ", or " : ", ";
           return (
             <Fragment key={a.slug}>
               {prefix}

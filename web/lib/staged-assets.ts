@@ -323,6 +323,20 @@ export function findStagedAsset(slug: string): StagedAsset | null {
   return STAGED_ASSETS.find((a) => a.slug === lower) ?? null;
 }
 
+/**
+ * The staged assets that belong in USER-FACING LISTS (landing grid, the
+ * Auto-Diligence degraded-mode picker, the Unresearched-asset footer, the
+ * Compare "add from library" chips). Excludes `hidden` exemplars (e.g. the
+ * Ac-225 showcase asset), which are loadable by slug but must NOT appear as
+ * curated real assets. Every list surface MUST route through this — the
+ * `hidden` flag is only honored if callers use it, and per project lore the
+ * staged list is the thing that drifts across surfaces. Single source of
+ * truth for "which staged assets does a visitor see."
+ */
+export function visibleStagedAssets(): StagedAsset[] {
+  return STAGED_ASSETS.filter((a) => !a.hidden);
+}
+
 /** Default rNPV inputs for unstaged assets — same shape as the
  *  per-asset constants. Lives here so it travels with the registry. */
 export const DEFAULT_RNPV: RnpvInputs = {

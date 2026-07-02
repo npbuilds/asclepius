@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PersonaToggle } from "@/components/PersonaToggle";
 import { SendFeedback } from "@/components/SendFeedback";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { METHODOLOGY_COUNT } from "@/lib/methodology-count";
 import { PERSONA_ANTI_FOUC_SCRIPT } from "@/lib/persona";
 import { ANTI_FOUC_SCRIPT } from "@/lib/theme";
 
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Asclepius — Biotech Venture Valuation",
     description:
-      "Reflexivity-adjusted PoS · phase-gated rNPV · ML prior externally validated against CT Open · 16 cited methodology writeups.",
+      `Reflexivity-adjusted PoS · phase-gated rNPV · ML prior externally validated against CT Open · ${METHODOLOGY_COUNT} cited methodology writeups.`,
     url: "https://asclepius-bio.vercel.app",
     siteName: "Asclepius",
     type: "website",

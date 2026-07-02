@@ -56,20 +56,25 @@ def _build_timeline(inputs: RnpvInputs, current_phase: Phase) -> _Timeline:
     """
     ypp = inputs.years_per_phase
 
+    # PRECLINICAL is approximated as "entering Phase 1" — all clinical phases lie
+    # ahead. (A separate preclinical→IND lead time isn't in the input schema, so
+    # we don't model it; the key correctness point is that a preclinical asset
+    # is NOT treated as launch-certain with zero cost, which the pre-fix
+    # fall-through did.)
+    _p1_ahead = (Phase.PRECLINICAL, Phase.PHASE_1)
+    _p2_ahead = (Phase.PRECLINICAL, Phase.PHASE_1, Phase.PHASE_2)
+    _p3_ahead = (Phase.PRECLINICAL, Phase.PHASE_1, Phase.PHASE_2, Phase.PHASE_3)
+
     cursor = 0.0
-    end_p1 = cursor + (ypp["phase_1"] if current_phase == Phase.PHASE_1 else 0.0)
+    end_p1 = cursor + (ypp["phase_1"] if current_phase in _p1_ahead else 0.0)
     cursor = end_p1
-    end_p2 = cursor + (
-        ypp["phase_2"] if current_phase in (Phase.PHASE_1, Phase.PHASE_2) else 0.0
-    )
+    end_p2 = cursor + (ypp["phase_2"] if current_phase in _p2_ahead else 0.0)
     cursor = end_p2
-    end_p3 = cursor + (
-        ypp["phase_3"]
-        if current_phase in (Phase.PHASE_1, Phase.PHASE_2, Phase.PHASE_3)
-        else 0.0
-    )
+    end_p3 = cursor + (ypp["phase_3"] if current_phase in _p3_ahead else 0.0)
     cursor = end_p3
-    launch = cursor + ypp.get("regulatory", 1.0)
+    # An already-approved asset is past regulatory review — no reg lead time.
+    reg_time = 0.0 if current_phase == Phase.APPROVED else ypp.get("regulatory", 1.0)
+    launch = cursor + reg_time
     return _Timeline(end_p1, end_p2, end_p3, launch)
 
 
@@ -83,7 +88,10 @@ def _phase_pos(phase: Phase, transitions: dict[str, float]) -> dict[str, float]:
     p3n = transitions.get("p3_to_nda", 0.6)
     pna = transitions.get("nda_to_approval", 0.9)
 
-    if phase == Phase.PHASE_1:
+    # PRECLINICAL is treated like the front of Phase 1 (no separate preclinical
+    # transition in the schema); it inherits Phase-1 reach probabilities rather
+    # than the launch-certain {1,1,1} fall-through, which mis-weighted costs.
+    if phase in (Phase.PRECLINICAL, Phase.PHASE_1):
         return {
             "reach_p2": p12,
             "reach_p3": p12 * p23,
@@ -110,16 +118,16 @@ def _closed_form_rnpv(
     # ---- Cost side: discount + PoS-weight each phase cost ----
     pv_cost = 0.0
 
-    if asset.phase == Phase.PHASE_1:
-        # Phase 1 cost incurred over phase 1 timeline; weight = 1.0 (we're here)
+    if asset.phase in (Phase.PRECLINICAL, Phase.PHASE_1):
+        # Phase 1 cost incurred over phase 1 timeline; weight = 1.0 (ahead of us)
         pv_cost += _discount_over_period(
             inputs.dev_cost_phase_1_usd_m, 0.0, timeline.end_phase_1, r
         )
-    if asset.phase in (Phase.PHASE_1, Phase.PHASE_2):
+    if asset.phase in (Phase.PRECLINICAL, Phase.PHASE_1, Phase.PHASE_2):
         pv_cost += pp["reach_p2"] * _discount_over_period(
             inputs.dev_cost_phase_2_usd_m, timeline.end_phase_1, timeline.end_phase_2, r
         )
-    if asset.phase in (Phase.PHASE_1, Phase.PHASE_2, Phase.PHASE_3):
+    if asset.phase in (Phase.PRECLINICAL, Phase.PHASE_1, Phase.PHASE_2, Phase.PHASE_3):
         pv_cost += pp["reach_p3"] * _discount_over_period(
             inputs.dev_cost_phase_3_usd_m, timeline.end_phase_2, timeline.end_phase_3, r
         )
@@ -153,13 +161,19 @@ def _discount_over_period(amount: float, t_start: float, t_end: float, r: float)
 
 def _downside_failed_p3(
     asset: AssetInput, pos: PoSResult, inputs: RnpvInputs
-) -> float:
+) -> float | None:
     """Conservative terminal value if asset fails at Phase 3.
 
     For v1: residual = cash committed to Phase 3 is lost; IP residual = 10% of
     forgone present value of revenue (cost recovery in a fire-sale licensing
     scenario). Returns a negative number (the loss).
+
+    Returns None for NDA / APPROVED assets: they have already cleared Phase 3,
+    so a "fails Phase 3" downside is undefined — surfacing a phantom loss for a
+    de-risked asset was incoherent (a bug the frontend then rendered).
     """
+    if asset.phase in (Phase.NDA, Phase.APPROVED):
+        return None
     timeline = _build_timeline(inputs, asset.phase)
     r = inputs.wacc
     lost_p3 = inputs.dev_cost_phase_3_usd_m / (
@@ -378,7 +392,7 @@ def compute(record: DiligenceRecord) -> RnpvResult:
         base_case_usd_m=round(base, 1),
         low_case_usd_m=round(p25, 1),
         high_case_usd_m=round(p75, 1),
-        downside_failed_p3_usd_m=round(downside, 1),
+        downside_failed_p3_usd_m=round(downside, 1) if downside is not None else None,
         tornado=tornado,
         monte_carlo_paths=_DEFAULT_MC_PATHS,
         monte_carlo_p25_usd_m=round(p25, 1),

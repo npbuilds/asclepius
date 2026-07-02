@@ -20,6 +20,8 @@
 
 import { ImageResponse } from "next/og";
 
+import { METHODOLOGY_COUNT } from "@/lib/methodology-count";
+
 export const alt = "Asclepius — Biotech Venture Valuation";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -223,7 +225,7 @@ export default async function Image() {
           <StatusRow
             color={CYAN_FADED}
             label="METHODOLOGY"
-            detail="16 cited writeups · every JSON value sourced"
+            detail={`${METHODOLOGY_COUNT} cited writeups · every JSON value sourced`}
             value="MIT licensed"
           />
         </div>

@@ -15,7 +15,7 @@ import { useState } from "react";
 
 import { type AgentError, runAutoDiligence } from "@/lib/api-client";
 import type { ClientDiligenceRecord } from "@/lib/module-registry";
-import { STAGED_ASSETS } from "@/lib/staged-assets";
+import { visibleStagedAssets } from "@/lib/staged-assets";
 import type {
   AssetInput,
   AutoDiligenceCitation,
@@ -26,6 +26,54 @@ import type {
   Phase,
   TherapeuticArea,
 } from "@/lib/types";
+
+// Valid enum members — used to coerce Auto-Diligence's extracted (free-string)
+// values into the backend enums. The web-search agent can legitimately return
+// a value outside our taxonomy (e.g. modality "bispecific_antibody", TA
+// "immunology"). Applying it verbatim (a) 422s the next deterministic module
+// call and (b) leaves the AssetForm <Select> BLANK (no matching <option>) —
+// wedging the workbench with no way to fix it in the UI. Coerce-or-keep-current
+// avoids that failure entirely. Keep in sync with the enums in AssetForm.tsx.
+const VALID_PHASES = new Set<string>([
+  "preclinical", "phase_1", "phase_2", "phase_3", "nda", "approved",
+]);
+const VALID_TAS = new Set<string>([
+  "oncology", "rare_orphan", "cns", "metabolic", "infectious", "cardiovascular",
+  "autoimmune", "ophthalmology", "hematology", "respiratory", "other",
+]);
+const VALID_MODALITIES = new Set<string>([
+  "small_molecule", "monoclonal_antibody", "antibody_drug_conjugate",
+  "gene_therapy", "cell_therapy_autologous", "cell_therapy_allogeneic", "mrna",
+  "protein", "oligonucleotide", "peptide", "targeted_protein_degrader",
+  "radiopharmaceutical", "epigenetic_editing", "other",
+]);
+const VALID_CAPITAL = new Set<string>([
+  "well_capitalized", "adequate", "constrained", "distressed",
+]);
+const VALID_DESIGNATIONS = new Set<string>([
+  "breakthrough_therapy", "orphan_drug", "fast_track", "accelerated_approval",
+  "rmat", "prime_ema",
+]);
+
+// Use the extracted value only if it's a valid enum member; else keep current.
+function coerceEnum<T extends string>(
+  value: unknown,
+  valid: Set<string>,
+  current: T,
+): T {
+  return typeof value === "string" && valid.has(value) ? (value as T) : current;
+}
+
+// Short source label from a citation URL. `new URL()` throws on a malformed
+// URL — unguarded, one bad citation blanks the entire extracted panel. Fall
+// back to a truncated raw string on parse failure.
+function safeHostLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").split(".")[0];
+  } catch {
+    return url.replace(/^https?:\/\//, "").split("/")[0].slice(0, 20) || "source";
+  }
+}
 
 // Richer, recovery-context descriptors for the 503-fallback "try these
 // instead" list — bespoke prose tuned for the "live agent is down, here's
@@ -127,16 +175,21 @@ export function AutoDiligencePanel({
       ...record.asset,
       asset_name: e.asset_name || record.asset.asset_name,
       sponsor: e.sponsor ?? record.asset.sponsor,
-      phase: (e.phase as Phase) || record.asset.phase,
-      therapeutic_area:
-        (e.therapeutic_area as TherapeuticArea) || record.asset.therapeutic_area,
-      modality: (e.modality as Modality) || record.asset.modality,
+      phase: coerceEnum(e.phase, VALID_PHASES, record.asset.phase),
+      therapeutic_area: coerceEnum(
+        e.therapeutic_area,
+        VALID_TAS,
+        record.asset.therapeutic_area,
+      ),
+      modality: coerceEnum(e.modality, VALID_MODALITIES, record.asset.modality),
       indication: e.indication ?? record.asset.indication,
       target: e.target ?? record.asset.target,
       mechanism: e.mechanism ?? record.asset.mechanism,
-      regulatory_designations:
-        (e.regulatory_designations as AssetInput["regulatory_designations"]) ??
-        record.asset.regulatory_designations,
+      regulatory_designations: Array.isArray(e.regulatory_designations)
+        ? (e.regulatory_designations.filter((d) =>
+            VALID_DESIGNATIONS.has(d),
+          ) as AssetInput["regulatory_designations"])
+        : record.asset.regulatory_designations,
       num_competitors:
         typeof e.num_competitors === "number"
           ? e.num_competitors
@@ -149,8 +202,11 @@ export function AutoDiligencePanel({
         typeof e.biomarker_enrichment === "boolean"
           ? e.biomarker_enrichment
           : record.asset.biomarker_enrichment,
-      capital_position:
-        (e.capital_position as CapitalPosition) || record.asset.capital_position,
+      capital_position: coerceEnum(
+        e.capital_position,
+        VALID_CAPITAL,
+        record.asset.capital_position,
+      ),
     };
     // Preserve any user-supplied NCT ID that's already on the record (e.g.
     // analyst typed it explicitly); only auto-fill from citations when the
@@ -201,12 +257,12 @@ export function AutoDiligencePanel({
             <p className="mb-3 font-prose text-[12px] normal-case tracking-normal text-text-primary">
               The agent that scans CT.gov, SEC EDGAR, FDA, EMA and the
               top journals needs a live API key, which isn't wired up on
-              this public demo. Five assets are pre-staged with full
-              cached agent outputs — pick one to see what a completed
-              diligence looks like end-to-end.
+              this public demo. {visibleStagedAssets().length} assets are
+              pre-staged with full cached agent outputs — pick one to see
+              what a completed diligence looks like end-to-end.
             </p>
             <ul className="space-y-1.5 font-prose text-[12px] normal-case tracking-normal text-text-primary">
-              {STAGED_ASSETS.map((a) => (
+              {visibleStagedAssets().map((a) => (
                 <li key={a.slug}>
                   <a
                     href={`/diligence/${a.slug}`}
@@ -277,7 +333,7 @@ export function AutoDiligencePanel({
                         title={c.span}
                         className="rounded border border-cyan-bright/30 bg-cyan-bright/10 px-1 text-[9px] uppercase tracking-wider text-cyan-bright hover:bg-cyan-bright/20"
                       >
-                        {new URL(c.url).hostname.replace(/^www\./, "").split(".")[0]}
+                        {safeHostLabel(c.url)}
                       </a>
                     ))}
                   </span>

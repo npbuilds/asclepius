@@ -217,8 +217,10 @@ export default function DiligencePage({
   // already correct; an analyst would only open the form to sensitivity-
   // test, not to populate. Unknown assets default-open because the form
   // is the only way to populate them.
-  const isStaged =
-    isAdagrasib || isDivarasib || isAducanumab || isLifileucel || isTulisokibart || isAc225;
+  // Any registry-known asset is "staged" — derive from the lookup the page
+  // already did rather than re-hardcoding the slug list (which drifts). The
+  // per-asset isName booleans below stay only for the framing-prose branch.
+  const isStaged = staged !== null;
   const [assetFormOpen, setAssetFormOpen] = useState(!isStaged);
 
   // v1.7.1: "ready to use" UX for the friend-test "type your own asset" path.

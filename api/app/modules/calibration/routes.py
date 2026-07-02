@@ -10,9 +10,10 @@ module's compute() output. Calibration extends it with three extra routes:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 
+from ...agents.routes import require_access
 from ...domain import AssetInput, DiligenceRecord
 from . import db, engine
 from .schemas import (
@@ -38,7 +39,7 @@ def compute_calibration(req: CalibrationRequest) -> AssetCalibrationContext:
     return engine.compute(record)
 
 
-@router.post("/log_prediction")
+@router.post("/log_prediction", dependencies=[Depends(require_access)])
 def log_prediction(req: LogPredictionRequest) -> dict[str, str]:
     pid = db.log_prediction(
         asset_name=req.asset_name,
@@ -53,7 +54,7 @@ def log_prediction(req: LogPredictionRequest) -> dict[str, str]:
     return {"id": pid}
 
 
-@router.post("/resolve_prediction")
+@router.post("/resolve_prediction", dependencies=[Depends(require_access)])
 def resolve_prediction(req: ResolvePredictionRequest) -> dict[str, bool]:
     ok = db.resolve_prediction(
         prediction_id=req.prediction_id,

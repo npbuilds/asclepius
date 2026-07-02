@@ -5,7 +5,8 @@ import { useState } from "react";
 
 import { SystemStatus, type HealthStatus } from "@/components/SystemStatus";
 import { TryYourOwnAsset } from "@/components/TryYourOwnAsset";
-import { STAGED_ASSETS, type StagedAsset } from "@/lib/staged-assets";
+import { METHODOLOGY_COUNT } from "@/lib/methodology-count";
+import { type StagedAsset, visibleStagedAssets } from "@/lib/staged-assets";
 
 /**
  * v1.6 friend-test landing — asset library + "your own asset" tile.
@@ -113,7 +114,7 @@ export default function LandingPage() {
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {STAGED_ASSETS.filter((a) => !a.hidden).map((asset) => (
+          {visibleStagedAssets().map((asset) => (
             <Link
               key={asset.slug}
               href={`/diligence/${asset.slug}`}
@@ -177,7 +178,7 @@ export default function LandingPage() {
           href="/methodology"
           className="rounded border border-border-dim bg-bg-panel px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-text-primary hover:border-magenta-bright hover:text-magenta-bright"
         >
-          [ Methodology · 21 writeups → ]
+          [ Methodology · {METHODOLOGY_COUNT} writeups → ]
         </Link>
       </div>
 

@@ -105,7 +105,16 @@ export function loaDisplay(record: ClientDiligenceRecord): LoaDisplay {
   }
   const final = pct(record.pos.final_loa);
   const baseRate = pct(record.pos.base_rate);
-  const reflex = pct(record.pos.final_loa);
+  // "Reflexivity" isolates the reflexivity tier's effect on the base rate —
+  // base_rate × the reflexivity multiplier — NOT the fully-adjusted final_loa
+  // (which also folds in modality/biomarker/target/designation/supply). For a
+  // neutral tier (adequate ×1.00) this correctly equals BIO; for a distressed
+  // or well-capitalized sponsor it shows the reflexivity lift/haircut directly.
+  const reflexMult =
+    record.pos.adjustments?.find((a) =>
+      a.name.toLowerCase().includes("reflexivity"),
+    )?.multiplier ?? 1;
+  const reflex = pct(record.pos.base_rate * reflexMult);
   // The "BIO → Reflexivity → ML" microsplit shows when ALL three numbers
   // are available. ML PoS is fetched separately and may settle after PoS
   // — until then we show the abbreviated "BIO → Reflexivity" line so the
