@@ -64,6 +64,21 @@ function coerceEnum<T extends string>(
   return typeof value === "string" && valid.has(value) ? (value as T) : current;
 }
 
+// Coerce the extracted regulatory-designation array: keep only valid members,
+// but if NONE survive (all out-of-taxonomy, e.g. ['priority_review'], or empty)
+// keep the CURRENT value rather than clearing it — an all-invalid extraction
+// must not silently erase existing valid staged/user designations (Codex P2).
+function coerceDesignations(
+  extracted: unknown,
+  current: AssetInput["regulatory_designations"],
+): AssetInput["regulatory_designations"] {
+  if (!Array.isArray(extracted)) return current;
+  const valid = extracted.filter(
+    (d) => typeof d === "string" && VALID_DESIGNATIONS.has(d),
+  ) as AssetInput["regulatory_designations"];
+  return valid.length > 0 ? valid : current;
+}
+
 // Short source label from a citation URL. `new URL()` throws on a malformed
 // URL — unguarded, one bad citation blanks the entire extracted panel. Fall
 // back to a truncated raw string on parse failure.
@@ -185,11 +200,10 @@ export function AutoDiligencePanel({
       indication: e.indication ?? record.asset.indication,
       target: e.target ?? record.asset.target,
       mechanism: e.mechanism ?? record.asset.mechanism,
-      regulatory_designations: Array.isArray(e.regulatory_designations)
-        ? (e.regulatory_designations.filter((d) =>
-            VALID_DESIGNATIONS.has(d),
-          ) as AssetInput["regulatory_designations"])
-        : record.asset.regulatory_designations,
+      regulatory_designations: coerceDesignations(
+        e.regulatory_designations,
+        record.asset.regulatory_designations,
+      ),
       num_competitors:
         typeof e.num_competitors === "number"
           ? e.num_competitors

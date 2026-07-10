@@ -281,20 +281,23 @@ def _vectorized_rnpv(
     timeline = _build_timeline(inputs, asset.phase)
     pp = _phase_pos(asset.phase, pos.phase_transitions)
 
-    # Cost side — same logic as closed-form, vectorized over wacc
+    # Cost side — same logic as closed-form, vectorized over wacc. Phase-ahead
+    # sets MUST match _closed_form_rnpv (incl. PRECLINICAL) or the Monte Carlo
+    # percentiles omit dev costs the base case includes → an inconsistent,
+    # overstated low/high band for preclinical assets.
     pv_cost = np.zeros_like(wacc)
-    if asset.phase == Phase.PHASE_1:
+    if asset.phase in (Phase.PRECLINICAL, Phase.PHASE_1):
         pv_cost += _discount_array(
             inputs.dev_cost_phase_1_usd_m, 0.0, timeline.end_phase_1, wacc
         )
-    if asset.phase in (Phase.PHASE_1, Phase.PHASE_2):
+    if asset.phase in (Phase.PRECLINICAL, Phase.PHASE_1, Phase.PHASE_2):
         pv_cost += pp["reach_p2"] * _discount_array(
             inputs.dev_cost_phase_2_usd_m,
             timeline.end_phase_1,
             timeline.end_phase_2,
             wacc,
         )
-    if asset.phase in (Phase.PHASE_1, Phase.PHASE_2, Phase.PHASE_3):
+    if asset.phase in (Phase.PRECLINICAL, Phase.PHASE_1, Phase.PHASE_2, Phase.PHASE_3):
         pv_cost += pp["reach_p3"] * _discount_array(
             inputs.dev_cost_phase_3_usd_m,
             timeline.end_phase_2,

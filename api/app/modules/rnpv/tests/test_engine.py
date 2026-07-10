@@ -116,6 +116,23 @@ def test_preclinical_is_risk_ordered_below_later_phases() -> None:
     assert compute(_record_for_phase(Phase.PRECLINICAL)).downside_failed_p3_usd_m is not None
 
 
+def test_preclinical_monte_carlo_includes_dev_costs() -> None:
+    """The Monte Carlo path (`_vectorized_rnpv`) must charge preclinical dev
+    costs too — matching the closed-form base case. If it omitted them, the
+    MC percentiles would be invariant to dev cost. Regression guard for the
+    Codex-flagged MC/base inconsistency (base included costs, MC did not)."""
+    big_cost = compute(
+        _record_for_phase(Phase.PRECLINICAL, dev_cost_phase_3_usd_m=2000.0)
+    )
+    no_cost = compute(
+        _record_for_phase(Phase.PRECLINICAL, dev_cost_phase_3_usd_m=0.0)
+    )
+    # A $2B Phase-3 cost must pull the MC median below the zero-cost variant.
+    assert big_cost.monte_carlo_p50_usd_m is not None
+    assert no_cost.monte_carlo_p50_usd_m is not None
+    assert big_cost.monte_carlo_p50_usd_m < no_cost.monte_carlo_p50_usd_m
+
+
 def test_monte_carlo_percentiles_are_ordered_and_finite() -> None:
     out = compute(_record())
     assert out.monte_carlo_paths == 10_000
