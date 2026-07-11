@@ -98,10 +98,10 @@ function safeHostLabel(url: string): string {
 // `story` for any slug without an entry here.
 const FALLBACK_503_BLURB: Record<string, string> = {
   adagrasib: "KRAS G12C NSCLC; retrospective vs the BMS $4.8B Mirati deal.",
-  divarasib: "Roche's second-gen G12C; live forward prediction, resolves 2027.",
+  divarasib: "Roche's second-gen G12C in a Phase 3 head-to-head vs sotorasib/adagrasib.",
   lifileucel:
     "Iovance autologous TIL therapy in melanoma; tests cell-therapy economics.",
-  tulisokibart: "Merck anti-TL1A in IBD; novel-target forward prediction.",
+  tulisokibart: "Merck anti-TL1A in IBD; a novel target class (none approved yet).",
   aducanumab:
     "Biogen anti-amyloid in Alzheimer's; a contested approval the framework can't predict.",
 };

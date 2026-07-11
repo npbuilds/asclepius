@@ -13,7 +13,6 @@ import type {
   AssetInput,
   AssetSizingInput,
   AutoDiligenceOutput,
-  CalibrationReport,
   ComparablesResult,
   FundParameters,
   MLPosPriorResult,
@@ -21,7 +20,6 @@ import type {
   MemoOutput,
   ModuleManifest,
   PoSResult,
-  PredictionLogEntry,
   RnpvInputs,
   RnpvResult,
   ScorecardInput,
@@ -334,16 +332,6 @@ export async function runCalibration(
     method: "POST",
     body: JSON.stringify({ asset }),
   });
-}
-
-export async function getCalibrationReport(): Promise<CalibrationReport> {
-  return jsonFetch<CalibrationReport>("/api/modules/calibration/report");
-}
-
-export async function listPredictions(): Promise<PredictionLogEntry[]> {
-  return jsonFetch<PredictionLogEntry[]>(
-    "/api/modules/calibration/predictions",
-  );
 }
 
 export async function runComparables(

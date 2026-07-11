@@ -16,7 +16,7 @@ import { type StagedAsset, visibleStagedAssets } from "@/lib/staged-assets";
  * To add a new showcase: add one entry to STAGED_ASSETS, then add its
  * framing paragraph in app/diligence/[asset]/page.tsx — both surfaces here
  * update automatically. The accent color on each card differentiates the
- * mode — cyan = retrospective backtest, magenta = forward prediction,
+ * mode — cyan = retrospective backtest, magenta = in-progress pipeline,
  * amber = contested/atypical case.
  *
  * Layout: single column on mobile, two columns on sm+ so a generalist
@@ -27,7 +27,7 @@ import { type StagedAsset, visibleStagedAssets } from "@/lib/staged-assets";
 
 const MODE_LABEL: Record<StagedAsset["mode"], string> = {
   retrospective: "retrospective →",
-  forward: "live forward prediction →",
+  forward: "in-progress →",
   contested: "contested case →",
 };
 
@@ -167,12 +167,6 @@ export default function LandingPage() {
           className="rounded border border-border-dim bg-bg-panel px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-text-primary hover:border-cyan-bright hover:text-cyan-bright"
         >
           [ Compare assets side-by-side → ]
-        </Link>
-        <Link
-          href="/predictions"
-          className="rounded border border-border-dim bg-bg-panel px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-text-primary hover:border-magenta-bright hover:text-magenta-bright"
-        >
-          [ Public predictions · track record → ]
         </Link>
         <Link
           href="/methodology"

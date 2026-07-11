@@ -65,33 +65,36 @@ jobs:
         run: pnpm typecheck
 
       - name: Sync-drift check
-        # `pnpm typecheck` (and `pnpm build`) auto-run the two sync scripts
-        # via the `predev`/`prebuild`/`typecheck` chain. If a commit reached
-        # main where the committed methodology-content.ts or
-        # predictions-content.ts is stale relative to its source, the sync
-        # we just ran will have regenerated different content from what was
-        # committed — surfacing as an unstaged diff (or, if the generated
-        # file was missing from the commit entirely, as a freshly-created
-        # untracked file).
+        # `pnpm typecheck` (and `pnpm build`) auto-run the methodology sync
+        # script via the `predev`/`prebuild`/`typecheck` chain. If a commit
+        # reached main where the committed methodology-content.ts /
+        # methodology-count.ts is stale relative to its source, the sync we
+        # just ran will have regenerated different content from what was
+        # committed — surfacing as an unstaged diff (or, if the generated file
+        # was missing from the commit entirely, as a freshly-created untracked
+        # file).
         #
         # We use `git status --porcelain` instead of `git diff --exit-code`
         # because diff doesn't include untracked files. The classic CI miss
         # (per codex review): if a commit accidentally removes the .ts file,
         # `pnpm typecheck` recreates it as untracked, `git diff` reports
-        # nothing, the build passes, and Vercel deploys a tree where the
-        # file isn't tracked — broken render. Porcelain catches modified +
-        # untracked + added + deleted in one check.
+        # nothing, the build passes, and Vercel deploys a tree where the file
+        # isn't tracked — broken render. Porcelain catches modified + untracked
+        # + added + deleted in one check.
+        #
+        # (The predictions-content.ts drift check was removed in the R2 rescope
+        # — the prediction-log surface was cut.)
         #
         # This step fails fast and points at the local pre-commit hook
         # (scripts/hooks/pre-commit) as the optimistic prevention.
         run: |
-          drift="$(git status --porcelain -- lib/methodology-content.ts lib/predictions-content.ts)"
+          drift="$(git status --porcelain -- lib/methodology-content.ts lib/methodology-count.ts)"
           if [[ -n "$drift" ]]; then
             echo "::error::Sync drift detected. Generated files don't match their sources OR aren't tracked:"
             echo "$drift"
             echo ""
-            echo "::error::Fix locally with: cd web && pnpm sync:methodology && pnpm sync:predictions"
-            echo "::error::Then: git add web/lib/methodology-content.ts web/lib/predictions-content.ts"
+            echo "::error::Fix locally with: cd web && pnpm sync:methodology"
+            echo "::error::Then: git add web/lib/methodology-content.ts web/lib/methodology-count.ts"
             echo "::error::And amend / re-commit. Install scripts/hooks/install.sh to auto-prevent."
             exit 1
           fi

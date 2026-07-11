@@ -395,18 +395,11 @@ export default function DiligencePage({
           </p>
         ) : isDivarasib ? (
           <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
-            <strong className="text-text-bright">Live forward prediction.</strong>{" "}
-            Phase 3 NCT06497556 head-to-head vs sotorasib/adagrasib. Enrollment
-            complete (ACTUAL n=338); primary completion 2027-09-30. Framework
-            output committed to git on 2026-06-03 before any outcome was known
-            — see {" "}
-            <a
-              href="/methodology/18-divarasib-live-forward-prediction"
-              className="underline hover:text-cyan-bright"
-            >
-              methodology/18
-            </a>{" "}
-            for the pre-registered prediction with resolution criteria.
+            <strong className="text-text-bright">Second-generation competitor example.</strong>{" "}
+            Divarasib (Roche) is a covalent second-gen KRAS G12C inhibitor in a
+            Phase 3 head-to-head (NCT06497556) vs sotorasib/adagrasib. A clean
+            test of the framework on a well-capitalized sponsor in a competitive,
+            target-validated field.
           </p>
         ) : isAducanumab ? (
           <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
@@ -431,7 +424,7 @@ export default function DiligencePage({
           </p>
         ) : isTulisokibart ? (
           <p className="mt-2 max-w-3xl font-prose text-[13px] text-text-primary">
-            <strong className="text-text-bright">Autoimmune biologic forward prediction.</strong>{" "}
+            <strong className="text-text-bright">Autoimmune biologic example.</strong>{" "}
             Phase 3 ATLAS-UC (NCT06430879) and ATLAS-CD trials ongoing for
             ulcerative colitis and Crohn&apos;s. Merck-sponsored after the April
             2023 Prometheus acquisition ($10.8B). Anti-TL1A is a novel target
@@ -488,7 +481,7 @@ export default function DiligencePage({
               <a href="/diligence/divarasib" className="text-cyan-bright underline hover:text-cyan-bright">
                 divarasib
               </a>{" "}
-              (live forward prediction).
+              (Phase 3 second-gen G12C).
             </p>
           </div>
         ) : null}

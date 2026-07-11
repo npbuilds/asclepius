@@ -14,7 +14,7 @@
  * Modes (drives accent color on the landing + the framing-paragraph
  * shape on the diligence page):
  *   - retrospective: information-cutoff backtest against a known outcome
- *   - forward: pre-registered prediction with a future catalyst date
+ *   - forward: an in-progress asset with a future catalyst (an ongoing example)
  *   - contested: controversial / unusual outcome the framework can't
  *     and shouldn't try to predict — useful for testing edges
  */
@@ -257,7 +257,7 @@ export const STAGED_ASSETS: StagedAsset[] = [
     mode: "forward",
     context: "Phase 3 · oncology · small molecule",
     story:
-      "Live forward prediction. Head-to-head vs sotorasib/adagrasib. PoS 59.3%, rNPV $948M committed to git before any outcome was known. Resolution 2027-09-30.",
+      "Second-gen KRAS G12C (Roche) in a Phase 3 head-to-head vs sotorasib/adagrasib. Tests the framework on a well-capitalized sponsor in a competitive, target-validated field.",
     asset: DIVARASIB,
     rnpv: DIVARASIB_RNPV,
     ml_pos_nct_id: "NCT06497556",
@@ -281,7 +281,7 @@ export const STAGED_ASSETS: StagedAsset[] = [
     mode: "forward",
     context: "Phase 3 · autoimmune · monoclonal antibody",
     story:
-      "Autoimmune forward prediction. Anti-TL1A novel target (no anti-TL1A approved yet). Phase 3 ATLAS-UC + ATLAS-CD ongoing. Tests the new autoimmune-biologic cohort.",
+      "Anti-TL1A (Merck, ex-Prometheus) — a novel target class (no anti-TL1A approved yet) in Phase 3 for UC/Crohn's. Exercises the autoimmune-biologic cohort.",
     asset: TULISOKIBART,
     rnpv: TULISOKIBART_RNPV,
     ml_pos_nct_id: "NCT06430879",

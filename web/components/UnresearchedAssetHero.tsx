@@ -49,7 +49,7 @@ import type { AssetInput } from "@/lib/types";
 // `mode` for any slug without an entry here.
 const FOOTER_BLURB: Record<string, string> = {
   adagrasib: "retrospective backtest",
-  divarasib: "live forward prediction",
+  divarasib: "Phase 3 second-gen G12C",
   lifileucel: "cell therapy retrospective",
   tulisokibart: "autoimmune forward",
   aducanumab: "contested approval",
