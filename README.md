@@ -1,6 +1,6 @@
 # Asclepius
 
-**Live:** <https://asclepius-lyart.vercel.app> · [methodology index](https://asclepius-lyart.vercel.app/methodology) · [how the tool thinks — a worked case](https://asclepius-lyart.vercel.app/showcase) · [worked example](https://asclepius-lyart.vercel.app/diligence/adagrasib)
+**Live:** <https://asclepius-bio.vercel.app> · [methodology index](https://asclepius-bio.vercel.app/methodology) · [how the tool thinks — a worked case](https://asclepius-bio.vercel.app/showcase) · [worked example](https://asclepius-bio.vercel.app/diligence/adagrasib)
 
 > A biotech research / analysis / advising tool. It treats two *structural* facts as
 > first-class value drivers that generic valuation tools ignore — **who holds the capital**
@@ -44,7 +44,7 @@ its work, and names what would change its mind.
 
 ## A worked case
 
-The [showcase](https://asclepius-lyart.vercel.app/showcase) narrates one hard asset end to end — an
+The [showcase](https://asclepius-bio.vercel.app/showcase) narrates one hard asset end to end — an
 Actinium-225 alpha-emitter from a capital-constrained junior — the one asset that lights up every
 differentiator at once (both path-dependencies bite, and it routes to the curated radiopharmaceutical
 comp cohort). Every number on that page is real engine output; the reading is editorial.
@@ -131,7 +131,7 @@ flags an asset for closer review.
 - **Narrated showcase** — the "how the tool thinks" case study.
 - **Saved analyses** — persist / list / reload a completed analysis (gated).
 - **Portfolio sizing** — Kelly + conviction + barbell allocation for the fund-manager view
-  ([`/portfolio`](https://asclepius-lyart.vercel.app/portfolio)).
+  ([`/portfolio`](https://asclepius-bio.vercel.app/portfolio)).
 
 ## Access
 
@@ -159,7 +159,7 @@ A first pass:
 5. [`06-signaling-equilibrium.md`](methodology/06-signaling-equilibrium.md) — the game-theoretic derivation of reflexivity from Spence (1973).
 6. [`05-worked-example-adagrasib.md`](methodology/05-worked-example-adagrasib.md) — the framework run end to end.
 
-Or browse the [methodology index](https://asclepius-lyart.vercel.app/methodology) live.
+Or browse the [methodology index](https://asclepius-bio.vercel.app/methodology) live.
 
 ## Sources and citations
 
