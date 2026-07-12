@@ -205,22 +205,22 @@ export default async function Image() {
         {/* Five rows of `●` status lines — same motif as the live landing */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <StatusRow
-            color={CYAN_BRIGHT}
-            label="ML PoS PRIOR"
-            detail="PubMedBERT + phase-stratified LightGBM"
-            value="HINT + CTO trained"
-          />
-          <StatusRow
             color={MAGENTA_BRIGHT}
             label="REFLEXIVITY"
-            detail="Spence signaling-equilibrium adjustment"
-            value="headline differentiator"
+            detail="sponsor capital → PoS (Spence signaling)"
+            value="path-dependency #1"
           />
           <StatusRow
             color={AMBER_BRIGHT}
-            label="EXTERNAL"
-            detail="CT Open uncontaminated (Gao 2024)"
-            value="AUC 0.600"
+            label="SUPPLY"
+            detail="manufacturability → PoS + rNPV ceiling"
+            value="path-dependency #2"
+          />
+          <StatusRow
+            color={CYAN_BRIGHT}
+            label="ML PoS PRIOR"
+            detail="PubMedBERT + LightGBM on HINT outcomes"
+            value="second opinion"
           />
           <StatusRow
             color={CYAN_FADED}

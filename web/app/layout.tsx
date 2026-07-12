@@ -52,11 +52,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://asclepius-bio.vercel.app"),
   title: "Asclepius — Biotech Venture Valuation",
   description:
-    "Phase-gated PoS with a reflexivity adjustment, rNPV with Monte Carlo, 8-pillar diligence scorecard, and cited deal comparables.",
+    "Phase-gated PoS with reflexivity + supply-constraint path-dependencies, rNPV with Monte Carlo, a defensible investment memo, and cited deal comparables.",
   openGraph: {
     title: "Asclepius — Biotech Venture Valuation",
     description:
-      `Reflexivity-adjusted PoS · phase-gated rNPV · ML prior externally validated against CT Open · ${METHODOLOGY_COUNT} cited methodology writeups.`,
+      `Reflexivity- and supply-adjusted PoS · phase-gated rNPV · a defensible memo · ${METHODOLOGY_COUNT} cited methodology writeups.`,
     url: "https://asclepius-bio.vercel.app",
     siteName: "Asclepius",
     type: "website",

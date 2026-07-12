@@ -1,74 +1,69 @@
 # Asclepius
 
-**Live:** <https://asclepius-bio.vercel.app> · [methodology index](https://asclepius-bio.vercel.app/methodology) · [worked example](https://asclepius-bio.vercel.app/diligence/adagrasib)
+**Live:** <https://asclepius-lyart.vercel.app> · [methodology index](https://asclepius-lyart.vercel.app/methodology) · [how the tool thinks — a worked case](https://asclepius-lyart.vercel.app/showcase) · [worked example](https://asclepius-lyart.vercel.app/diligence/adagrasib)
 
-> Asclepius is the first open rNPV tool that prices the path-dependency between a sponsor's
-> balance sheet and their trial's probability of success. Capital-constrained sponsors run
-> worse trials; well-capitalized sponsors enable adaptive designs and stronger regulatory
-> engagement. We make that explicit and quantifiable, with citations on every number.
+> A biotech research / analysis / advising tool. It treats two *structural* facts as
+> first-class value drivers that generic valuation tools ignore — **who holds the capital**
+> and **who controls the supply** — and it produces a *defensible view* on a single asset:
+> a call, a conviction, and the one readout that would flip it. Every number ships its citation.
 
-A biotech venture valuation workbench: phase-gated probability of success with an explicit
-**reflexivity adjustment**, risk-adjusted NPV with 10,000-path Monte Carlo and tornado
-sensitivity, a supervised **ML PoS Prior** on real HINT clinical-trial outcomes (PubMedBERT +
-**phase-stratified LightGBM**, bootstrap-percentile uncertainty bands + Mondrian split-conformal
-coverage; **externally validated against CTO uncontaminated at AUC 0.600, then retrained on
-HINT ∪ CTO with one model per phase → 0.660 on held-out CTO (+6pp) — see
-[methodology/13](methodology/13-ct-open-benchmark.md) +
-[/14](methodology/14-phase-stratified-retrain.md) for the honest generalization-gap and
-Simpson's-paradox analysis, [/15](methodology/15-trial-design-features-negative-result.md)
-for a documented label-leak discovery,
-[/16](methodology/16-planned-enrollment-null-effect.md) for the leak-free planned-enrollment
-counterfactual showing the apparent lift was training-noise, and
-[/17](methodology/17-phase2-error-analysis-and-calibration.md) for the v1.5.9 phase-2
-error analysis + per-phase isotonic calibration that improves Brier 5-13% by correcting the
-+12-15pp training-eval base-rate over-prediction**), an
-8-pillar diligence scorecard, cited deal comparables, three
-runtime agents (Auto-Diligence, Memo Writer, Game-Theory Adversary), and **four persona-aware
-reader views** (VC Associate, IC Voter, Scientific Reviewer, Quant) — all built on a **modular
-registry pattern** that has now successfully absorbed five major feature lines (v1.5 calibrated
-ML, v1.5.5 external validation, v1.5.6 phase-stratified retrain, v1.7 reader-journey IA, v1.8
-persona views) without core edits.
+Asclepius is used by its author and a small trusted circle to analyze real pre-approval biotech
+assets. It is **not** a public product, a SaaS, or a forecasting service. Its value is the
+**creativity, architecture, and methodology** it embodies — a framework that forms a view, shows
+its work, and names what would change its mind.
 
-The architecture is intentional and replicable. Every methodology decision is documented in
-[`methodology/`](methodology/); every reference value is in versioned JSON with a `source` field;
-every PoS adjustment is logged with rationale and citation. Asclepius is built as a *maintained*
-methodology platform with a quarterly refresh cadence tied to BIO/Informa and Damodaran's
-publication calendars — not a one-shot portfolio artifact.
+## The differentiators
 
-## What you're looking at
+1. **Two named structural path-dependencies.** Most tools price a drug as a probability-weighted
+   cash-flow stream and stop. This one adds:
+   - **[Reflexivity](methodology/02-reflexivity-thesis.md)** — a Spence-style signaling multiplier
+     on probability-of-success keyed to sponsor capital state. Capital-constrained sponsors run
+     worse trials; well-capitalized sponsors enable adaptive designs and stronger regulatory
+     engagement. Grounded in Spence (1973) with modern empirical support (Kao 2024, Lo & Thakor
+     2022, Ma 2025).
+   - **[Supply constraint](methodology/22-supply-constraint-thesis.md)** — a manufacturability
+     multiplier on PoS *and* a peak-sales ceiling in rNPV. A binding isotope/raw-material/capacity
+     constraint is execution risk on the way in and a revenue cap at the top. Generic DCF models
+     put neither on the revenue line.
 
-**The headline result** — adagrasib, applied as a retrospective backtest using only public
-information available before the KRYSTAL-12 Phase 3 readout (June 2022 cutoff):
+   Both are reasoned structural hypotheses, grounded in named sources and **honestly labeled as
+   estimates, not calibrated corrections.**
+
+2. **A recommendation that earns itself.** The [memo synthesis](methodology/12-memo-synthesis.md)
+   doesn't print a number — it forms a *view*: an explicit conviction level (orthogonal to
+   buy/hold), a one-line verdict on how the path-dependencies net-moved the call, a priced close,
+   and a **falsifiable kill criterion** (a named event with a threshold and a direction). The
+   schema forces all four — a memo cannot come back without them.
+
+3. **An architecture that generalizes.** A single [`DiligenceRecord`](api/app/domain.py) pydantic
+   model is the source of truth; three auto-discovered registries (`data_sources/`, `modules/`,
+   `agents/`) plug into FastAPI on startup; the Next.js frontend renders one panel per module from
+   the `/api/modules` manifest. Adding the entire supply-constraint dimension (a new path-dependency
+   affecting two engines) required **no core edits** — it slotted into the same waterfall position
+   reflexivity occupies. See [`docs/architecture.md`](docs/architecture.md).
+
+## A worked case
+
+The [showcase](https://asclepius-lyart.vercel.app/showcase) narrates one hard asset end to end — an
+Actinium-225 alpha-emitter from a capital-constrained junior — the one asset that lights up every
+differentiator at once (both path-dependencies bite, and it routes to the curated radiopharmaceutical
+comp cohort). Every number on that page is real engine output; the reading is editorial.
+
+The canonical **retrospective calibration example** is adagrasib, run on only public information
+available before the KRYSTAL-12 Phase 3 readout (June 2022 cutoff):
 
 | Scenario | Framework value | Reality |
 |---|---:|---|
-| Rule-based PoS (BIO 7.9% → reflexivity → final LOA) | **13.2%** | — |
-| ML PoS Prior (PubMedBERT-embedded KRYSTAL-1 criteria + LGBM) | **23.6%** [24%–53% bootstrap band] | Real-outcome-supervised, AUC 0.7030 |
-| Pre-readout (Phase 2) base case rNPV | **$570M** | Mirati's market cap at cutoff |
-| Pre-readout Monte Carlo P25–P75 | **$440M – $680M** | Distribution over 10K simulated paths |
+| Rule-based PoS (BIO base → reflexivity → final LOA) | **~13%** | — |
+| ML PoS Prior (second opinion; PubMedBERT + LightGBM on HINT) | **~24%** | Real-outcome-supervised |
+| Pre-readout (Phase 2) base-case rNPV | **~$570M** | Mirati's market cap at cutoff |
 | Post-readout (at NDA) base case | **~$4.9B** | — |
-| Actual BMS acquisition (Oct 2022) | $4.8B | Brackets within 2% |
-| Winner's-curse-adjusted private value | $4,400M – $4,600M | Pfizer was reported as competing bidder |
+| Actual BMS acquisition (Oct 2022) | $4.8B | Brackets within ~2% |
 
-**The verdict:** BMS paid a small premium to the success-weighted central case — defensible
-as strategic KRAS-franchise value, but no margin of safety for a financial buyer. Read the
-[full worked example](methodology/05-worked-example-adagrasib.md).
-
-**The forward prediction** — divarasib (Roche, NCT06497556, KRAS G12C+ NSCLC Phase 3 head-to-head
-vs sotorasib/adagrasib, primary completion **2027-09-30**). The framework's *pre-registered*
-prediction, committed to git on 2026-06-03, before any outcome is known:
-
-| Metric | Framework value |
-|---|---:|
-| PoS final LOA | **59.3%** [95% CI 54.8% – 63.4%] |
-| rNPV base case | **$948M** |
-| Monte Carlo P25 / P50 / P75 | $637M / $935M / $1,337M |
-| Resolution date | 2027-09-30 (estimated PCD) |
-
-This is the discipline that converts the methodology layer from "calibrated against history" to
-"auditable against the future." The prediction record lives at
-[`predictions/2026-06-03-divarasib-…json`](predictions/2026-06-03-divarasib-divarasib_nct06497556_2026_06.json);
-the full reasoning is in [`methodology/18-divarasib-live-forward-prediction.md`](methodology/18-divarasib-live-forward-prediction.md).
+BMS paid a small premium to the success-weighted central case — defensible as strategic
+KRAS-franchise value, no margin of safety for a financial buyer. Full write-up:
+[05-worked-example-adagrasib.md](methodology/05-worked-example-adagrasib.md). This is *calibration
+against a known outcome*, not a prediction.
 
 ## Try it
 
@@ -87,302 +82,102 @@ pnpm dev
 
 Then open <http://localhost:3000/diligence/adagrasib>.
 
-**Two hero interactions** to try:
+**Two hero interactions:**
 
-1. **Reflexivity slider** (at the top of the Thesis section). Drag from "Adequate" to "Well
-   capitalized" and watch the HeroBanner's LOA microsplit, the PoS waterfall, the ML PoS
-   Prior band, the rNPV base case, the Monte Carlo distribution, and the tornado all update
-   live. That single drag is the framework's load-bearing demo — the headline differentiator
-   visibly moving rNPV 20%+.
+1. **Reflexivity slider** (top of the Thesis section). Drag from "Adequate" to "Well capitalized"
+   and watch the LOA microsplit, PoS waterfall, ML PoS band, rNPV base case, Monte Carlo
+   distribution, and tornado all recompute live — the headline differentiator visibly moving rNPV.
+2. **Persona toggle** (global header). Cycle VC Associate / IC Voter / Scientific Reviewer / Quant
+   and watch the whole page reorganize around each reader's first question. Same data, four reads —
+   "methodology applied to its own presentation" ([product thesis](methodology/00-product-thesis.md)).
 
-2. **Persona toggle** (in the global header). Cycle among VC Associate (default) / IC Voter /
-   Scientific Reviewer / Quant and watch the entire page transform: different banner content,
-   different module ordering, different leading-element cards (TrialDesignCard for science,
-   ModelInfoRawCard for quant). Same underlying data, four audience-specific reads. The
-   v1.8.0 evolution of "methodology applied to its own presentation" — see
-   [`methodology/00-product-thesis.md`](methodology/00-product-thesis.md) §Persona modes.
+## What's in the build
 
-## Architecture in one sentence
+**The deterministic spine:**
 
-A `DiligenceRecord` pydantic model is the single source of truth; three auto-discovered
-registries (`data_sources/`, `modules/`, `agents/`) plug into FastAPI on startup; the Next.js
-frontend reads the `/api/modules` manifest endpoint and dynamically renders one panel per
-module.
+- **PoS engine** — a `base × Π(multipliers)` chain (base rate → modality → mechanism/biomarker →
+  target validation → regulatory designations → **reflexivity** → **supply constraint**), every
+  step logged in the audit trail with a primary-source citation. Frontier modalities (degrader,
+  radiopharmaceutical, epigenetic editing) carry honest "Asclepius estimate, no BIO/Informa cohort"
+  provenance rather than borrowing a citation they aren't entitled to.
+- **rNPV engine** — phase-gated cash flows, mid-year discount convention, 10,000-path Monte Carlo
+  (log-normal peak / beta LOA / normal WACC / triangular COGS), tornado sensitivity, and the
+  supply-constraint peak-sales ceiling.
+- **8-pillar diligence scorecard** — including a computational-infrastructure pillar that prices a
+  sponsor's AI/ML/data assets.
+- **Cited deal comparables** — cohort routing by (therapeutic area, modality family) with a curated
+  radiopharma cohort and an honest same-TA-approximation fallback; provenance on every row.
 
-See [`docs/architecture.md`](docs/architecture.md) for the full contract on adding a new
-module, data source, agent, or exporter without touching the core.
+**Three runtime agents** (each one UI button; coordination via the deterministic core):
 
-## What's in the live build
+- **Auto-Diligence** — asset name → structured `AssetInput` with citations from a high-signal
+  domain allowlist (CT.gov, FDA, EDGAR, top journals); output coerced to the domain enums at the
+  boundary.
+- **Memo Writer** — diligence record → a structured investment memo with the defensible-recommendation
+  discipline ([12-memo-synthesis.md](methodology/12-memo-synthesis.md)).
+- **Game-Theory Adversary** — a devil's-advocate pass surfacing signaling-equilibrium violations,
+  winner's-curse adjustments, and Bayesian-persuasion flags on selective disclosure.
 
-The v1 baseline (shipped Weeks 1-4):
+**A second-opinion ML PoS prior** — PubMedBERT-embedded eligibility text + structured features →
+LightGBM (phase-stratified), supervised on real HINT trial→approval outcomes, with a
+bootstrap-percentile band and split-conformal coverage exposed at `/api/modules/ml_pos_prior/model_info`.
+It is a *check on* the rule-based estimate, not a forecast: agreement raises confidence, divergence
+flags an asset for closer review.
 
-- **PoS engine** with a six-step adjustment chain (base rate → modality → mechanism modifiers
-  → regulatory designations → reflexivity), every step logged in the audit trail with a
-  primary-source citation
-- **rNPV engine** with phase-gated cash flows, mid-year discount convention, Monte Carlo over
-  log-normal peak sales / beta LOA / normal WACC / triangular COGS, and tornado sensitivity
-- **8-pillar diligence scorecard** with red/green flag mechanics — including the novel
-  computational-infrastructure pillar that explicitly prices a sponsor's AI/ML/data assets
-- **Cited deal comparables** with provenance on every cohort row (encorafenib, selpercatinib,
-  larotrectinib; the kinase-TKI single-asset M&A cohort)
-- **Worked example** anchored to the BMS / Mirati adagrasib transaction, framed as
-  retrospective calibration (not prediction)
-- **CI workflow** running `ruff` + `pytest` + `pnpm typecheck` + `pnpm build` on every push
+**Product surfaces:**
 
-### v1.1 — Three runtime agents (shipped)
+- **Persona-aware diligence page** — the same record through four audience-specific reads
+  (VC Associate / IC Voter / Scientific Reviewer / Quant).
+- **Narrated showcase** — the "how the tool thinks" case study.
+- **Saved analyses** — persist / list / reload a completed analysis (gated).
+- **Portfolio sizing** — Kelly + conviction + barbell allocation for the fund-manager view
+  ([`/portfolio`](https://asclepius-lyart.vercel.app/portfolio)).
 
-Each maps to one UI button; coordination is via the deterministic core, not agent-to-agent calls:
+## Access
 
-- **Auto-Diligence** — asset name → structured AssetInput fields with citations from a
-  high-signal domain allowlist (CT.gov, FDA, NEJM, EDGAR, top journals). Defensive
-  normalization filter at the agent boundary drops drift between LLM output and the
-  domain enum
-- **Memo Writer** — diligence record → 2-page narrative investment memo ending with a
-  recommendation paragraph
-- **Game-Theory Adversary** — devil's-advocate critique surfacing signaling-equilibrium
-  violations, winner's-curse adjustments on M&A comparables, and Bayesian-persuasion flags
-  on selective disclosure patterns
-
-### v1.5 — ML PoS Prior with calibrated uncertainty (shipped)
-
-- **PubMedBERT-embedded eligibility-criteria text** + 36-dim structured features = 804-dim
-  feature vector → **LightGBM regularized**, supervised on real Phase 1/2/3 → approval
-  outcomes from the HINT clinical-trial corpus (Fu et al. 2022)
-- **Test AUC 0.7030** on HINT held-out test split (Doane 2025 baseline: 0.7404)
-- **Two-axis uncertainty**: (1) 90% bootstrap-percentile interval across an ensemble of 10
-  LGBMs trained on independent bootstrap resamples (displayed in UI), (2) **Mondrian
-  split-conformal coverage** per phase, recorded in the artifact and exposed at
-  `/api/modules/ml_pos_prior/model_info` (overall test coverage 91.7%, per-phase
-  89.1%/92.2%/92.4%). The bootstrap band is the epistemic "how much does the model
-  disagree with itself"; the conformal radii are the formal frequentist coverage report
-- **Cache-first inference pattern** with feature-fingerprint validation — canonical
-  assets serve from disk; novel inputs hit the in-container PubMedBERT
-- **Calibration Dashboard** — SQLite-backed `log_prediction` / `resolve_prediction` with
-  Brier-score tracking by TA / modality / capital-position tier. Public prediction log
-  at [`predictions/`](predictions/)
-
-### v1.7 — Reader-journey IA redesign (shipped)
-
-The `/diligence/[asset]` page restructured from module-registry-discovery order to an
-equity-research / IC-memo reading order. Six named sections, each answering one specific
-question the reader is trying to answer at that moment:
-
-- **HeroBanner** ("30-second read") — recommendation chip + rNPV range + LOA microsplit
-  (BIO → Reflexivity → ML) + reflexivity tier + catalyst
-- **Thesis** — reflexivity slider promoted out of the sidebar to the section's leading
-  element; PoS waterfall + ML PoS Prior follow
-- **Valuation** — rNPV + Comparables (Comparables before Scorecard per equity-research
-  convention; number-readers anchor rNPV to deal comps before qualitative review)
-- **Operational** — Scorecard + Calibration
-- **Risk & Limits** — consolidated LimitationsPanel + AdversaryPanel (per the healthcare-VC
-  research, "the section that determines a yes/no vote")
-- **Take Action** — Auto-Diligence + Memo Writer + methodology link
-
-Section grouping is configuration; the dynamic-registry pattern is preserved.
-
-### v1.8 — Persona views (shipped)
-
-Four reader personas selectable from the global header. Same underlying diligence record
-through four audience-specific presentations:
-
-- **VC Associate** (default) — the v1.7 reader-journey layout
-- **IC Voter** — 1-page summary: recommendation + top-3 risks + top-3 reasons + catalyst
-  (auto-derived from scorecard's red_flags / green_flags), single "Decision view"
-  section, no ActionSection. ~2-minute read.
-- **Scientific Reviewer** — mechanism + target + biomarker + trial design upfront, ML
-  PoS Prior elevated, rNPV + comparables hidden. TrialDesignCard with CT.gov link leads
-  the Science section.
-- **Quant / Calibration-focused** — AUC + Brier + per-phase conformal coverage
-  (color-coded against 90% target) + ML-vs-rule disagreement, **no recommendation chip**.
-  ModelInfoRawCard exposes the literal `/model_info` JSON in a lazy-loading collapsible.
-
-Reuses the theme-toggle infrastructure pattern (localStorage + DOM attribute + anti-FOUC
-inline script). Persona toggle ships with two Codex review passes addressed.
-
-### v2.0 — Portfolio Sizing (shipped, separate audience)
-
-Kelly + conviction multiplier + barbell allocation. Targets the biotech *fund manager*
-(not single-asset diligence). Lives at [`/portfolio`](https://asclepius-bio.vercel.app/portfolio).
-
-## Roadmap
-
-What's still ahead, in rough priority order:
-
-- **v1.5.4 — Locally-adaptive conformal**: scale conformal residual by bootstrap std to
-  unify both uncertainty axes (formal coverage AND useful band shape). Documented as a
-  next-up candidate in `methodology/09-ml-pos-prior.md`.
-- **CT Open benchmark**: external AUC + calibration metrics against the April-2026
-  uncontaminated public benchmark ([arXiv:2604.16742](https://arxiv.org/abs/2604.16742)).
-  Originally planned for v1.5; pending.
-- **Methodology parity lint**: small CI script grep-asserting that every cited percentage
-  in `methodology/*.md` appears in `api/app/data/*.json` or `app/modules/*/engine.py`.
-- **Fresh Loom demo**: persona toggle now joins the reflexivity slider as a headline beat;
-  worth re-recording.
-- **Compact panel rendering for IC Voter**: when shipping a persona that explicitly
-  collapses tornado / MC histogram / audit-trail details to literalize the 1-page summary.
-
-Deliberately *not* on the roadmap: conversational "Ask Asclepius" chat tab (different
-surface, weakly differentiated vs the existing agent buttons). See the
-[product thesis](methodology/00-product-thesis.md) for the three strategic trajectories
-(portfolio artifact, maintained methodology platform, embedded in real workflows) and
-why Trajectory B is the realistic ceiling.
-
-## Maintenance cadence
-
-Asclepius is positioned as a maintained tool, not a frozen artifact:
-
-| Trigger | Effort |
-|---|---|
-| BIO/Informa publishes the next annual cohort (typically Q2) | 30 min — refresh `api/app/data/base_rates.json`. CI auto-runs `python scripts/check_methodology_parity.py` on push — any methodology citation that now drifts from the new JSON fails the build until updated or marked `<!-- parity-allow: <category> -->`. |
-| Damodaran's January cost-of-capital update | 15 min — refresh `api/app/data/wacc_benchmarks.json` (same parity-lint gate applies) |
-| Major biotech M&A closes | 30 min per deal — add a new JSON to `api/app/data/comparables/` |
-| Semi-annual methodology sweep | 2–3 hours — re-read writeups against current values; the parity lint runs in CI and the orphan list is enforced (zero tolerance, with explicit `parity-allow` markers for documented exemptions) |
-| Framework run on a public asset | 1 min — log_prediction, then `python api/scripts/sync_predictions_to_public_log.py` + commit. See [`methodology/10-public-prediction-log.md`](methodology/10-public-prediction-log.md). |
-| Public catalyst lands (FDA action, M&A, readout) | 5 min — resolve_prediction with source citation, sync + commit |
-
-### Concrete prediction-log workflow
-
-Log a new prediction (replace placeholders with the asset's actual values):
-
-```bash
-curl -s -X POST https://asclepius-api.fly.dev/api/modules/calibration/log_prediction \
-  -H "Content-Type: application/json" \
-  -d '{
-    "asset_name": "<asset>",
-    "phase": "phase_2",
-    "therapeutic_area": "oncology",
-    "modality": "small_molecule",
-    "capital_position": "adequate",
-    "predicted_pos": 0.161,
-    "reflexivity_multiplier": 1.0
-  }'
-# → {"id": "<uuid>"}
-```
-
-Resolve a prediction when the catalyst lands:
-
-```bash
-curl -s -X POST https://asclepius-api.fly.dev/api/modules/calibration/resolve_prediction \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prediction_id": "<uuid-from-log_prediction>",
-    "outcome": 1,
-    "outcome_source": "FDA accelerated approval, NDA 216340, Dec 12 2022."
-  }'
-# → {"updated": true}
-```
-
-Publish to the public log + commit:
-
-```bash
-cd "$(git rev-parse --show-toplevel)"
-python api/scripts/sync_predictions_to_public_log.py
-git add predictions/
-git commit -m "Log <asset> prediction" -m "<outcome source if resolved>"
-```
-
-Reference data is JSON-first with `source` fields on every row, so refreshes don't require
-code changes. See [`docs/architecture.md`](docs/architecture.md) for the
-contract.
-
-## Reading the methodology folder
-
-Eighteen writeups, designed to be read in any order. For a first pass:
-
-1. [`02-reflexivity-thesis.md`](methodology/02-reflexivity-thesis.md) — the framework's
-   load-bearing intellectual claim. Reads as an investor memo.
-2. [`05-worked-example-adagrasib.md`](methodology/05-worked-example-adagrasib.md) — the
-   retrospective backtest applied to the BMS / Mirati transaction. Ends with a verdict
-   paragraph an investment committee can act on.
-3. [`06-signaling-equilibrium.md`](methodology/06-signaling-equilibrium.md) — the formal
-   game-theoretic derivation of the reflexivity adjustment from Spence (1973) and Akerlof
-   (1970), with modern empirical support from Kao (2024 Management Science), Lo & Thakor
-   (2022 Annual Review), and Ma et al. (2025).
-4. [`09-ml-pos-prior.md`](methodology/09-ml-pos-prior.md) — the supervised ML PoS Prior
-   on real HINT outcomes, including the bootstrap-percentile + Mondrian-split-conformal
-   two-axis uncertainty story.
-5. [`13-ct-open-benchmark.md`](methodology/13-ct-open-benchmark.md) — the v1.5.5 honest
-   external validation against CTO's manually-annotated uncontaminated tier. AUC drops
-   10.3 pp on out-of-distribution data; the writeup unpacks why and what it means for
-   how to read the ML prior on assets outside HINT's coverage.
-6. [`00-product-thesis.md`](methodology/00-product-thesis.md) — strategic framing of the
-   project itself, via The Loom's six-phase AI-native product framework. Includes the
-   v1.7 "Reading order" and v1.8 "Persona modes" subsections explaining the
-   audience-modeling thesis behind the UI itself.
-
-Or browse the [methodology index](https://asclepius-bio.vercel.app/methodology) on the live
-deployment.
+The live app's AI features (the three agents, saved analyses) are gated behind a shared passphrase
+so they don't spend the owner's API key — it is a tool for a small trusted circle, not a public
+service. The deterministic modules and the methodology are open.
 
 ## Stack
 
-- **API**: Python 3.11+, FastAPI, pydantic v2, numpy/scipy. 176 tests, all passing
-  (includes the parity test that grep-asserts `web/lib/reflexivity-tiers.ts` stays in
-  sync with `api/app/data/reflexivity_adjustments.json`, plus 4 bootstrap-path tests
-  + 1 real-LightGBM integration test for the ML PoS Prior engine).
-- **ML inference**: torch 2.6.0+cpu + transformers 4.46.x + lightgbm 4.x. PubMedBERT
-  loaded in-container; LightGBM artifact (~3 MB; main model + 10 bootstrap models +
-  conformal radii + per-phase coverage) shipped with the Docker image.
+- **API**: Python 3.11+, FastAPI, pydantic v2, numpy/scipy. Full app test suite passing.
+- **ML inference**: torch (cpu) + transformers + lightgbm; PubMedBERT loaded in-container, the
+  LightGBM artifact shipped with the Docker image.
 - **Web**: Next.js 14 (App Router), Tailwind, recharts, react-markdown, TypeScript.
-  Production build clean. 18 static pages prerendered.
-- **Deploy**: Vercel (web) + Fly.io (api) — live at `asclepius-api.fly.dev` (image size
-  733 MB). See [`docs/deployment.md`](docs/deployment.md).
-- **CI**: GitHub Actions running ruff + pytest + pnpm typecheck + pnpm build on every push.
+- **Deploy**: Vercel (web) + Fly.io (api). See [`docs/deployment.md`](docs/deployment.md).
+- **CI**: GitHub Actions — ruff + pytest + pnpm typecheck + pnpm build on every push.
 
-## Related work
+## Reading the methodology folder
 
-To our knowledge, no widely-used open-source Python rNPV library for biotech exists.
-Educational content in the space ([Models Hub](https://financialmodelshub.com/risk-adjusted-npv-explained-the-gold-standard-for-biotech-valuation/),
-[Vision Lifesciences](https://visionlifesciences.com/insights/rnpv-valuation-guide-pharma),
-[BiopharmaVantage](https://www.biopharmavantage.com/pharma-biotech-valuation-best-practices))
-is methodology articles; operational tools (Vision Lifesciences' product, vendor offerings)
-are closed-source/commercial. [Wong, Siah, Lo (2019)](https://academic.oup.com/biostatistics/article/20/2/273/4817524) did not release code or
-data — both are constrained by Informa's proprietary licensing.
+A first pass:
 
-Adjacent open project: [bvssaisantoshi19/clinical-trial-outcome-prediction](https://github.com/bvssaisantoshi19/clinical-trial-outcome-prediction)
-solves the prediction-end of the PoS problem using AACT (ClinicalTrials.gov) data. Doesn't
-address rNPV, scorecards, or comparables. Asclepius's v1.5 ML PoS Prior takes a different
-approach — supervised on the HINT clinical-trial-outcome corpus (Fu et al. 2022) with
-PubMedBERT-embedded eligibility-criteria features rather than AACT structured fields.
+1. [`00-product-thesis.md`](methodology/00-product-thesis.md) — what the tool is and what it's a proof of.
+2. [`02-reflexivity-thesis.md`](methodology/02-reflexivity-thesis.md) — the load-bearing claim (capital → PoS).
+3. [`22-supply-constraint-thesis.md`](methodology/22-supply-constraint-thesis.md) — the second path-dependency (supply → PoS + a revenue ceiling).
+4. [`12-memo-synthesis.md`](methodology/12-memo-synthesis.md) — what makes a recommendation defensible.
+5. [`06-signaling-equilibrium.md`](methodology/06-signaling-equilibrium.md) — the game-theoretic derivation of reflexivity from Spence (1973).
+6. [`05-worked-example-adagrasib.md`](methodology/05-worked-example-adagrasib.md) — the framework run end to end.
 
-Asclepius is positioned as **the first open-source implementation tying phase-gated cash
-flows + reflexivity-adjusted PoS + supervised ML-PoS on real outcomes (with bootstrap +
-Mondrian conformal uncertainty) + Monte Carlo with documented priors + audit-trail
-discipline + persona-aware presentation in one codebase**.
+Or browse the [methodology index](https://asclepius-lyart.vercel.app/methodology) live.
 
 ## Sources and citations
 
-The methodology cites peer-reviewed work or primary industry sources for every empirical
-claim. The canonical references:
+Every empirical claim cites peer-reviewed work or a primary industry source. Canonical references:
 
 - Spence, M. (1973). Job Market Signaling. *Quarterly Journal of Economics*.
 - Akerlof, G.A. (1970). The Market for "Lemons". *Quarterly Journal of Economics*.
-- Stewart, J.J., Allison, P.N., Johnson, R.S. (2001). Putting a Price on Biotechnology.
-  *Nature Biotechnology* 19(9).
-- Wong, C.H., Siah, K.W., Lo, A.W. (2019). Estimation of clinical trial success rates and
-  related parameters. *Biostatistics* 20(2).
-- Lo, A.W., Thakor, R.T. (2022). Financing Biomedical Innovation. *Annual Review of
-  Financial Economics* 14.
+- Wong, C.H., Siah, K.W., Lo, A.W. (2019). Estimation of clinical trial success rates. *Biostatistics* 20(2).
+- Lo, A.W., Thakor, R.T. (2022). Financing Biomedical Innovation. *Annual Review of Financial Economics* 14.
 - Kao, J. (2024). Information Disclosure and Competitive Dynamics. *Management Science*.
-- Ma, S., Han, W., Lê Cook, B., et al. (2025). Predicting accrual success for better
-  clinical trial resource allocation. *Scientific Reports* 15.
-- Fu, T., Huang, K., Xiao, C., Glass, L.M., Sun, J. (2022). HINT: Hierarchical Interaction
-  Network for Trial Outcome Prediction. *Patterns* (Cell Press). Backbone of the v1.5 ML
-  PoS Prior's supervised labels.
-- Gu, Y., Tinn, R., Cheng, H., et al. (2021). Domain-Specific Language Model Pretraining
-  for Biomedical NLP. *ACM Transactions on Computing for Healthcare* — the PubMedBERT
-  paper. Backbone of the v1.5 eligibility-criteria embedding.
-- Vovk, V., Gammerman, A., Shafer, G. (2005). *Algorithmic Learning in a Random World*.
-  Foundation for the v1.5.3 Mondrian split-conformal coverage discipline.
-- BIO / Informa Pharma Intelligence / QLS Advisors (2021). Clinical Development Success
-  Rates 2011-2020.
+- Ma, S., et al. (2025). Predicting accrual success for better clinical trial resource allocation. *Scientific Reports* 15.
+- Fu, T., et al. (2022). HINT: Hierarchical Interaction Network for Trial Outcome Prediction. *Patterns*.
+- Gu, Y., et al. (2021). Domain-Specific Language Model Pretraining for Biomedical NLP (PubMedBERT). *ACM TOCH*.
+- BIO / Informa / QLS Advisors (2021). Clinical Development Success Rates 2011–2020.
 - Damodaran, A. (2025). Cost of Capital by Industry (US). NYU Stern.
 
 Full per-writeup citations are in [`methodology/`](methodology/).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
-The methodology writeups are released under the same license. If you build on the
-reflexivity adjustment, the productization-of-methodology framing, or the audit-trail
-discipline, an acknowledgment in the relevant docs is appreciated but not required.
+MIT — see [LICENSE](LICENSE). The methodology writeups are released under the same license.
