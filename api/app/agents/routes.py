@@ -7,19 +7,22 @@ the agent's manifest (output_fields).
 A single generic route handles all agents — adding a new agent never requires
 editing this file.
 
-ACCESS GATE (v1.9.1): the three agents are the only routes that spend money
-(live Anthropic calls + web search). When the demo runs with a live
-ANTHROPIC_API_KEY behind a public URL, anyone who finds the endpoint could
-drain the key. `require_access` gates this router behind a single shared
-passphrase stored in the ASCLEPIUS_ACCESS_PASSPHRASE env var (a Fly secret).
+ACCESS GATE: the three agents are the only routes that spend money (live
+Anthropic calls + web search). When the demo runs with a live ANTHROPIC_API_KEY
+behind a public URL, anyone who finds the endpoint could drain the key.
+`require_access` gates the money-spending path behind a shared passphrase stored
+in the ASCLEPIUS_ACCESS_PASSPHRASE env var (a Fly secret).
+
+The gate is applied ONLY to the LIVE path (R3 rescope): a request whose result is
+served from a pre-computed cache spends nothing, so it is returned WITHOUT
+requiring the passphrase. This is what lets a cold visitor see the AI features on
+the pre-cached staged assets (e.g. adagrasib's memo) without a token, while a
+custom/uncached asset — which would fire a live Anthropic call — still needs it.
 
 Design is FAIL-OPEN: if the passphrase env var is unset, the gate is inert and
-the routes behave exactly as before (public). This lets the gate code deploy
-without breaking anything; the owner ACTIVATES it by setting the secret, and
-REVOKES access by rotating it. Only this router is gated — the deterministic
-module routes (/api/modules/*), the manifest list (GET /api/agents), and the
-methodology/staged-asset surfaces stay public so the portfolio value and the
-quantitative workbench remain visible to anyone.
+the routes are fully public. Only this router is gated — the deterministic module
+routes (/api/modules/*), the manifest list, and the methodology/staged-asset
+surfaces stay public regardless.
 """
 
 from __future__ import annotations
@@ -27,7 +30,7 @@ from __future__ import annotations
 import logging
 import os
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 
 from ..domain import DiligenceRecord
 from ..registry import get_registry
@@ -62,20 +65,27 @@ def require_access(
         )
 
 
-router = APIRouter(
-    prefix="/api/agents",
-    tags=["agents"],
-    dependencies=[Depends(require_access)],
-)
+router = APIRouter(prefix="/api/agents", tags=["agents"])
 
 
 @router.post("/{agent_id}/run")
-def run_agent(agent_id: str, record: DiligenceRecord) -> dict:
+def run_agent(
+    agent_id: str,
+    record: DiligenceRecord,
+    x_asclepius_access: str | None = Header(default=None),
+) -> dict:
     registry = get_registry()
     loaded = registry.agents.get(agent_id)
     if loaded is None:
         raise HTTPException(status_code=404, detail=f"agent '{agent_id}' not registered")
     try:
+        # Free path: if a pre-computed cached response exists, serve it ungated —
+        # it spends no money. Only the LIVE (key-spending) path requires the
+        # passphrase, so cached staged assets stay visible to a cold visitor.
+        cached = loaded.instance.maybe_cached(record)
+        if cached is not None:
+            return cached
+        require_access(x_asclepius_access)
         return loaded.instance.run(record)
     except HTTPException:
         raise

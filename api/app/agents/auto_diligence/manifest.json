@@ -2,7 +2,7 @@
   "id": "auto_diligence",
   "name": "Auto-Diligence",
   "version": "0.2.0",
-  "description": "Asset name → structured PoS/rNPV inputs with citations. Uses Anthropic web_search restricted to a high-signal allowlist (CT.gov, SEC EDGAR, FDA, EMA, top journals, newswires). Single-pass extractor; populates AssetInput fields with a verbatim URL+span citation on every grounded value.",
+  "description": "Asset name \u2192 structured PoS/rNPV inputs with citations. Uses Anthropic web_search restricted to a high-signal allowlist (CT.gov, SEC EDGAR, FDA, EMA, top journals, newswires). Single-pass extractor; populates AssetInput fields with a verbatim URL+span citation on every grounded value.",
   "methodology_refs": [],
   "trigger_label": "Auto-diligence from asset name",
   "input_fields": [
@@ -18,5 +18,11 @@
     "generated_at"
   ],
   "model": "claude-opus-4-7",
-  "cached_assets": ["adagrasib"]
+  "cached_assets": [
+    "adagrasib",
+    "divarasib",
+    "lifileucel",
+    "tulisokibart",
+    "aducanumab"
+  ]
 }

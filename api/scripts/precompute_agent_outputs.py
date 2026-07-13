@@ -29,6 +29,25 @@ from app.modules.rnpv.engine import compute as compute_rnpv  # noqa: E402
 from app.modules.scorecard.engine import compute as compute_scorecard  # noqa: E402
 from app.registry import get_registry  # noqa: E402
 
+# The ScorecardRadarPanel DEFAULT_INPUT — the same defaults every asset's
+# workbench renders unless the user edits a pillar. Shared so a cached memo's
+# scorecard discussion matches the live page for all pre-cached assets.
+_DEFAULT_SCORECARD = {
+    "clinical": {"score": 7.0},
+    "regulatory": {"score": 7.0},
+    "competitive": {"score": 6.0},
+    "manufacturing": {"score": 7.0},
+    "ip": {"score": 7.0},
+    "financial": {"score": 6.0},
+    "team": {"score": 7.0},
+    "computational": {"score": 5.0},
+    "red_flags": [],
+    "green_flags": [],
+}
+
+# rNPV + AssetInput values below MUST match web/lib/staged-assets.ts so a cached
+# memo references the same numbers the live workbench computes. The dict KEY must
+# equal the slugified asset_name (the cache lookup key).
 CACHEABLE_ASSETS: dict[str, dict] = {
     "adagrasib": {
         "asset_input": {
@@ -71,19 +90,128 @@ CACHEABLE_ASSETS: dict[str, dict] = {
         # cached memo's aggregate score and pillar discussion line up with what
         # the page actually renders. (Defaults: clinical/regulatory/manufacturing/
         # ip/team 7, competitive/financial 6, computational 5, no flags.)
-        "scorecard_input": {
-            "clinical": {"score": 7.0},
-            "regulatory": {"score": 7.0},
-            "competitive": {"score": 6.0},
-            "manufacturing": {"score": 7.0},
-            "ip": {"score": 7.0},
-            "financial": {"score": 6.0},
-            "team": {"score": 7.0},
-            "computational": {"score": 5.0},
-            "red_flags": [],
-            "green_flags": [],
+        "scorecard_input": _DEFAULT_SCORECARD,
+    },
+    "divarasib": {
+        "asset_input": {
+            "asset_name": "divarasib",
+            "sponsor": "Hoffmann-La Roche",
+            "phase": "phase_3",
+            "therapeutic_area": "oncology",
+            "modality": "small_molecule",
+            "capital_position": "well_capitalized",
+            "mechanism": "KRAS G12C inhibitor (covalent, second-generation)",
+            "target": "KRAS G12C",
+            "indication": "Previously treated KRAS G12C+ advanced/metastatic NSCLC",
+            "regulatory_designations": [],
+            "num_competitors": 3,
+            "target_validated": True,
+            "biomarker_enrichment": True,
         },
-    }
+        "rnpv_inputs": {
+            "peak_sales_usd_m": 700.0,
+            "years_to_peak": 5,
+            "years_of_exclusivity": 12,
+            "cogs_pct": 0.20,
+            "wacc": 0.10,
+            "dev_cost_phase_1_usd_m": 0.0,
+            "dev_cost_phase_2_usd_m": 0.0,
+            "dev_cost_phase_3_usd_m": 250.0,
+            "launch_cost_usd_m": 150.0,
+            "years_per_phase": {"phase_1": 0, "phase_2": 0, "phase_3": 1.5, "regulatory": 1},
+        },
+        "scorecard_input": _DEFAULT_SCORECARD,
+    },
+    "lifileucel": {
+        "asset_input": {
+            "asset_name": "lifileucel",
+            "sponsor": "Iovance Biotherapeutics",
+            "phase": "phase_3",
+            "therapeutic_area": "oncology",
+            "modality": "cell_therapy_autologous",
+            "capital_position": "constrained",
+            "mechanism": "autologous tumor-infiltrating lymphocyte (TIL) therapy",
+            "target": "patient-specific tumor neoantigens",
+            "indication": "Advanced/metastatic melanoma post-anti-PD1 + BRAF/MEK (if BRAF+)",
+            "regulatory_designations": ["breakthrough_therapy", "orphan_drug", "fast_track"],
+            "num_competitors": 0,
+            "target_validated": True,
+            "biomarker_enrichment": False,
+        },
+        "rnpv_inputs": {
+            "peak_sales_usd_m": 1100.0,
+            "years_to_peak": 6,
+            "years_of_exclusivity": 12,
+            "cogs_pct": 0.38,
+            "wacc": 0.12,
+            "dev_cost_phase_1_usd_m": 0.0,
+            "dev_cost_phase_2_usd_m": 0.0,
+            "dev_cost_phase_3_usd_m": 150.0,
+            "launch_cost_usd_m": 300.0,
+            "years_per_phase": {"phase_1": 0, "phase_2": 0, "phase_3": 1, "regulatory": 1},
+        },
+        "scorecard_input": _DEFAULT_SCORECARD,
+    },
+    "tulisokibart": {
+        "asset_input": {
+            "asset_name": "tulisokibart",
+            "sponsor": "Merck & Co. (acquired from Prometheus)",
+            "phase": "phase_3",
+            "therapeutic_area": "autoimmune",
+            "modality": "monoclonal_antibody",
+            "capital_position": "well_capitalized",
+            "mechanism": "anti-TL1A (TNFSF15) monoclonal antibody",
+            "target": "TL1A (TNFSF15)",
+            "indication": "Ulcerative colitis (Phase 3 ATLAS-UC) and Crohn's disease (Phase 3 ATLAS-CD)",
+            "regulatory_designations": [],
+            "num_competitors": 2,
+            "target_validated": False,
+            "biomarker_enrichment": False,
+        },
+        "rnpv_inputs": {
+            "peak_sales_usd_m": 5000.0,
+            "years_to_peak": 6,
+            "years_of_exclusivity": 12,
+            "cogs_pct": 0.22,
+            "wacc": 0.10,
+            "dev_cost_phase_1_usd_m": 0.0,
+            "dev_cost_phase_2_usd_m": 0.0,
+            "dev_cost_phase_3_usd_m": 400.0,
+            "launch_cost_usd_m": 200.0,
+            "years_per_phase": {"phase_1": 0, "phase_2": 0, "phase_3": 3, "regulatory": 1},
+        },
+        "scorecard_input": _DEFAULT_SCORECARD,
+    },
+    "aducanumab": {
+        "asset_input": {
+            "asset_name": "aducanumab",
+            "sponsor": "Biogen / Eisai",
+            "phase": "phase_3",
+            "therapeutic_area": "cns",
+            "modality": "monoclonal_antibody",
+            "capital_position": "well_capitalized",
+            "mechanism": "anti-amyloid-beta monoclonal antibody",
+            "target": "amyloid beta (Aβ) aggregates",
+            "indication": "Alzheimer's disease (mild cognitive impairment)",
+            "regulatory_designations": ["fast_track"],
+            "num_competitors": 2,
+            "target_validated": False,
+            "biomarker_enrichment": False,
+        },
+        "rnpv_inputs": {
+            "peak_sales_usd_m": 4500.0,
+            "years_to_peak": 5,
+            "years_of_exclusivity": 12,
+            "cogs_pct": 0.15,
+            "wacc": 0.10,
+            "dev_cost_phase_1_usd_m": 0.0,
+            "dev_cost_phase_2_usd_m": 0.0,
+            "dev_cost_phase_3_usd_m": 200.0,
+            "launch_cost_usd_m": 200.0,
+            "years_per_phase": {"phase_1": 0, "phase_2": 0, "phase_3": 2, "regulatory": 1},
+        },
+        "scorecard_input": _DEFAULT_SCORECARD,
+    },
 }
 
 

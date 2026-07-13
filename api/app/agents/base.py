@@ -133,6 +133,18 @@ class BaseAgent(ABC):
             return base_prompt
         return f"{self.methodology_context}\n\n---\n\n{base_prompt}"
 
+    def maybe_cached(self, record: DiligenceRecord) -> dict[str, Any] | None:
+        """Return a pre-computed cached response for this record if one exists,
+        WITHOUT doing any money-spending work; else None.
+
+        Default: no cache (agents that don't cache never short-circuit). Caching
+        agents override to delegate to their private cache lookup. The access
+        gate uses this so FREE (cached) responses can be served without the
+        passphrase, while money-spending LIVE calls stay gated. See
+        app/agents/routes.py.
+        """
+        return None
+
     @abstractmethod
     def run(self, record: DiligenceRecord) -> dict[str, Any]:
         """Run the agent against a diligence record.

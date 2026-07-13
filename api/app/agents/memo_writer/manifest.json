@@ -25,5 +25,11 @@
     "generated_at"
   ],
   "model": "claude-opus-4-7",
-  "cached_assets": ["adagrasib"]
+  "cached_assets": [
+    "adagrasib",
+    "divarasib",
+    "lifileucel",
+    "tulisokibart",
+    "aducanumab"
+  ]
 }

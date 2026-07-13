@@ -165,6 +165,10 @@ class Agent(BaseAgent):
     def _cache_path(self, record: DiligenceRecord) -> Path:
         return self.cache_dir / f"{_slugify_asset_name(record.asset.asset_name)}.json"
 
+    def maybe_cached(self, record: DiligenceRecord) -> dict[str, Any] | None:
+        # Public hook for the access gate (serve free cached responses ungated).
+        return self._maybe_cached(record)
+
     def _maybe_cached(self, record: DiligenceRecord) -> dict[str, Any] | None:
         key = _slugify_asset_name(record.asset.asset_name)
         if key not in self.manifest.cached_assets:
