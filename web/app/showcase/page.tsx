@@ -16,6 +16,8 @@
 
 import Link from "next/link";
 
+import { ProvenanceLegend } from "@/components/ProvenanceLegend";
+
 export const metadata = {
   title: "How the tool thinks — Ac-225 case study | Asclepius",
   description:
@@ -182,6 +184,8 @@ export default function ShowcasePage() {
         Every multiplier renders its real source — including the ones that admit
         a gap.
       </Annotation>
+
+      <ProvenanceLegend className="mt-3" />
 
       {/* 2. Valuation */}
       <SectionHeader n="02" title="Valuation — and the ceiling generic DCF misses" />

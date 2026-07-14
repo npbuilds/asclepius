@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ProvenanceBadge, ProvenanceLegend } from "@/components/ProvenanceLegend";
 import { runPoS } from "@/lib/api-client";
 import { emitModuleLoad, type ModulePanelProps } from "@/lib/module-registry";
 import type { PoSResult } from "@/lib/types";
@@ -96,11 +97,15 @@ export default function PoSWaterfallPanel({ record, setRecord }: ModulePanelProp
                   </span>
                 </div>
                 <div className="mt-0.5 font-prose">{a.rationale}</div>
-                <div className="mt-0.5 italic text-text-dim">{a.source}</div>
+                <div className="mt-0.5 flex items-start gap-1.5">
+                  <ProvenanceBadge source={a.source} />
+                  <span className="italic text-text-dim">{a.source}</span>
+                </div>
               </li>
             );
           })}
         </ol>
+        <ProvenanceLegend className="mt-2.5 border-t border-border-dim pt-2" />
       </details>
     </PanelShell>
   );
